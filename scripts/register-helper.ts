@@ -24,6 +24,15 @@ const base = { name: hostName, description: 'BookPass native helper', path: exe,
 const chromeManifest = { ...base, allowed_origins: [`chrome-extension://${chromeId}/`] };
 const firefoxManifest = { ...base, allowed_extensions: [firefoxId] };
 
+// Browsers built on Chromium read the same kind of manifest from their own registry key.
+const chromiumLike: [string, string][] = [
+  ['Edge', 'Microsoft\\Edge'],
+  ['Brave', 'BraveSoftware\\Brave-Browser'],
+  ['Brave Origin', 'BraveSoftware\\Brave-Origin'],
+  ['Vivaldi', 'Vivaldi'],
+  ['Chromium', 'Chromium'],
+];
+
 interface Target {
   name: string;
   manifest: object;
@@ -43,12 +52,12 @@ function targets(): Target[] {
         file: join(dir, 'host-chrome.json'),
         regKey: reg('Google\\Chrome'),
       },
-      {
-        name: 'Edge',
+      ...chromiumLike.map(([name, vendor]) => ({
+        name,
         manifest: chromeManifest,
         file: join(dir, 'host-chrome.json'),
-        regKey: reg('Microsoft\\Edge'),
-      },
+        regKey: reg(vendor),
+      })),
       {
         name: 'Firefox',
         manifest: firefoxManifest,
