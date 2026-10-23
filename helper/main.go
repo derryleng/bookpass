@@ -48,26 +48,30 @@ type request struct {
 	SHA256      string `json:"sha256,omitempty"`
 	ExpectedSHA string `json:"expectedSha256,omitempty"` // hash of the file we last read, empty if it did not exist
 	VaultPath   string `json:"vaultPath,omitempty"`
+	Source      string `json:"source,omitempty"` // which file to read: empty for the vault, "conflict" or "backup"
+	Name        string `json:"name,omitempty"`   // the file name when Source is not the vault
 	BackupCount *int   `json:"backupCount,omitempty"`
 }
 
 type response struct {
-	ID          int    `json:"id"`
-	OK          bool   `json:"ok"`
-	Code        string `json:"code,omitempty"`
-	Error       string `json:"error,omitempty"`
-	Protocol    int    `json:"protocol,omitempty"`
-	Helper      string `json:"helper,omitempty"`
-	OS          string `json:"os,omitempty"`
-	Arch        string `json:"arch,omitempty"`
-	VaultPath   string `json:"vaultPath,omitempty"`
-	DefaultPath string `json:"defaultPath,omitempty"`
-	BackupCount *int   `json:"backupCount,omitempty"`
-	Exists      bool   `json:"exists,omitempty"`
-	Size        int64  `json:"size,omitempty"`
-	SHA256      string `json:"sha256,omitempty"`
-	Data        []byte `json:"data,omitempty"`
-	EOF         bool   `json:"eof,omitempty"`
+	ID          int          `json:"id"`
+	OK          bool         `json:"ok"`
+	Code        string       `json:"code,omitempty"`
+	Error       string       `json:"error,omitempty"`
+	Protocol    int          `json:"protocol,omitempty"`
+	Helper      string       `json:"helper,omitempty"`
+	OS          string       `json:"os,omitempty"`
+	Arch        string       `json:"arch,omitempty"`
+	VaultPath   string       `json:"vaultPath,omitempty"`
+	DefaultPath string       `json:"defaultPath,omitempty"`
+	BackupCount *int         `json:"backupCount,omitempty"`
+	Exists      bool         `json:"exists,omitempty"`
+	Size        int64        `json:"size,omitempty"`
+	SHA256      string       `json:"sha256,omitempty"`
+	Data        []byte       `json:"data,omitempty"`
+	EOF         bool         `json:"eof,omitempty"`
+	Names       []string     `json:"names,omitempty"`
+	Backups     []backupInfo `json:"backups,omitempty"`
 }
 
 func readMessage(in *bufio.Reader) (*request, error) {
@@ -113,6 +117,9 @@ func fail(id int, code, msg string) *response {
 }
 
 func main() {
+	if runCommand(os.Args[1:], os.Stdin, os.Stdout) {
+		return
+	}
 	srv, err := newServer()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "startup:", err)

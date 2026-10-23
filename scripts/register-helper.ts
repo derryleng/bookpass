@@ -1,113 +1,22 @@
-// Registers the built helper with Chrome, Edge and Firefox for the current user (no administrator rights).
-// Development convenience until the installers exist.
+// Installs or removes the built helper for the current user, the way an end user's installer would:
+// the helper copies itself to a per-user folder and registers with the browsers it finds.
 //
-//   node scripts/register-helper.ts            register
-//   node scripts/register-helper.ts --remove   undo
+//   node scripts/register-helper.ts            install
+//   node scripts/register-helper.ts --remove   uninstall
 //
-// Build the helper first: cd helper && go build -o bin/bookpass-helper.exe .
+// Build the helper first: npm run helper:build
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import { homedir, platform } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
-import { chromeId, firefoxId, hostName } from './ids.ts';
+import { existsSync } from 'node:fs';
+import { platform } from 'node:os';
+import { resolve } from 'node:path';
 
-const remove = process.argv.includes('--remove');
 const exe = resolve(
   import.meta.dirname,
   '../helper/bin',
   platform() === 'win32' ? 'bookpass-helper.exe' : 'bookpass-helper',
 );
+if (!existsSync(exe)) throw new Error(`Build the helper first: ${exe} is missing`);
 
-if (!remove && !existsSync(exe)) throw new Error(`Build the helper first: ${exe} is missing`);
-
-const base = { name: hostName, description: 'BookPass native helper', path: exe, type: 'stdio' };
-const chromeManifest = { ...base, allowed_origins: [`chrome-extension://${chromeId}/`] };
-const firefoxManifest = { ...base, allowed_extensions: [firefoxId] };
-
-// Browsers built on Chromium read the same kind of manifest from their own registry key.
-const chromiumLike: [string, string][] = [
-  ['Edge', 'Microsoft\\Edge'],
-  ['Brave', 'BraveSoftware\\Brave-Browser'],
-  ['Brave Origin', 'BraveSoftware\\Brave-Origin'],
-  ['Vivaldi', 'Vivaldi'],
-  ['Chromium', 'Chromium'],
-];
-
-interface Target {
-  name: string;
-  manifest: object;
-  file: string; // where the manifest json lives
-  regKey?: string; // Windows registry key that points at it
-}
-
-function targets(): Target[] {
-  const home = homedir();
-  if (platform() === 'win32') {
-    const dir = join(process.env.LOCALAPPDATA ?? join(home, 'AppData', 'Local'), 'BookPass');
-    const reg = (vendor: string) => `HKCU\\Software\\${vendor}\\NativeMessagingHosts\\${hostName}`;
-    return [
-      {
-        name: 'Chrome',
-        manifest: chromeManifest,
-        file: join(dir, 'host-chrome.json'),
-        regKey: reg('Google\\Chrome'),
-      },
-      ...chromiumLike.map(([name, vendor]) => ({
-        name,
-        manifest: chromeManifest,
-        file: join(dir, 'host-chrome.json'),
-        regKey: reg(vendor),
-      })),
-      {
-        name: 'Firefox',
-        manifest: firefoxManifest,
-        file: join(dir, 'host-firefox.json'),
-        regKey: reg('Mozilla'),
-      },
-    ];
-  }
-  const mac = platform() === 'darwin';
-  const support = join(home, 'Library', 'Application Support');
-  const dirs = mac
-    ? {
-        chrome: join(support, 'Google/Chrome'),
-        edge: join(support, 'Microsoft Edge'),
-        firefox: join(support, 'Mozilla'),
-      }
-    : {
-        chrome: join(home, '.config/google-chrome'),
-        edge: join(home, '.config/microsoft-edge'),
-        firefox: join(home, '.mozilla'),
-      };
-  const sub = 'NativeMessagingHosts';
-  return [
-    { name: 'Chrome', manifest: chromeManifest, file: join(dirs.chrome, sub, `${hostName}.json`) },
-    { name: 'Edge', manifest: chromeManifest, file: join(dirs.edge, sub, `${hostName}.json`) },
-    {
-      name: 'Firefox',
-      manifest: firefoxManifest,
-      file: join(dirs.firefox, mac ? sub : 'native-messaging-hosts', `${hostName}.json`),
-    },
-  ];
-}
-
-for (const t of targets()) {
-  if (remove) {
-    if (t.regKey) {
-      try {
-        execFileSync('reg', ['delete', t.regKey, '/f'], { stdio: 'ignore' });
-      } catch {
-        /* was not registered */
-      }
-    }
-    rmSync(t.file, { force: true });
-  } else {
-    mkdirSync(dirname(t.file), { recursive: true });
-    writeFileSync(t.file, JSON.stringify(t.manifest, null, 2));
-    if (t.regKey)
-      execFileSync('reg', ['add', t.regKey, '/ve', '/t', 'REG_SZ', '/d', t.file, '/f'], {
-        stdio: 'ignore',
-      });
-  }
-  console.log(`${remove ? 'Removed' : 'Registered'} ${t.name}: ${t.file}`);
-}
+const command = process.argv.includes('--remove') ? 'uninstall' : 'install';
+// With arguments the helper never waits for a key press, so this also works in scripts.
+process.stdout.write(execFileSync(exe, [command], { encoding: 'utf8' }));

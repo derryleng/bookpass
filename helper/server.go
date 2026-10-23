@@ -99,6 +99,12 @@ func (s *server) handle(req *request) *response {
 		return s.exists(req)
 	case "stat":
 		return s.stat(req)
+	case "findConflicts":
+		return &response{ID: req.ID, OK: true, Names: s.conflictCopies()}
+	case "archiveConflict":
+		return s.archiveConflict(req)
+	case "listBackups":
+		return s.listBackups(req)
 	case "read":
 		return s.read(req)
 	case "writeBegin":
@@ -168,14 +174,18 @@ func (s *server) exists(req *request) *response {
 }
 
 func (s *server) stat(req *request) *response {
-	info, err := os.Stat(s.cfg.VaultPath)
+	path, err := s.sourcePath(req)
+	if err != nil {
+		return fail(req.ID, codeInvalid, err.Error())
+	}
+	info, err := os.Stat(path)
 	if errors.Is(err, fs.ErrNotExist) {
 		return &response{ID: req.ID, OK: true}
 	}
 	if err != nil {
 		return fail(req.ID, codeIO, err.Error())
 	}
-	sum, err := fileHash(s.cfg.VaultPath)
+	sum, err := fileHash(path)
 	if err != nil {
 		return fail(req.ID, codeIO, err.Error())
 	}
@@ -186,7 +196,11 @@ func (s *server) read(req *request) *response {
 	if req.Length <= 0 || req.Length > maxChunk {
 		return fail(req.ID, codeInvalid, fmt.Sprintf("length must be 1 to %d", maxChunk))
 	}
-	f, err := os.Open(s.cfg.VaultPath)
+	path, err := s.sourcePath(req)
+	if err != nil {
+		return fail(req.ID, codeInvalid, err.Error())
+	}
+	f, err := os.Open(path)
 	if err != nil {
 		return fail(req.ID, codeIO, err.Error())
 	}
@@ -344,4 +358,113 @@ func fileHash(path string) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+// sourcePath picks the file a stat or read is about. Apart from the vault itself, only two kinds of file
+// can be named, and only by a plain file name that the helper itself found: a copy a sync tool left next to
+// the vault, or one of the helper's own backups.
+func (s *server) sourcePath(req *request) (string, error) {
+	switch req.Source {
+	case "", "vault":
+		return s.cfg.VaultPath, nil
+	case "conflict":
+		for _, name := range s.conflictCopies() {
+			if name == req.Name {
+				return filepath.Join(filepath.Dir(s.cfg.VaultPath), name), nil
+			}
+		}
+		return "", errors.New("that is not a conflict copy of the vault")
+	case "backup":
+		for _, b := range s.backupList() {
+			if b.Name == req.Name {
+				return filepath.Join(s.backupDir(), b.Name), nil
+			}
+		}
+		return "", errors.New("that is not a backup of the vault")
+	}
+	return "", fmt.Errorf("unknown source %q", req.Source)
+}
+
+func (s *server) backupDir() string {
+	return filepath.Join(filepath.Dir(s.cfg.VaultPath), "backups")
+}
+
+// vaultBase is the vault's file name without .kdbx.
+func (s *server) vaultBase() string {
+	return strings.TrimSuffix(filepath.Base(s.cfg.VaultPath), filepath.Ext(s.cfg.VaultPath))
+}
+
+// Marks that sync tools put in the name of a copy they could not merge: Syncthing, Dropbox and Nextcloud.
+var conflictMarks = []string{".sync-conflict-", " (conflicted copy", "_conflict-"}
+
+func isConflictCopy(name, base string) bool {
+	if !strings.HasPrefix(name, base) || !strings.EqualFold(filepath.Ext(name), ".kdbx") || name == base+".kdbx" {
+		return false
+	}
+	for _, mark := range conflictMarks {
+		if strings.Contains(name, mark) {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *server) conflictCopies() []string {
+	entries, err := os.ReadDir(filepath.Dir(s.cfg.VaultPath))
+	if err != nil {
+		return nil
+	}
+	var names []string
+	for _, e := range entries {
+		if !e.IsDir() && isConflictCopy(e.Name(), s.vaultBase()) {
+			names = append(names, e.Name())
+		}
+	}
+	return names
+}
+
+// archiveConflict moves a conflict copy into the backups folder once it has been merged, so it is not offered again.
+func (s *server) archiveConflict(req *request) *response {
+	path, err := s.sourcePath(&request{Source: "conflict", Name: req.Name})
+	if err != nil {
+		return fail(req.ID, codeInvalid, err.Error())
+	}
+	if err := os.MkdirAll(s.backupDir(), 0o700); err != nil {
+		return fail(req.ID, codeIO, err.Error())
+	}
+	dest := filepath.Join(s.backupDir(), "merged-"+filepath.Base(path))
+	if err := os.Rename(path, dest); err != nil {
+		return fail(req.ID, codeIO, err.Error())
+	}
+	return &response{ID: req.ID, OK: true}
+}
+
+type backupInfo struct {
+	Name     string `json:"name"`
+	Size     int64  `json:"size"`
+	Modified int64  `json:"modified"` // milliseconds since 1970
+}
+
+// backupList returns the helper's own backups, newest first.
+func (s *server) backupList() []backupInfo {
+	entries, err := os.ReadDir(s.backupDir())
+	if err != nil {
+		return nil
+	}
+	var list []backupInfo
+	for _, e := range entries {
+		name := e.Name()
+		if e.IsDir() || !strings.HasPrefix(name, s.vaultBase()+"-") || !strings.HasSuffix(name, ".kdbx") {
+			continue
+		}
+		if info, err := e.Info(); err == nil {
+			list = append(list, backupInfo{Name: name, Size: info.Size(), Modified: info.ModTime().UnixMilli()})
+		}
+	}
+	sort.Slice(list, func(i, j int) bool { return list[i].Name > list[j].Name })
+	return list
+}
+
+func (s *server) listBackups(req *request) *response {
+	return &response{ID: req.ID, OK: true, Backups: s.backupList()}
 }

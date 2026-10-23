@@ -91,6 +91,10 @@ export interface BookmarkInput {
   type?: BookmarkType;
   favorite?: boolean;
   tags?: string[];
+  /** Manual sort position. New bookmarks go last. */
+  order?: number;
+  /** When it was first saved (ms since 1970), for imports. */
+  created?: number;
 }
 
 export interface Image {
@@ -111,13 +115,13 @@ export const defaultFolderIcon = 'fa-solid:folder';
 
 // Small helpers around kdbxweb's loose types.
 
-function text(entry: KdbxEntry, name: string): string {
+export function text(entry: KdbxEntry, name: string): string {
   const value = entry.fields.get(name);
   if (value === undefined || value === null) return '';
   return typeof value === 'string' ? value : value.getText();
 }
 
-function setText(entry: KdbxEntry, name: string, value: string) {
+export function setText(entry: KdbxEntry, name: string, value: string) {
   if (value) entry.fields.set(name, value);
   else entry.fields.delete(name);
 }
@@ -149,7 +153,7 @@ function isBin(db: Kdbx, group: KdbxGroup): boolean {
 }
 
 /** True for the Recycle Bin and anything inside it. */
-function inBin(db: Kdbx, group: KdbxGroup | undefined): boolean {
+export function inBin(db: Kdbx, group: KdbxGroup | undefined): boolean {
   for (let g = group; g; g = g.parentGroup) if (isBin(db, g)) return true;
   return false;
 }
@@ -224,12 +228,12 @@ export function readSnapshot(db: Kdbx): Snapshot {
   return snapshot;
 }
 
-function findEntry(db: Kdbx, id: string): KdbxEntry {
+export function findEntry(db: Kdbx, id: string): KdbxEntry {
   for (const entry of db.getDefaultGroup().allEntries()) if (entry.uuid.id === id) return entry;
   throw new Error('Bookmark not found');
 }
 
-function findGroup(db: Kdbx, id: string | null): KdbxGroup {
+export function findGroup(db: Kdbx, id: string | null): KdbxGroup {
   if (id === null) return db.getDefaultGroup();
   const group = db.getGroup(id);
   if (!group || inBin(db, group)) throw new Error('Folder not found');
@@ -297,7 +301,8 @@ export async function addBookmark(
   capture: Capture = {},
 ): Promise<string> {
   const entry = db.createEntry(findGroup(db, input.folderId));
-  applyBookmark(entry, { ...input, order: Date.now() });
+  applyBookmark(entry, { ...input, order: input.order ?? Date.now() });
+  if (input.created) entry.times.creationTime = new Date(input.created);
   if (capture.cover) await setCover(db, entry, capture.cover);
   if (capture.favicon) setFavicon(db, entry, capture.favicon.site, capture.favicon.png);
   return entry.uuid.id;
@@ -354,6 +359,8 @@ export function emptyTrash(db: Kdbx) {
 // Writing folders
 
 export interface FolderPatch {
+  /** The folder icon drawn as a PNG, so KeePassXC shows it too. Stored once per icon and color. */
+  iconImage?: { name: string; png: Uint8Array };
   name?: string;
   note?: string;
   icon?: string;
@@ -374,6 +381,20 @@ function applyFolder(group: KdbxGroup, patch: FolderPatch) {
   if (patch.view !== undefined) setData(group, groupData.view, JSON.stringify(patch.view));
 }
 
+/** Points a folder at a stored picture, reusing one that is already there. */
+function setFolderPicture(db: Kdbx, group: KdbxGroup, picture: { name: string; png: Uint8Array }) {
+  let id = [...db.meta.customIcons].find(([, icon]) => icon.name === picture.name)?.[0];
+  if (!id) {
+    id = KdbxUuid.random().id;
+    db.meta.customIcons.set(id, {
+      data: picture.png.slice().buffer,
+      name: picture.name,
+      lastModified: new Date(),
+    });
+  }
+  group.customIcon = new KdbxUuid(id);
+}
+
 export function createFolder(
   db: Kdbx,
   parentId: string | null,
@@ -382,12 +403,14 @@ export function createFolder(
 ): string {
   const group = db.createGroup(findGroup(db, parentId), name);
   applyFolder(group, { order: Date.now(), ...patch });
+  if (patch.iconImage) setFolderPicture(db, group, patch.iconImage);
   return group.uuid.id;
 }
 
 export function updateFolder(db: Kdbx, id: string, patch: FolderPatch) {
   const group = findGroup(db, id);
   applyFolder(group, patch);
+  if (patch.iconImage) setFolderPicture(db, group, patch.iconImage);
   // Opening or closing a folder in the tree is not an edit worth a new modification time.
   if (Object.keys(patch).some((k) => k !== 'expanded')) group.times.update();
 }

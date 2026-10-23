@@ -146,3 +146,63 @@ func TestReadLimits(t *testing.T) {
 		t.Fatalf("unknown op: %+v", r)
 	}
 }
+
+func TestConflictCopiesAreFoundOnlyByTheirMarks(t *testing.T) {
+	s := testServer(t)
+	write(s, []byte("main"), "")
+	dir := filepath.Dir(s.cfg.VaultPath)
+	for name, body := range map[string]string{
+		"bookmarks.sync-conflict-20260101-120000-ABCDEFG.kdbx": "syncthing",
+		"bookmarks (conflicted copy 2026-01-01).kdbx":          "dropbox",
+		"bookmarks-work.kdbx":                                  "another vault, not a conflict",
+		"notes.sync-conflict-1.kdbx":                           "someone else's file",
+	} {
+		os.WriteFile(filepath.Join(dir, name), []byte(body), 0o600)
+	}
+	r := s.handle(&request{Op: "findConflicts"})
+	if len(r.Names) != 2 {
+		t.Fatalf("found %v", r.Names)
+	}
+
+	// Reading a conflict copy works by name, but an arbitrary file name does not.
+	st := s.handle(&request{Op: "stat", Source: "conflict", Name: r.Names[0]})
+	if !st.OK || !st.Exists {
+		t.Fatalf("stat of a conflict copy: %+v", st)
+	}
+	if bad := s.handle(&request{Op: "read", Source: "conflict", Name: "bookmarks-work.kdbx", Length: 10}); bad.OK {
+		t.Fatal("read a file that is not a conflict copy")
+	}
+	if bad := s.handle(&request{Op: "read", Source: "conflict", Name: `..\..\secret.kdbx`, Length: 10}); bad.OK {
+		t.Fatal("read outside the folder")
+	}
+
+	// Once merged, a copy is moved away and not offered again.
+	if a := s.handle(&request{Op: "archiveConflict", Name: r.Names[0]}); !a.OK {
+		t.Fatalf("archive: %+v", a)
+	}
+	if again := s.handle(&request{Op: "findConflicts"}); len(again.Names) != 1 {
+		t.Fatalf("after archiving: %v", again.Names)
+	}
+}
+
+func TestBackupsCanBeListedAndRead(t *testing.T) {
+	s := testServer(t)
+	prev := ""
+	for _, v := range []string{"one", "two", "three"} {
+		data := []byte("version " + v)
+		write(s, data, prev)
+		prev = sum(data)
+	}
+	list := s.handle(&request{Op: "listBackups"})
+	if len(list.Backups) != 2 {
+		t.Fatalf("backups: %+v", list.Backups)
+	}
+	newest := list.Backups[0].Name
+	r := s.handle(&request{Op: "read", Source: "backup", Name: newest, Length: maxChunk})
+	if !r.OK || string(r.Data) != "version two" {
+		t.Fatalf("read backup: %+v %q", r.OK, r.Data)
+	}
+	if bad := s.handle(&request{Op: "read", Source: "backup", Name: "../bookmarks.kdbx", Length: 10}); bad.OK {
+		t.Fatal("read outside the backups folder")
+	}
+}
