@@ -15,7 +15,6 @@ const {
   check,
   openPage,
   text,
-  until,
   hasText,
   click,
   type,
