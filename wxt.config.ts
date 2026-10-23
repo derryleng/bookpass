@@ -28,8 +28,9 @@ export default defineConfig({
         description: 'Save the current page to BookPass',
       },
     },
-    // Pins the Chrome extension id so the helper can name it. Firefox uses the id below.
-    ...(browser === 'firefox' ? {} : { key: chromeDevKey }),
+    // Pins the Chrome extension id for development builds so the helper can name it. Store builds get the id the
+    // store assigns. Firefox uses the id below.
+    ...(browser === 'firefox' || process.env.BOOKPASS_STORE_BUILD ? {} : { key: chromeDevKey }),
     // The Firefox add-on id is permanent once published.
     browser_specific_settings: {
       gecko: { id: firefoxId, data_collection_permissions: { required: ['none'] } },

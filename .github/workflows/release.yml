@@ -1,0 +1,125 @@
+# Builds everything for a release when a version tag such as v0.5.0 is pushed.
+# Signing steps run only when their secrets exist (see docs/RELEASING.md). Releases before 1.0 are unsigned.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  extension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: The tag must match the version in package.json
+        run: test "v$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run zip:store
+      - uses: actions/upload-artifact@v4
+        with:
+          name: extension
+          path: .output/*.zip
+
+  helper:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - { goos: windows, goarch: amd64, file: bookpass-helper-windows-amd64.exe }
+          - { goos: windows, goarch: arm64, file: bookpass-helper-windows-arm64.exe }
+          - { goos: linux, goarch: amd64, file: bookpass-helper-linux-amd64 }
+          - { goos: linux, goarch: arm64, file: bookpass-helper-linux-arm64 }
+          - { goos: darwin, goarch: amd64, file: bookpass-helper-macos-intel }
+          - { goos: darwin, goarch: arm64, file: bookpass-helper-macos-apple-silicon }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Build
+        working-directory: helper
+        env:
+          CGO_ENABLED: '0'
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: go build -trimpath -ldflags "-s -w" -o "../${{ matrix.file }}" .
+      - name: Package the macOS and Linux programs so they keep their executable bit
+        if: matrix.goos != 'windows'
+        run: |
+          chmod +x "${{ matrix.file }}"
+          tar -czf "${{ matrix.file }}.tar.gz" "${{ matrix.file }}"
+          rm "${{ matrix.file }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: helper-${{ matrix.file }}
+          path: bookpass-helper-*
+
+  sign-windows:
+    # Skipped until a code signing certificate is added as secrets (docs/RELEASING.md).
+    needs: helper
+    runs-on: windows-latest
+    env:
+      CERT_PFX_BASE64: ${{ secrets.WINDOWS_CERT_PFX_BASE64 }}
+      CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
+    steps:
+      - uses: actions/download-artifact@v4
+        if: env.CERT_PFX_BASE64 != ''
+        with:
+          pattern: helper-bookpass-helper-windows-*
+          merge-multiple: true
+      - name: Sign
+        if: env.CERT_PFX_BASE64 != ''
+        shell: pwsh
+        run: |
+          [IO.File]::WriteAllBytes('cert.pfx', [Convert]::FromBase64String($env:CERT_PFX_BASE64))
+          $signtool = (Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe" | Sort-Object FullName | Select-Object -Last 1).FullName
+          Get-ChildItem bookpass-helper-windows-*.exe | ForEach-Object {
+            & $signtool sign /f cert.pfx /p $env:CERT_PASSWORD /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 $_.FullName
+          }
+          Remove-Item cert.pfx
+      - uses: actions/upload-artifact@v4
+        if: env.CERT_PFX_BASE64 != ''
+        with:
+          name: helper-signed-windows
+          path: bookpass-helper-windows-*.exe
+
+  publish:
+    needs: [extension, helper, sign-windows]
+    if: ${{ !cancelled() && needs.extension.result == 'success' && needs.helper.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: '{extension,helper-bookpass-*}'
+          merge-multiple: true
+      - name: Signed programs replace the unsigned ones, when there are any
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          path: dist
+          pattern: helper-signed-*
+          merge-multiple: true
+      - name: Notes from the changelog
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '$0 ~ "^## \[?" v "\]?" {found=1; next} /^## / && found {exit} found' CHANGELOG.md > notes.md
+          test -s notes.md || echo "See CHANGELOG.md." > notes.md
+      - name: Publish a draft release for review
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prerelease=""
+          case "$GITHUB_REF_NAME" in v0.*|*-*) prerelease="--prerelease";; esac
+          gh release create "$GITHUB_REF_NAME" dist/* --draft $prerelease --title "BookPass $GITHUB_REF_NAME" --notes-file notes.md
