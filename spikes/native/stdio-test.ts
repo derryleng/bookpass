@@ -16,7 +16,7 @@ interface Reply {
 }
 
 const dir = mkdtempSync(join(tmpdir(), 'bookpass-'));
-const helper = spawn('helper/bin/bookpass-helper.exe', [], {
+const helper = spawn('spikes/native/helper/bin/bookpass-helper.exe', [], {
   env: { ...process.env, BOOKPASS_SPIKE_DIR: dir },
   stdio: ['pipe', 'pipe', 'inherit'],
 });

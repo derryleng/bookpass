@@ -15,14 +15,14 @@ const browser = process.argv[2] as 'chrome' | 'edge' | 'firefox';
 const timeoutMs = 180_000;
 const root = resolve(import.meta.dirname, '../..');
 const ext = join(root, 'spikes/native/extension');
-const helper = join(root, 'helper/bin/bookpass-helper.exe');
+const helper = join(root, 'spikes/native/helper/bin/bookpass-helper.exe');
 const out = join(root, 'spikes/native/out', browser);
 const hostName = 'com.bookpass.spike';
 const chromeId = 'ndpefeoncgmemiofijbmljmmlbfkdcif'; // derived from the key in extension/manifest.json
 const firefoxId = 'bookpass-spike@local';
 
 if (!existsSync(helper))
-  throw new Error('Build the helper first: cd helper && go build -o bin/bookpass-helper.exe .');
+  throw new Error('Build the helper first: cd spikes/native/helper && go build -o bin/bookpass-helper.exe .');
 copyFileSync(join(root, 'node_modules/hash-wasm/dist/index.esm.js'), join(ext, 'hash-wasm.js'));
 execFileSync('npx.cmd', ['rolldown', '-c', 'spikes/native/rolldown.config.js'], {
   cwd: root,

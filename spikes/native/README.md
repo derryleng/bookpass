@@ -1,13 +1,13 @@
 # Spike: native messaging to a Go helper
 
-The helper in `helper/` speaks the browser native messaging protocol: a 4 byte length in native byte order, then JSON, on stdin and stdout. This spike shows that Chrome, Edge and Firefox on Windows can talk to it, run Argon2id and move a 50 MiB vault through it in both directions.
+The spike helper in `spikes/native/helper/` speaks the browser native messaging protocol: a 4 byte length in native byte order, then JSON, on stdin and stdout. This spike shows that Chrome, Edge and Firefox on Windows can talk to it, run Argon2id and move a 50 MiB vault through it in both directions.
 
 ## Run it
 
 Needs Go, Node 22.18 or newer, Chrome, Edge and Firefox installed in their default Windows folders.
 
 ```bash
-cd helper && go build -o bin/bookpass-helper.exe . && cd ..
+cd spikes/native/helper && go build -o bin/bookpass-helper.exe . && cd ../../..
 node spikes/native/stdio-test.ts          # helper alone, no browser
 node spikes/native/run.ts chrome          # or edge, firefox
 ```
