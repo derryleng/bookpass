@@ -1,0 +1,10 @@
+node_modules/
+.output/
+.wxt/
+*.zip
+*.kdbx
+!tests/fixtures/*.kdbx
+spikes/**/out/
+helper/bin/
+spikes/native/extension/vault.js
+spikes/native/extension/hash-wasm.js
