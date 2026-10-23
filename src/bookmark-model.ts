@@ -6,6 +6,7 @@
 //   cover    -> entry attachment cover.webp
 //   favicon  -> KDBX custom icon, one per site, shared by every entry from it
 //   trash    -> the Recycle Bin group
+import { toBase64 } from './base64';
 import type { Kdbx, KdbxEntry, KdbxGroup } from './kdbx';
 import { KdbxUuid } from './kdbx';
 import type { Layout } from './settings';
@@ -143,21 +144,6 @@ function binaryBytes(value: unknown): ArrayBuffer | undefined {
   return undefined;
 }
 
-export function toBase64(bytes: ArrayBuffer | Uint8Array): string {
-  const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
-  let binary = '';
-  for (let i = 0; i < view.length; i += 0x8000)
-    binary += String.fromCharCode(...view.subarray(i, i + 0x8000));
-  return btoa(binary);
-}
-
-export function fromBase64(base64: string): Uint8Array<ArrayBuffer> {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
-}
-
 function isBin(db: Kdbx, group: KdbxGroup): boolean {
   return !!db.meta.recycleBinUuid && group.uuid.equals(db.meta.recycleBinUuid);
 }
@@ -253,7 +239,15 @@ function findGroup(db: Kdbx, id: string | null): KdbxGroup {
 /** Bytes of a bookmark's cover thumbnail, if it has one. */
 export function getCover(db: Kdbx, id: string): Image | null {
   const bytes = binaryBytes(findEntry(db, id).binaries.get(coverName));
-  return bytes ? { base64: toBase64(bytes), mime: 'image/webp' } : null;
+  return bytes ? { base64: toBase64(bytes), mime: sniffMime(bytes) } : null;
+}
+
+/** Covers are WebP where the browser can make it, but PNG or JPEG are fine too, so look at the bytes. */
+function sniffMime(bytes: ArrayBuffer): string {
+  const b = new Uint8Array(bytes, 0, Math.min(12, bytes.byteLength));
+  if (b[0] === 0x89 && b[1] === 0x50) return 'image/png';
+  if (b[0] === 0xff && b[1] === 0xd8) return 'image/jpeg';
+  return 'image/webp';
 }
 
 /** Bytes of a stored favicon. */

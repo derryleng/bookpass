@@ -1,3 +1,4 @@
 import { createRoot } from 'react-dom/client';
+import { ManagerApp } from '../../ui/Manager';
 
-createRoot(document.getElementById('root')!).render(<h1>BookPass manager</h1>);
+createRoot(document.getElementById('root')!).render(<ManagerApp />);

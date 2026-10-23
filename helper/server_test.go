@@ -37,12 +37,15 @@ func write(s *server, data []byte, expected string) *response {
 
 func TestWriteReadRoundTrip(t *testing.T) {
 	s := testServer(t)
-	if st := s.handle(&request{Op: "stat"}); !st.OK || st.Exists {
+	if st := s.handle(&request{Op: "exists"}); !st.OK || st.Exists {
 		t.Fatalf("new vault should not exist: %+v", st)
 	}
 	data := bytes.Repeat([]byte("encrypted"), 1000)
 	if r := write(s, data, ""); !r.OK {
 		t.Fatalf("write failed: %+v", r)
+	}
+	if ex := s.handle(&request{Op: "exists"}); !ex.Exists || ex.Size != int64(len(data)) {
+		t.Fatalf("exists after write: %+v", ex)
 	}
 	st := s.handle(&request{Op: "stat"})
 	if !st.Exists || st.SHA256 != sum(data) || st.Size != int64(len(data)) {

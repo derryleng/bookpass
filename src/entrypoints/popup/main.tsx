@@ -1,3 +1,4 @@
 import { createRoot } from 'react-dom/client';
+import { PopupApp } from '../../ui/Popup';
 
-createRoot(document.getElementById('root')!).render(<h1>BookPass</h1>);
+createRoot(document.getElementById('root')!).render(<PopupApp />);

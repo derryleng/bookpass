@@ -9,3 +9,4 @@ helper/bin/
 spikes/native/extension/vault.js
 spikes/native/extension/hash-wasm.js
 spikes/native/helper/bin/
+e2e-out/

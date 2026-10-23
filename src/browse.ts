@@ -1,0 +1,195 @@
+// What the manager shows: which bookmarks, in what order, and how folders nest. Pure logic, no React.
+import type { Bookmark, Folder, Snapshot, ViewSettings } from './bookmark-model';
+
+export type Selection =
+  | { kind: 'all' }
+  | { kind: 'unsorted' }
+  | { kind: 'favorites' }
+  | { kind: 'trash' }
+  | { kind: 'folder'; id: string }
+  | { kind: 'tag'; tag: string }
+  | { kind: 'search' };
+
+export function domainOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return '';
+  }
+}
+
+/** Two URLs that differ only in the fragment or a trailing slash count as the same page. */
+export function normalizeUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    u.hash = '';
+    return u.href.replace(/\/$/, '').toLowerCase();
+  } catch {
+    return url.trim().toLowerCase();
+  }
+}
+
+// Folders
+
+export interface TreeNode {
+  folder: Folder;
+  children: TreeNode[];
+  /** Bookmarks directly in this folder. */
+  own: number;
+  /** Bookmarks in this folder and everything below it. */
+  total: number;
+}
+
+export function buildTree(folders: Folder[], bookmarks: Bookmark[]): TreeNode[] {
+  const own = new Map<string, number>();
+  for (const b of bookmarks) if (b.folderId) own.set(b.folderId, (own.get(b.folderId) ?? 0) + 1);
+
+  const nodes = new Map<string, TreeNode>();
+  for (const folder of folders)
+    nodes.set(folder.id, { folder, children: [], own: own.get(folder.id) ?? 0, total: 0 });
+
+  const roots: TreeNode[] = [];
+  for (const node of nodes.values()) {
+    const parent = node.folder.parentId ? nodes.get(node.folder.parentId) : undefined;
+    (parent ? parent.children : roots).push(node);
+  }
+
+  const byOrder = (a: TreeNode, b: TreeNode) =>
+    a.folder.order - b.folder.order || a.folder.name.localeCompare(b.folder.name);
+  const finish = (list: TreeNode[]) => {
+    list.sort(byOrder);
+    for (const node of list) {
+      finish(node.children);
+      node.total = node.own + node.children.reduce((sum, c) => sum + c.total, 0);
+    }
+  };
+  finish(roots);
+  return roots;
+}
+
+/** The folder and every folder below it. */
+export function descendantIds(tree: TreeNode[], id: string): Set<string> {
+  const ids = new Set<string>();
+  const collect = (node: TreeNode) => {
+    ids.add(node.folder.id);
+    node.children.forEach(collect);
+  };
+  const find = (nodes: TreeNode[]): TreeNode | undefined => {
+    for (const node of nodes) {
+      if (node.folder.id === id) return node;
+      const inner = find(node.children);
+      if (inner) return inner;
+    }
+  };
+  const start = find(tree);
+  if (start) collect(start);
+  return ids;
+}
+
+export interface FolderOption {
+  id: string;
+  name: string;
+  depth: number;
+}
+
+/** Folders in tree order with their depth, for a folder picker. `exclude` hides folders that cannot be chosen. */
+export function folderOptions(tree: TreeNode[], exclude: Set<string> = new Set()): FolderOption[] {
+  const out: FolderOption[] = [];
+  const walk = (nodes: TreeNode[], depth: number) => {
+    for (const node of nodes) {
+      if (exclude.has(node.folder.id)) continue;
+      out.push({ id: node.folder.id, name: node.folder.name, depth });
+      walk(node.children, depth + 1);
+    }
+  };
+  walk(tree, 0);
+  return out;
+}
+
+// Search, filter, sort
+
+/**
+ * Words match the title, address, note, description and tags. Plus:
+ *   #tag  bookmarks with that tag      domain:example.com   bookmarks from that site
+ *   is:fav  favorites
+ */
+export function matchesQuery(b: Bookmark, query: string): boolean {
+  const haystack = `${b.title} ${b.url} ${b.note} ${b.excerpt} ${b.tags.join(' ')}`.toLowerCase();
+  for (const raw of query.toLowerCase().split(/\s+/).filter(Boolean)) {
+    if (raw.startsWith('#')) {
+      if (!b.tags.some((t) => t.toLowerCase() === raw.slice(1))) return false;
+    } else if (raw.startsWith('domain:')) {
+      if (!domainOf(b.url).includes(raw.slice(7))) return false;
+    } else if (raw === 'is:fav') {
+      if (!b.favorite) return false;
+    } else if (!haystack.includes(raw)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export function sortBookmarks(
+  list: Bookmark[],
+  view: Pick<ViewSettings, 'sort' | 'sortDir'>,
+): Bookmark[] {
+  const compare: Record<ViewSettings['sort'], (a: Bookmark, b: Bookmark) => number> = {
+    added: (a, b) => a.created - b.created,
+    edited: (a, b) => a.modified - b.modified,
+    title: (a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }),
+    domain: (a, b) => domainOf(a.url).localeCompare(domainOf(b.url)),
+    manual: (a, b) => a.order - b.order,
+  };
+  const sign = view.sortDir === 'asc' ? 1 : -1;
+  return [...list].sort(
+    (a, b) => sign * compare[view.sort](a, b) || a.title.localeCompare(b.title),
+  );
+}
+
+export function bookmarksFor(
+  snapshot: Snapshot,
+  selection: Selection,
+  view: ViewSettings,
+  query: string,
+): Bookmark[] {
+  let list: Bookmark[];
+  if (query.trim()) {
+    list = snapshot.bookmarks.filter((b) => matchesQuery(b, query));
+  } else {
+    switch (selection.kind) {
+      case 'all':
+      case 'search':
+        list = snapshot.bookmarks;
+        break;
+      case 'unsorted':
+        list = snapshot.bookmarks.filter((b) => b.folderId === null);
+        break;
+      case 'favorites':
+        list = snapshot.bookmarks.filter((b) => b.favorite);
+        break;
+      case 'trash':
+        list = snapshot.trash;
+        break;
+      case 'tag':
+        list = snapshot.bookmarks.filter((b) => b.tags.includes(selection.tag));
+        break;
+      case 'folder': {
+        const ids = view.subfolders
+          ? descendantIds(buildTree(snapshot.folders, []), selection.id)
+          : new Set([selection.id]);
+        list = snapshot.bookmarks.filter((b) => b.folderId !== null && ids.has(b.folderId));
+        break;
+      }
+    }
+  }
+  return sortBookmarks(list, view);
+}
+
+/** Tags with how many bookmarks use each, most used first. */
+export function tagCounts(bookmarks: Bookmark[]): { tag: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const b of bookmarks) for (const tag of b.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+  return [...counts]
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+}

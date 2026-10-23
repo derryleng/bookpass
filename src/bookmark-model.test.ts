@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { fromBase64 } from './base64';
 import * as model from './bookmark-model';
 import {
   credentialsFromKey,
@@ -160,8 +161,8 @@ describe('bookmarks', () => {
     expect(first!.iconId).toBe(second!.iconId);
     expect(first!.hasCover).toBe(true);
     expect(second!.hasCover).toBe(false);
-    expect(model.getCover(reopened, a)?.mime).toBe('image/webp');
-    expect(model.fromBase64(model.getIcon(reopened, first!.iconId!)!.base64)).toEqual(png);
+    expect(model.getCover(reopened, a)?.mime).toBe('image/png'); // the mime comes from the bytes
+    expect(fromBase64(model.getIcon(reopened, first!.iconId!)!.base64)).toEqual(png);
   });
 });
 

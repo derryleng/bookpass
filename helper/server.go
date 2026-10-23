@@ -95,6 +95,8 @@ func (s *server) handle(req *request) *response {
 		ok.VaultPath, ok.DefaultPath, ok.BackupCount = s.cfg.VaultPath, s.defaultPath, &s.cfg.BackupCount
 	case "setConfig":
 		return s.setConfig(req)
+	case "exists":
+		return s.exists(req)
 	case "stat":
 		return s.stat(req)
 	case "read":
@@ -151,6 +153,18 @@ func expandPath(p string) (string, error) {
 		return "", errors.New("the vault path must be absolute")
 	}
 	return filepath.Clean(p), nil
+}
+
+// exists is a cheap check that does not hash the file, for status polling.
+func (s *server) exists(req *request) *response {
+	info, err := os.Stat(s.cfg.VaultPath)
+	if errors.Is(err, fs.ErrNotExist) {
+		return &response{ID: req.ID, OK: true}
+	}
+	if err != nil {
+		return fail(req.ID, codeIO, err.Error())
+	}
+	return &response{ID: req.ID, OK: true, Exists: true, Size: info.Size()}
 }
 
 func (s *server) stat(req *request) *response {

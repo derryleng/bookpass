@@ -22,7 +22,9 @@ const chromeId = 'ndpefeoncgmemiofijbmljmmlbfkdcif'; // derived from the key in 
 const firefoxId = 'bookpass-spike@local';
 
 if (!existsSync(helper))
-  throw new Error('Build the helper first: cd spikes/native/helper && go build -o bin/bookpass-helper.exe .');
+  throw new Error(
+    'Build the helper first: cd spikes/native/helper && go build -o bin/bookpass-helper.exe .',
+  );
 copyFileSync(join(root, 'node_modules/hash-wasm/dist/index.esm.js'), join(ext, 'hash-wasm.js'));
 execFileSync('npx.cmd', ['rolldown', '-c', 'spikes/native/rolldown.config.js'], {
   cwd: root,
