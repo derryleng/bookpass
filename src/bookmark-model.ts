@@ -315,12 +315,19 @@ export async function updateBookmark(
   capture: Capture = {},
 ) {
   const entry = findEntry(db, id);
-  entry.pushHistory(); // keeps the old version so an edit can be recovered
+  // Moving a bookmark in the manual order is not an edit worth a history entry.
+  const onlyOrder = Object.keys(patch).every((key) => key === 'order');
+  if (!onlyOrder) entry.pushHistory(); // keeps the old version so an edit can be recovered
   applyBookmark(entry, patch);
   if (patch.folderId !== undefined) db.move(entry, findGroup(db, patch.folderId));
   if (capture.cover) await setCover(db, entry, capture.cover);
   if (capture.favicon) setFavicon(db, entry, capture.favicon.site, capture.favicon.png);
-  entry.times.update();
+  if (!onlyOrder) entry.times.update();
+}
+
+/** Sets the manual order of several bookmarks at once. */
+export function setOrders(db: Kdbx, orders: { id: string; order: number }[]) {
+  for (const { id, order } of orders) setText(findEntry(db, id), entryField.order, String(order));
 }
 
 export function moveBookmarks(db: Kdbx, ids: string[], folderId: string | null) {

@@ -111,7 +111,7 @@ export function folderOptions(tree: TreeNode[], exclude: Set<string> = new Set()
 /**
  * Words match the title, address, note, description and tags. Plus:
  *   #tag  bookmarks with that tag      domain:example.com   bookmarks from that site
- *   is:fav  favorites
+ *   is:fav  favorites      type:video  one kind of page      has:note   has:cover
  */
 export function matchesQuery(b: Bookmark, query: string): boolean {
   const haystack = `${b.title} ${b.url} ${b.note} ${b.excerpt} ${b.tags.join(' ')}`.toLowerCase();
@@ -122,6 +122,12 @@ export function matchesQuery(b: Bookmark, query: string): boolean {
       if (!domainOf(b.url).includes(raw.slice(7))) return false;
     } else if (raw === 'is:fav') {
       if (!b.favorite) return false;
+    } else if (raw.startsWith('type:')) {
+      if (b.type !== raw.slice(5)) return false;
+    } else if (raw === 'has:note') {
+      if (!b.note) return false;
+    } else if (raw === 'has:cover') {
+      if (!b.hasCover) return false;
     } else if (!haystack.includes(raw)) {
       return false;
     }
@@ -192,4 +198,39 @@ export function tagCounts(bookmarks: Bookmark[]): { tag: string; count: number }
   return [...counts]
     .map(([tag, count]) => ({ tag, count }))
     .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+}
+
+/**
+ * New manual order values after dragging bookmarks next to another one.
+ * `list` is what is on screen, `ids` are the bookmarks dragged (kept in their on-screen order) and they land
+ * just before or after `targetId`. Only the dragged ones get new values, placed between their new neighbours,
+ * unless neighbours share a value, in which case everything is numbered again.
+ */
+export function reorder(
+  list: Bookmark[],
+  ids: string[],
+  targetId: string,
+  before: boolean,
+  dir: 'asc' | 'desc',
+): { id: string; order: number }[] {
+  const moving = list.filter((b) => ids.includes(b.id));
+  const rest = list.filter((b) => !ids.includes(b.id));
+  const at = rest.findIndex((b) => b.id === targetId);
+  if (at < 0 || moving.length === 0) return [];
+  const insertAt = before ? at : at + 1;
+  const prev = rest[insertAt - 1];
+  const next = rest[insertAt];
+  const sign = dir === 'asc' ? 1 : -1;
+  // The values just outside the gap, extended one step past the end of the list where there is no neighbour.
+  const count = moving.length;
+  const from = prev ? prev.order : next ? next.order - sign * (count + 1) : 0;
+  const to = next ? next.order : from + sign * (count + 1);
+  const step = (to - from) / (count + 1);
+  const values = moving.map((_, i) => from + step * (i + 1));
+  const distinct = new Set([from, to, ...values]).size === count + 2;
+  if (distinct) return moving.map((b, i) => ({ id: b.id, order: values[i]! }));
+
+  // Neighbours with the same value leave no room, so number the whole list in the new sequence.
+  const sequence = [...rest.slice(0, insertAt), ...moving, ...rest.slice(insertAt)];
+  return sequence.map((b, i) => ({ id: b.id, order: sign * (i + 1) * 1000 }));
 }

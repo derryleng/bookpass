@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Bookmark, ViewSettings } from '../bookmark-model';
 import { domainOf } from '../browse';
 import { send, useImage } from './api';
+import { isOurs, readDrag, startDrag } from './dnd';
 import { I } from './Icon';
 import { Favicon } from './parts';
 
@@ -16,6 +17,8 @@ interface Props {
   onToggle: (id: string) => void;
   onEdit: (bookmark: Bookmark) => void;
   onTag: (tag: string) => void;
+  /** Set when the list is in manual order, so dropping one bookmark on another reorders them. */
+  onReorder?: (ids: string[], targetId: string, before: boolean) => void;
 }
 
 export function BookmarkList({
@@ -26,6 +29,7 @@ export function BookmarkList({
   onToggle,
   onEdit,
   onTag,
+  onReorder,
 }: Props) {
   // How many are drawn. It starts over when the list is replaced by another one.
   const listKey = `${bookmarks[0]?.id}:${view.layout}`;
@@ -59,6 +63,8 @@ export function BookmarkList({
             onToggle={() => onToggle(b.id)}
             onEdit={() => onEdit(b)}
             onTag={onTag}
+            dragIds={selected.has(b.id) ? [...selected] : [b.id]}
+            onReorder={onReorder}
           />
         ))}
       </div>
@@ -79,7 +85,11 @@ function BookmarkItem({
   onToggle,
   onEdit,
   onTag,
+  dragIds,
+  onReorder,
 }: {
+  dragIds: string[];
+  onReorder?: Props['onReorder'];
   bookmark: Bookmark;
   view: ViewSettings;
   selected: boolean;
@@ -94,9 +104,30 @@ function BookmarkItem({
   const cover = useImage('cover', wantsCover && b.hasCover ? b.id : null, b.modified);
   const domain = domainOf(b.url);
   const showCoverBox = wantsCover && (view.layout !== 'list' || b.hasCover);
+  const [dropMark, setDropMark] = useState<'before' | 'after'>();
 
   return (
-    <article className={`bm ${selected ? 'selected' : ''}`}>
+    <article
+      className={`bm ${selected ? 'selected' : ''} ${dropMark ? `drop-${dropMark}` : ''}`}
+      draggable={!inTrash}
+      onDragStart={(e) => startDrag(e, { kind: 'bookmarks', ids: dragIds })}
+      onDragOver={(e) => {
+        if (!onReorder || !isOurs(e)) return;
+        e.preventDefault();
+        const box = e.currentTarget.getBoundingClientRect();
+        setDropMark(e.clientY < box.top + box.height / 2 ? 'before' : 'after');
+      }}
+      onDragLeave={() => setDropMark(undefined)}
+      onDrop={(e) => {
+        const payload = readDrag(e);
+        const before = dropMark === 'before';
+        setDropMark(undefined);
+        if (onReorder && payload?.kind === 'bookmarks') {
+          e.preventDefault();
+          onReorder(payload.ids, b.id, before);
+        }
+      }}
+    >
       <input
         className="bm-check"
         type="checkbox"

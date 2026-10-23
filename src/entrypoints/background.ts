@@ -1,6 +1,9 @@
 import { browser } from 'wxt/browser';
 import { defineBackground } from 'wxt/utils/define-background';
 import * as model from '../bookmark-model';
+import { startContextMenu } from '../context-menu';
+import { getHistory, restoreVersion } from '../history';
+import { importInto, previewImport } from '../importing';
 import { startLockManager } from '../lock-manager';
 import {
   AppError,
@@ -12,6 +15,7 @@ import {
   type Requests,
   type ResponseEnvelope,
 } from '../messages';
+import { addTags, deleteTag, renameTag, setTagColor } from '../tags';
 import { Vault } from '../vault';
 
 type Handlers = { [K in RequestType]: (payload: Requests[K][0]) => Promise<Requests[K][1]> };
@@ -27,18 +31,27 @@ export default defineBackground(() => {
     browser.runtime.sendMessage({ event } satisfies BroadcastEvent).catch(() => {}); // no page open is fine
   };
   vault.onEvent(broadcast);
+  startContextMenu(vault);
 
   const handlers: Handlers = {
     status: () => vault.status(),
     setVaultPath: ({ vaultPath }) => vault.setVaultPath(vaultPath),
     setBackupCount: ({ count }) => vault.setBackupCount(count),
-    createVault: ({ password }) => vault.createVault(password),
-    unlock: ({ password }) => vault.unlock(password),
+    createVault: (secret) => vault.createVault(secret),
+    unlock: (secret) => vault.unlock(secret),
+    newKeyFile: () => vault.newKeyFile(),
+    changePassword: ({ current, next }) => vault.changePassword(current, next),
     lock: () => vault.lock(),
     saveNow: async () => {
       await vault.saveNow().catch(() => {}); // the failure is part of the status
       return vault.status();
     },
+    checkFile: () => vault.checkForChanges(),
+    mergeConflictCopy: ({ name }) => vault.mergeConflictCopy(name),
+    resolveConflict: ({ id, action }) => vault.resolveConflict(id, action),
+    listBackups: () => vault.listBackups(),
+    restoreBackup: ({ name, password, keyFile }) =>
+      vault.restoreBackup(name, password === undefined ? undefined : { password, keyFile }),
     snapshot: () => vault.snapshot(),
     getImage: ({ kind, id }) => vault.image(kind, id),
     addBookmark: ({ input, capture }) =>
@@ -47,15 +60,27 @@ export default defineBackground(() => {
       vault.edit((db) => model.updateBookmark(db, id, patch, Vault.capture(capture))),
     moveBookmarks: ({ ids, folderId }) =>
       vault.edit((db) => model.moveBookmarks(db, ids, folderId)),
+    setOrder: ({ orders }) => vault.edit((db) => model.setOrders(db, orders)),
     trashBookmarks: ({ ids }) => vault.edit((db) => model.trashBookmarks(db, ids)),
     restoreBookmarks: ({ ids }) => vault.edit((db) => model.restoreBookmarks(db, ids)),
     deleteForever: ({ ids }) => vault.edit((db) => model.deleteForever(db, ids)),
     emptyTrash: () => vault.edit((db) => model.emptyTrash(db)),
+    history: ({ id }) => vault.read((db) => getHistory(db, id)),
+    restoreVersion: ({ id, time }) => vault.edit((db) => restoreVersion(db, id, time)),
     createFolder: ({ parentId, name, patch }) =>
-      vault.edit((db) => model.createFolder(db, parentId, name, patch)),
-    updateFolder: ({ id, patch }) => vault.edit((db) => model.updateFolder(db, id, patch)),
+      vault.edit((db) => model.createFolder(db, parentId, name, Vault.folderPatch(patch))),
+    updateFolder: ({ id, patch }) =>
+      vault.edit((db) => model.updateFolder(db, id, Vault.folderPatch(patch)!)),
     moveFolder: ({ id, parentId }) => vault.edit((db) => model.moveFolder(db, id, parentId)),
     trashFolder: ({ id }) => vault.edit((db) => model.trashFolder(db, id)),
+    renameTag: ({ from, to }) => vault.edit((db) => renameTag(db, from, to)),
+    deleteTag: ({ tag }) => vault.edit((db) => deleteTag(db, tag)),
+    setTagColor: ({ tag, color }) => vault.edit((db) => setTagColor(db, tag, color)),
+    addTags: ({ ids, tags }) => vault.edit((db) => addTags(db, ids, tags)),
+    importPreview: ({ parsed, skipDuplicates }) =>
+      vault.read((db) => previewImport(db, parsed, skipDuplicates)),
+    importBookmarks: ({ parsed, parentId, wrapper, skipDuplicates }) =>
+      vault.edit((db) => importInto(db, parsed, parentId, wrapper, skipDuplicates)),
     getSettings: async () => vault.settings,
     setSettings: async (patch) => {
       const settings = await vault.setSettings(patch);

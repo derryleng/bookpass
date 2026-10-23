@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { browser } from 'wxt/browser';
 import type { BookmarkType } from '../bookmark-model';
 import { buildTree, domainOf, normalizeUrl } from '../browse';
-import { inspectTab, isSavable, shrinkToWebp, type PageInfo } from '../capture';
+import { inspectTab, isSavable, shrinkCover, type PageInfo } from '../capture';
+import { stopCoversVaultBytes } from '../constants';
+import type { ParsedImport } from '../formats';
 import type { CaptureData } from '../messages';
 import { send } from './api';
 import { I } from './Icon';
@@ -10,8 +12,6 @@ import { errorText, FolderSelect, TagInput } from './parts';
 import { Shell, type PageContext } from './Shell';
 
 const LAST_FOLDER = 'bookpass.lastFolder';
-/** Width of the stored cover picture. About 8 to 15 KB as WebP. */
-const COVER_WIDTH = 256;
 
 function rememberedFolder(): string | null {
   try {
@@ -38,16 +38,19 @@ function Popup({ status, snapshot }: PageContext) {
     [snapshot],
   );
 
+  // Past a certain size the vault stops taking new cover pictures.
+  const wantCovers = status.settings.captureCovers && status.vaultBytes < stopCoversVaultBytes;
+
   // Look at the page the popup was opened on.
   useEffect(() => {
     void (async () => {
       const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
       if (!tab) return setError('There is no page to save.');
-      const info = await inspectTab(tab, status.settings.captureCovers);
+      const info = await inspectTab(tab, wantCovers);
       setPage(info);
       setTitle(info.title);
     })().catch((e) => setError(errorText(e)));
-  }, [status.settings.captureCovers]);
+  }, [wantCovers]);
 
   const existing =
     page && snapshot.bookmarks.find((b) => normalizeUrl(b.url) === normalizeUrl(page.url));
@@ -69,7 +72,7 @@ function Popup({ status, snapshot }: PageContext) {
       const capture: CaptureData = {};
       // An existing cover is kept: saving again should not replace it with a screenshot of whatever is on screen now.
       if (keepCover && page.cover && !existing?.hasCover)
-        capture.cover = await shrinkToWebp(page.cover, COVER_WIDTH);
+        capture.cover = await shrinkCover(page.cover, status.settings.coverWidth);
       if (page.favicon) {
         capture.favicon = {
           site: new URL(page.url).origin,
@@ -240,6 +243,7 @@ function Popup({ status, snapshot }: PageContext) {
             </label>
             {error && <div className="callout error">{error}</div>}
           </div>
+          <SaveTabs folder={folder} onDone={setDone} onError={setError} />
           <div className="popup-foot">
             <button className="btn primary" disabled={busy}>
               {busy ? <I n="spinner" spin /> : <I n="bookmark" />}{' '}
@@ -257,5 +261,73 @@ export function PopupApp() {
     <div className="popup">
       <Shell>{(context) => <Popup {...context} />}</Shell>
     </div>
+  );
+}
+
+/**
+ * Saves the tabs of this window, or just the ones you selected, into a new folder. Reading the title and address of
+ * tabs other than the one you are on needs the `tabs` permission, which is asked for the first time you use this.
+ */
+function SaveTabs({
+  folder,
+  onDone,
+  onError,
+}: {
+  folder: string | null;
+  onDone: (text: string) => void;
+  onError: (text: string) => void;
+}) {
+  async function save(selectedOnly: boolean) {
+    try {
+      if (!(await browser.permissions.request({ permissions: ['tabs'] }))) {
+        return onError('Saving several tabs needs permission to read their titles and addresses.');
+      }
+      const tabs = await browser.tabs.query(
+        selectedOnly ? { currentWindow: true, highlighted: true } : { currentWindow: true },
+      );
+      const parsed: ParsedImport = {
+        bookmarks: tabs
+          .filter((t) => isSavable(t.url))
+          .map((t) => ({
+            folderPath: [],
+            title: t.title || t.url!,
+            url: t.url!,
+            note: '',
+            excerpt: '',
+            tags: [],
+            favorite: false,
+          })),
+        emptyFolders: [],
+      };
+      if (parsed.bookmarks.length === 0)
+        return onError('None of those tabs are web pages BookPass can save.');
+      const result = await send('importBookmarks', {
+        parsed,
+        parentId: folder,
+        wrapper: `Tabs ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`,
+        skipDuplicates: false,
+      });
+      onDone(`Saved ${result.added} tab${result.added === 1 ? '' : 's'}`);
+      setTimeout(() => window.close(), 1200);
+    } catch (e) {
+      onError(errorText(e));
+    }
+  }
+
+  return (
+    <details className="history" style={{ padding: '0 12px 10px' }}>
+      <summary>Save several tabs…</summary>
+      <div className="row" style={{ marginTop: 8 }}>
+        <button type="button" className="btn small" onClick={() => void save(false)}>
+          All tabs in this window
+        </button>
+        <button type="button" className="btn small" onClick={() => void save(true)}>
+          Selected tabs
+        </button>
+      </div>
+      <p className="hint" style={{ margin: '6px 0 0' }}>
+        They go into a new folder. Hold Ctrl or Shift and click tabs to select several.
+      </p>
+    </details>
   );
 }

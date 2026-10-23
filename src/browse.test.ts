@@ -7,6 +7,7 @@ import {
   domainOf,
   folderOptions,
   matchesQuery,
+  reorder,
   normalizeUrl,
   sortBookmarks,
   tagCounts,
@@ -170,5 +171,65 @@ describe('sorting and selections', () => {
       { tag: 'b', count: 2 },
       { tag: 'a', count: 1 },
     ]);
+  });
+});
+
+describe('manual order', () => {
+  const list = (...orders: number[]) =>
+    orders.map((order, i) =>
+      bookmark({ id: String.fromCharCode(97 + i), order, title: String.fromCharCode(97 + i) }),
+    );
+  const apply = (items: Bookmark[], updates: { id: string; order: number }[]) =>
+    sortBookmarks(
+      items.map((b) => ({ ...b, order: updates.find((u) => u.id === b.id)?.order ?? b.order })),
+      { sort: 'manual', sortDir: 'asc' },
+    )
+      .map((b) => b.id)
+      .join('');
+
+  it('puts a dragged bookmark between two others, changing only its own value', () => {
+    const items = list(10, 20, 30, 40); // a b c d
+    const updates = reorder(items, ['d'], 'a', false, 'asc'); // after a
+    expect(updates).toHaveLength(1);
+    expect(apply(items, updates)).toBe('adbc');
+  });
+
+  it('can go first and last, and keeps several dragged items in order', () => {
+    const items = list(10, 20, 30, 40);
+    expect(apply(items, reorder(items, ['c'], 'a', true, 'asc'))).toBe('cabd');
+    expect(apply(items, reorder(items, ['a'], 'd', false, 'asc'))).toBe('bcda');
+    expect(apply(items, reorder(items, ['d', 'c'], 'a', true, 'asc'))).toBe('cdab');
+  });
+
+  it('works when the list is shown in reverse', () => {
+    const items = list(40, 30, 20, 10); // shown top to bottom: a b c d, with falling values
+    const moved = apply(
+      items,
+      reorder(items, ['d'], 'a', false, 'desc'), // after a
+    );
+    // Read back in descending order to match what is on screen.
+    const screen = sortBookmarks(
+      items.map((b) => ({
+        ...b,
+        order:
+          reorder(items, ['d'], 'a', false, 'desc').find((u) => u.id === b.id)?.order ?? b.order,
+      })),
+      { sort: 'manual', sortDir: 'desc' },
+    )
+      .map((b) => b.id)
+      .join('');
+    expect(screen).toBe('adbc');
+    expect(moved.length).toBe(4);
+  });
+
+  it('numbers everything again when neighbours share a value', () => {
+    const items = list(0, 0, 0, 0);
+    const updates = reorder(items, ['d'], 'a', false, 'asc'); // between a and b
+    expect(updates).toHaveLength(4);
+    expect(apply(items, updates)).toBe('adbc');
+  });
+
+  it('does nothing for a target that is not in the list', () => {
+    expect(reorder(list(1, 2), ['a'], 'zzz', true, 'asc')).toEqual([]);
   });
 });

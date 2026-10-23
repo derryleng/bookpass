@@ -1,15 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { defaultView, type Bookmark, type SortKey, type ViewSettings } from '../bookmark-model';
-import { bookmarksFor, buildTree, type Selection } from '../browse';
+import { bookmarksFor, buildTree, reorder, type Selection } from '../browse';
 import type { Layout } from '../settings';
 import { send } from './api';
+import { Banners } from './Banners';
 import { BookmarkList } from './BookmarkList';
 import { BookmarkDialog } from './Dialogs';
 import { I } from './Icon';
-import { FolderSelect } from './parts';
+import { useIconsFor } from './icon-library';
+import { DuplicatesDialog, ExportDialog, ImportDialog } from './ImportExport';
+import { FolderSelect, errorText } from './parts';
 import { SettingsPanel } from './SettingsPanel';
 import { Shell, type PageContext } from './Shell';
 import { Sidebar } from './Sidebar';
+import { TagDialog } from './TagDialog';
 
 const layouts: { value: Layout; icon: string; label: string }[] = [
   { value: 'list', icon: 'list', label: 'List' },
@@ -23,10 +27,13 @@ const sorts: { value: SortKey; label: string }[] = [
   { value: 'edited', label: 'Date edited' },
   { value: 'title', label: 'Title' },
   { value: 'domain', label: 'Website' },
+  { value: 'manual', label: 'Manual (drag to reorder)' },
 ];
 
 const VIEW_KEY = 'bookpass.view';
 const everything: Selection = { kind: 'all' };
+/** How often an open manager looks for changes made to the vault file elsewhere. */
+const CHECK_EVERY_MS = 30_000;
 
 /** The view for places that are not a folder (All, Unsorted, tags...). It is remembered on this device. */
 function useLocalView(
@@ -56,6 +63,20 @@ function useLocalView(
   return [view, update];
 }
 
+/** A bookmark handed over by the right click menu while the vault was locked. */
+function takeSavedLink(): { url: string; title: string } | undefined {
+  const match = /^#save=(.+)$/.exec(location.hash);
+  if (!match) return undefined;
+  history.replaceState(null, '', location.pathname);
+  try {
+    return JSON.parse(decodeURIComponent(match[1]!)) as { url: string; title: string };
+  } catch {
+    return undefined;
+  }
+}
+
+type Tool = 'import' | 'export' | 'duplicates' | 'tags';
+
 function Manager({ status, snapshot, refreshStatus }: PageContext) {
   const [page, setPage] = useState<'bookmarks' | 'settings'>(
     location.hash === '#settings' ? 'settings' : 'bookmarks',
@@ -63,9 +84,18 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
   const [chosen, setSelection] = useState<Selection>({ kind: 'all' });
   const [query, setQuery] = useState('');
   const [picked, setPicked] = useState<Set<string>>(new Set());
-  const [dialog, setDialog] = useState<{ bookmark?: Bookmark } | undefined>();
+  const [dialog, setDialog] = useState<
+    { bookmark?: Bookmark; initial?: { url: string; title: string } } | undefined
+  >(() => {
+    const saved = takeSavedLink();
+    return saved ? { initial: saved } : undefined;
+  });
+  const [tool, setTool] = useState<Tool>();
+  const [bulkTag, setBulkTag] = useState('');
+  const [error, setError] = useState<string>();
   const searchRef = useRef<HTMLInputElement>(null);
   const [localView, updateLocalView] = useLocalView(status.settings.defaultLayout);
+  useIconsFor(snapshot.folders.map((f) => f.icon));
 
   // A folder that was deleted or merged away elsewhere must not stay selected.
   const selection =
@@ -77,7 +107,10 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
   const view = folder ? folder.view : localView;
   const updateView = (patch: Partial<ViewSettings>) =>
     folder
-      ? void send('updateFolder', { id: folder.id, patch: { view: { ...folder.view, ...patch } } })
+      ? void send('updateFolder', {
+          id: folder.id,
+          patch: { view: { ...folder.view, ...patch } },
+        })
       : updateLocalView(patch);
 
   const searching = query.trim() !== '';
@@ -86,6 +119,24 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
     [snapshot, selection, view, query],
   );
   const tree = useMemo(() => buildTree(snapshot.folders, snapshot.bookmarks), [snapshot]);
+
+  // Changes made to the vault file by another computer, a sync tool or KeePassXC.
+  useEffect(() => {
+    const check = () => void send('checkFile', undefined).catch(() => {});
+    check();
+    const timer = setInterval(
+      () => document.visibilityState === 'visible' && check(),
+      CHECK_EVERY_MS,
+    );
+    const onVisible = () => document.visibilityState === 'visible' && check();
+    document.addEventListener('visibilitychange', onVisible);
+    addEventListener('focus', check);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+      removeEventListener('focus', check);
+    };
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -119,6 +170,7 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
     });
   const ids = [...picked];
   const afterBulk = () => setPicked(new Set());
+  const attempt = (job: Promise<unknown>) => job.then(afterBulk, (e) => setError(errorText(e)));
 
   function open(next: Selection) {
     setSelection(next);
@@ -128,6 +180,7 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
   }
 
   const save = status.saveState;
+  const manual = view.sort === 'manual' && !searching && selection.kind !== 'trash';
 
   return (
     <div className="mgr">
@@ -154,7 +207,11 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
           />
         </div>
         <span className="grow" />
-        <span className={`save-state ${save === 'error' ? 'error' : ''}`} title={status.saveError}>
+        <span
+          className={`save-state ${save === 'error' ? 'error' : ''}`}
+          title={status.saveError}
+          role="status"
+        >
           {save === 'saved' && (
             <>
               <I n="circle-check" /> Saved
@@ -180,6 +237,31 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
         <button className="btn primary" onClick={() => setDialog({})}>
           <I n="plus" /> Add bookmark
         </button>
+        <details className="menu">
+          <summary className="btn ghost square" title="Tools" aria-label="Tools">
+            <I n="ellipsis" />
+          </summary>
+          <div className="menu-list">
+            {(
+              [
+                ['import', 'Import bookmarks…'],
+                ['export', 'Export bookmarks…'],
+                ['duplicates', 'Find duplicates…'],
+                ['tags', 'Manage tags…'],
+              ] as [Tool, string][]
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                onClick={(e) => {
+                  setTool(value);
+                  e.currentTarget.closest('details')?.removeAttribute('open');
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </details>
         <button
           className={`btn ghost square ${page === 'settings' ? 'active' : ''}`}
           onClick={() => setPage(page === 'settings' ? 'bookmarks' : 'settings')}
@@ -205,6 +287,7 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
       />
 
       <main className="main">
+        <Banners status={status} />
         {page === 'settings' ? (
           <SettingsPanel status={status} onChanged={refreshStatus} />
         ) : (
@@ -268,8 +351,37 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
                     </button>
                   ))}
                 </div>
+                <details className="menu">
+                  <summary className="btn square" title="What to show" aria-label="What to show">
+                    <I n="sliders" />
+                  </summary>
+                  <div className="menu-list">
+                    {(
+                      [
+                        ['showCover', 'Cover pictures'],
+                        ['showNote', 'Notes'],
+                        ['showTags', 'Tags'],
+                      ] as ['showCover' | 'showNote' | 'showTags', string][]
+                    ).map(([key, label]) => (
+                      <label key={key}>
+                        <input
+                          type="checkbox"
+                          checked={view[key]}
+                          onChange={(e) => updateView({ [key]: e.target.checked })}
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                </details>
               </div>
             </div>
+
+            {error && (
+              <div className="callout error" role="alert" style={{ marginBottom: 12 }}>
+                {error}
+              </div>
+            )}
 
             {picked.size > 0 && (
               <div className="bulkbar">
@@ -279,30 +391,52 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
                   <>
                     <button
                       className="btn"
-                      onClick={() => void send('restoreBookmarks', { ids }).then(afterBulk)}
+                      onClick={() => void attempt(send('restoreBookmarks', { ids }))}
                     >
                       <I n="rotate-left" /> Restore
                     </button>
                     <button
                       className="btn"
-                      onClick={() => void send('deleteForever', { ids }).then(afterBulk)}
+                      onClick={() => void attempt(send('deleteForever', { ids }))}
                     >
                       <I n="trash" /> Delete forever
                     </button>
                   </>
                 ) : (
                   <>
+                    <form
+                      className="row"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const tags = bulkTag
+                          .split(',')
+                          .map((t) => t.trim())
+                          .filter(Boolean);
+                        if (tags.length)
+                          void attempt(send('addTags', { ids, tags })).then(() => setBulkTag(''));
+                      }}
+                    >
+                      <input
+                        className="input"
+                        style={{ width: 150, padding: '5px 8px' }}
+                        placeholder="Add a tag"
+                        value={bulkTag}
+                        onChange={(e) => setBulkTag(e.target.value)}
+                        aria-label="Tag to add to the selection"
+                      />
+                      <button className="btn">
+                        <I n="tag" /> Tag
+                      </button>
+                    </form>
                     <FolderSelect
                       tree={tree}
                       value={null}
                       topLabel="Move to…"
-                      onChange={(id) =>
-                        void send('moveBookmarks', { ids, folderId: id }).then(afterBulk)
-                      }
+                      onChange={(id) => void attempt(send('moveBookmarks', { ids, folderId: id }))}
                     />
                     <button
                       className="btn"
-                      onClick={() => void send('trashBookmarks', { ids }).then(afterBulk)}
+                      onClick={() => void attempt(send('trashBookmarks', { ids }))}
                     >
                       <I n="trash" /> Trash
                     </button>
@@ -325,6 +459,15 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
                 onToggle={toggle}
                 onEdit={(bookmark) => setDialog({ bookmark })}
                 onTag={(tag) => open({ kind: 'tag', tag })}
+                onReorder={
+                  manual
+                    ? (dragged, target, before) => {
+                        const orders = reorder(list, dragged, target, before, view.sortDir);
+                        if (orders.length)
+                          void send('setOrder', { orders }).catch((e) => setError(errorText(e)));
+                      }
+                    : undefined
+                }
               />
             )}
           </>
@@ -335,10 +478,17 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
         <BookmarkDialog
           snapshot={snapshot}
           bookmark={dialog.bookmark}
+          initial={dialog.initial}
           folderId={selection.kind === 'folder' ? selection.id : null}
           onClose={() => setDialog(undefined)}
         />
       )}
+      {tool === 'import' && <ImportDialog snapshot={snapshot} onClose={() => setTool(undefined)} />}
+      {tool === 'export' && <ExportDialog snapshot={snapshot} onClose={() => setTool(undefined)} />}
+      {tool === 'duplicates' && (
+        <DuplicatesDialog snapshot={snapshot} onClose={() => setTool(undefined)} />
+      )}
+      {tool === 'tags' && <TagDialog snapshot={snapshot} onClose={() => setTool(undefined)} />}
     </div>
   );
 }
@@ -357,7 +507,9 @@ function EmptyState({
       <div className="empty">
         <I n="magnifying-glass" />
         <strong>Nothing matches your search</strong>
-        <span>Try fewer words, or use #tag and domain:example.com.</span>
+        <span>
+          Try fewer words, or use #tag, domain:example.com, is:fav, type:video or has:note.
+        </span>
       </div>
     );
   }
@@ -374,7 +526,8 @@ function EmptyState({
       <I n="bookmark" />
       <strong>No bookmarks here yet</strong>
       <span>
-        Save the page you are on from the BookPass button in the toolbar, or add an address by hand.
+        Save the page you are on from the BookPass button in the toolbar, import your bookmarks from
+        the menu, or add an address by hand.
       </span>
       <button className="btn primary" onClick={onAdd}>
         <I n="plus" /> Add bookmark

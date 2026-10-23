@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
+import type { BackupInfo } from '../helper-client';
 import type { Status } from '../messages';
 import {
+  coverWidths,
   idleChoices,
   lockModes,
   type Layout,
@@ -9,7 +11,7 @@ import {
   type Theme,
 } from '../settings';
 import { send } from './api';
-import { VaultLocation } from './Gates';
+import { KeyFileField, VaultLocation } from './Gates';
 import { I } from './Icon';
 import { errorText } from './parts';
 
@@ -214,7 +216,28 @@ export function SettingsPanel({ status, onChanged }: { status: Status; onChanged
             </div>
           </div>
         </label>
+        <label className="field" style={{ maxWidth: 300 }}>
+          <span>Cover picture width</span>
+          <select
+            className="select"
+            value={settings.coverWidth}
+            onChange={(e) => void change({ coverWidth: Number(e.target.value) })}
+          >
+            {coverWidths.map((w) => (
+              <option key={w} value={w}>
+                {w} pixels{w === 256 ? ' (recommended)' : ''}
+              </option>
+            ))}
+          </select>
+          <span className="hint" style={{ fontWeight: 400 }}>
+            Wider covers look sharper and make the vault bigger. Each one is squeezed to at most 20
+            KB.
+          </span>
+        </label>
       </section>
+
+      <PasswordPanel />
+      <BackupsPanel />
 
       <section className="panel stack">
         <h2>About</h2>
@@ -239,5 +262,199 @@ export function SettingsPanel({ status, onChanged }: { status: Status; onChanged
         </p>
       </section>
     </div>
+  );
+}
+
+function PasswordPanel() {
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [again, setAgain] = useState('');
+  const [message, setMessage] = useState<{ ok: boolean; text: string }>();
+  const [busy, setBusy] = useState(false);
+
+  async function change(e: FormEvent) {
+    e.preventDefault();
+    if (next !== again)
+      return setMessage({ ok: false, text: 'The two new passwords do not match.' });
+    setBusy(true);
+    try {
+      await send('changePassword', { current, next });
+      setCurrent('');
+      setNext('');
+      setAgain('');
+      setMessage({
+        ok: true,
+        text: 'Master password changed. Other computers that use this vault will ask for the new one the next time they open it.',
+      });
+    } catch (err) {
+      setMessage({ ok: false, text: errorText(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form className="panel stack" onSubmit={change}>
+      <div>
+        <h2>Master password</h2>
+        <p className="hint" style={{ margin: 0 }}>
+          Changing it re-encrypts the vault. If you use a key file, it stays the same.
+        </p>
+      </div>
+      <label className="field" style={{ maxWidth: 360 }}>
+        <span>Current password</span>
+        <input
+          className="input"
+          type="password"
+          value={current}
+          onChange={(e) => setCurrent(e.target.value)}
+          required
+        />
+      </label>
+      <label className="field" style={{ maxWidth: 360 }}>
+        <span>New password</span>
+        <input
+          className="input"
+          type="password"
+          value={next}
+          onChange={(e) => setNext(e.target.value)}
+          required
+        />
+      </label>
+      <label className="field" style={{ maxWidth: 360 }}>
+        <span>Repeat the new password</span>
+        <input
+          className="input"
+          type="password"
+          value={again}
+          onChange={(e) => setAgain(e.target.value)}
+          required
+        />
+      </label>
+      {message && (
+        <div
+          className={`callout ${message.ok ? '' : 'error'}`}
+          role={message.ok ? 'status' : 'alert'}
+        >
+          {message.text}
+        </div>
+      )}
+      <div>
+        <button className="btn" disabled={busy}>
+          {busy ? <I n="spinner" spin /> : <I n="key" />} Change password
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function BackupsPanel() {
+  const [backups, setBackups] = useState<BackupInfo[]>();
+  const [asking, setAsking] = useState<string>();
+  const [password, setPassword] = useState('');
+  const [keyFile, setKeyFile] = useState<{ name: string; base64: string }>();
+  const [message, setMessage] = useState<{ ok: boolean; text: string }>();
+
+  useEffect(() => {
+    let live = true;
+    send('listBackups', undefined).then(
+      (list) => live && setBackups(list),
+      (e) => live && setMessage({ ok: false, text: errorText(e) }),
+    );
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  async function restore(name: string, withPassword: boolean) {
+    if (
+      !confirm(
+        'Replace the vault with this backup? The vault as it is now is kept as a backup too.',
+      )
+    )
+      return;
+    try {
+      await send('restoreBackup', {
+        name,
+        password: withPassword ? password : undefined,
+        keyFile: withPassword ? keyFile?.base64 : undefined,
+      });
+      setAsking(undefined);
+      setMessage({ ok: true, text: 'Backup restored.' });
+    } catch (e) {
+      // A backup made with another password needs that password.
+      if ((e as { code?: string }).code === 'wrong-password') setAsking(name);
+      setMessage({ ok: false, text: errorText(e) });
+    }
+  }
+
+  return (
+    <section className="panel stack">
+      <div>
+        <h2>Backups</h2>
+        <p className="hint" style={{ margin: 0 }}>
+          The helper keeps these next to the vault file. Restoring one replaces what you have now.
+        </p>
+      </div>
+      {!backups && !message && (
+        <span className="muted">
+          <I n="spinner" spin /> Looking…
+        </span>
+      )}
+      {backups?.length === 0 && (
+        <p className="muted" style={{ margin: 0 }}>
+          No backups yet. The first appears after the second save.
+        </p>
+      )}
+      <ul className="tag-list">
+        {backups?.map((b) => (
+          <li key={b.name}>
+            <div className="row">
+              <span className="grow">
+                {new Date(b.modified).toLocaleString()}{' '}
+                <span className="hint">{Math.max(1, Math.round(b.size / 1024))} KB</span>
+              </span>
+              <button className="btn small" onClick={() => void restore(b.name, false)}>
+                Restore
+              </button>
+            </div>
+            {asking === b.name && (
+              <form
+                className="stack"
+                style={{ marginTop: 8 }}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void restore(b.name, true);
+                }}
+              >
+                <label className="field" style={{ maxWidth: 360 }}>
+                  <span>Password this backup was saved with</span>
+                  <input
+                    className="input"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoFocus
+                    required
+                  />
+                </label>
+                <KeyFileField value={keyFile} onChange={setKeyFile} />
+                <div>
+                  <button className="btn primary small">Restore with these</button>
+                </div>
+              </form>
+            )}
+          </li>
+        ))}
+      </ul>
+      {message && (
+        <div
+          className={`callout ${message.ok ? '' : 'error'}`}
+          role={message.ok ? 'status' : 'alert'}
+        >
+          {message.text}
+        </div>
+      )}
+    </section>
   );
 }

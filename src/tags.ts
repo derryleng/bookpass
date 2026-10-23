@@ -58,8 +58,9 @@ export function deleteTag(db: Kdbx, tag: string) {
     entry.tags = entry.tags.filter((t) => t.toLowerCase() !== tag.toLowerCase());
     entry.times.update();
   }
-  const { [tag]: _removed, ...rest } = readTagColors(db);
-  writeTagColors(db, rest);
+  const colors = readTagColors(db);
+  delete colors[tag];
+  writeTagColors(db, colors);
 }
 
 /** Adds tags to many bookmarks at once. */

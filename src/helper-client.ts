@@ -119,8 +119,10 @@ export async function setConfig(change: {
   await call('setConfig', change);
 }
 
-export async function vaultExists(): Promise<boolean> {
-  return (await call('exists')).exists === true;
+/** Cheap to ask, as the helper does not hash the file for this. */
+export async function vaultInfo(): Promise<{ exists: boolean; size: number }> {
+  const r = await call('exists');
+  return { exists: r.exists === true, size: (r.size as number | undefined) ?? 0 };
 }
 
 export interface VaultFile {
@@ -129,15 +131,42 @@ export interface VaultFile {
   sha256: string;
 }
 
-/** Reads the whole vault in chunks, or null if the file does not exist yet. */
-export async function readVault(): Promise<VaultFile | null> {
+/** Which file to read: the vault, a copy a sync tool left next to it, or one of the helper's backups. */
+export type Source = { source?: 'vault' } | { source: 'conflict' | 'backup'; name: string };
+
+export interface BackupInfo {
+  name: string;
+  size: number;
+  /** ms since 1970 */
+  modified: number;
+}
+
+export async function statVault(): Promise<{ exists: boolean; sha256: string }> {
+  const r = await call('stat');
+  return { exists: r.exists === true, sha256: (r.sha256 as string | undefined) ?? '' };
+}
+
+export async function findConflictCopies(): Promise<string[]> {
+  return ((await call('findConflicts')).names as string[] | undefined) ?? [];
+}
+
+export async function archiveConflictCopy(name: string): Promise<void> {
+  await call('archiveConflict', { name });
+}
+
+export async function listBackups(): Promise<BackupInfo[]> {
+  return ((await call('listBackups')).backups as BackupInfo[] | undefined) ?? [];
+}
+
+/** Reads a whole file in chunks, or null if it does not exist. The vault is the default. */
+export async function readVault(from: Source = {}): Promise<VaultFile | null> {
   for (let attempt = 0; attempt < 3; attempt++) {
-    const stat = await call('stat');
+    const stat = await call('stat', from);
     if (!stat.exists) return null;
     const parts: Uint8Array<ArrayBuffer>[] = [];
     let total = 0;
     for (let offset = 0; ; offset += CHUNK) {
-      const r = await call('read', { offset, length: CHUNK });
+      const r = await call('read', { offset, length: CHUNK, ...from });
       const part = fromBase64((r.data as string | undefined) ?? '');
       parts.push(part);
       total += part.length;

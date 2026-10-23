@@ -37,22 +37,52 @@ kdbxweb.CryptoEngine.setArgon2Impl(
   },
 );
 
-export async function credentialsFromPassword(password: string): Promise<kdbxweb.KdbxCredentials> {
-  const creds = new kdbxweb.KdbxCredentials(kdbxweb.ProtectedValue.fromString(password));
+export async function credentialsFromPassword(
+  password: string,
+  keyFile?: Uint8Array,
+): Promise<kdbxweb.KdbxCredentials> {
+  const creds = new kdbxweb.KdbxCredentials(kdbxweb.ProtectedValue.fromString(password), keyFile);
   await creds.ready;
   return creds;
 }
 
-/** The unlock key: the password's hash, which opens the vault but is not the password itself. */
+/** A new random key file, in KeePass's key file format. */
+export function createKeyFile(): Promise<Uint8Array> {
+  return kdbxweb.KdbxCredentials.createRandomKeyFile();
+}
+
+/**
+ * The unlock key: the hash of the master password, and of the key file if there is one. It opens the vault
+ * but is not the password. Without a key file it is just the base64 hash, as in the first versions.
+ */
 export function keyOf(creds: kdbxweb.KdbxCredentials): string {
-  return kdbxweb.ByteUtils.bytesToBase64(creds.passwordHash!.getBinary());
+  const password = kdbxweb.ByteUtils.bytesToBase64(creds.passwordHash!.getBinary());
+  if (!creds.keyFileHash) return password;
+  return JSON.stringify({
+    p: password,
+    k: kdbxweb.ByteUtils.bytesToBase64(creds.keyFileHash.getBinary()),
+  });
 }
 
 export function credentialsFromKey(key: string): kdbxweb.KdbxCredentials {
+  const parts = key.startsWith('{') ? (JSON.parse(key) as { p: string; k?: string }) : { p: key };
+  const hash = (base64: string) =>
+    kdbxweb.ProtectedValue.fromBinary(kdbxweb.ByteUtils.base64ToBytes(base64).slice().buffer);
   const creds = new kdbxweb.KdbxCredentials(null);
-  creds.passwordHash = kdbxweb.ProtectedValue.fromBinary(
-    kdbxweb.ByteUtils.base64ToBytes(key).slice().buffer,
-  );
+  creds.passwordHash = hash(parts.p);
+  if (parts.k) creds.keyFileHash = hash(parts.k);
+  return creds;
+}
+
+/** Sets a new master password on an open vault. The key file, if any, stays. */
+export async function changePassword(
+  db: Kdbx,
+  newPassword: string,
+): Promise<kdbxweb.KdbxCredentials> {
+  const creds = await credentialsFromPassword(newPassword);
+  creds.keyFileHash = db.credentials.keyFileHash;
+  db.credentials = creds;
+  db.meta.keyChanged = new Date();
   return creds;
 }
 
@@ -143,3 +173,48 @@ function cloneCustomData(data: KdbxGroup['customData']): KdbxGroup['customData']
 }
 
 export const { KdbxUuid, ProtectedValue } = kdbxweb;
+
+/** A bookmark that was changed on this computer and on another since the two last agreed. */
+export interface EditConflict {
+  id: string;
+  title: string;
+  localTime: number;
+  remoteTime: number;
+}
+
+/** What one edit of an entry amounts to, ignoring times, so a copy that only touched the clock is not a conflict. */
+function entryContent(entry: KdbxEntry): string {
+  const fields = [...entry.fields].map(([name, value]) => [
+    name,
+    typeof value === 'string' ? value : value.getText(),
+  ]);
+  return JSON.stringify([fields.sort(), [...entry.tags].sort()]);
+}
+
+/**
+ * Finds bookmarks edited on both sides since `since` (ms since 1970) with different results.
+ * Call it before mergeRemote. KDBX times have one second resolution, so the comparison allows a second.
+ */
+export function findEditConflicts(local: Kdbx, remote: Kdbx, since: number): EditConflict[] {
+  const entries = new Map([...local.getDefaultGroup().allEntries()].map((e) => [e.uuid.id, e]));
+  const found: EditConflict[] = [];
+  for (const theirs of remote.getDefaultGroup().allEntries()) {
+    const ours = entries.get(theirs.uuid.id);
+    if (!ours) continue;
+    const localTime = ours.lastModTime;
+    const remoteTime = theirs.lastModTime;
+    if (
+      localTime > since - 1000 &&
+      remoteTime > since - 1000 &&
+      entryContent(ours) !== entryContent(theirs)
+    ) {
+      found.push({
+        id: ours.uuid.id,
+        title: String(ours.fields.get('Title') ?? ''),
+        localTime,
+        remoteTime,
+      });
+    }
+  }
+  return found;
+}

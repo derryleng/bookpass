@@ -11,7 +11,23 @@ export default defineConfig({
     name: 'BookPass',
     description: 'Encrypted bookmarks in a KeePass file on your own disk.',
     // No access to all sites. activeTab covers reading the page you save, and nativeMessaging reaches the helper.
-    permissions: ['storage', 'alarms', 'idle', 'activeTab', 'scripting', 'nativeMessaging'],
+    permissions: [
+      'storage',
+      'alarms',
+      'idle',
+      'activeTab',
+      'scripting',
+      'contextMenus',
+      'nativeMessaging',
+    ],
+    // Asked for only when you use the feature: saving several tabs, and importing your browser's bookmarks.
+    optional_permissions: ['tabs', 'bookmarks'],
+    commands: {
+      _execute_action: {
+        suggested_key: { default: 'Alt+Shift+B' },
+        description: 'Save the current page to BookPass',
+      },
+    },
     // Pins the Chrome extension id so the helper can name it. Firefox uses the id below.
     ...(browser === 'firefox' ? {} : { key: chromeDevKey }),
     // The Firefox add-on id is permanent once published.

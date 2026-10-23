@@ -4,7 +4,9 @@
 // A small function is injected into that tab to read the page. It can fetch the page's own images, but images from
 // other sites usually refuse (CORS), so the fallback for the cover is a screenshot of the visible tab.
 import { browser } from 'wxt/browser';
+import { toBase64 } from './base64';
 import type { BookmarkType } from './bookmark-model';
+import { maxCoverBytes } from './constants';
 
 export interface PageInfo {
   title: string;
@@ -139,29 +141,45 @@ async function screenshot(windowId: number | undefined): Promise<string | null> 
   }
 }
 
-/** Draws an image data URL no wider than `width` and returns it as base64 WebP (PNG if the browser cannot make WebP). */
-export async function shrinkToWebp(
+/** An image as pixels. Works in a page and in the background, which has no document. */
+async function decode(dataUrl: string): Promise<ImageBitmap> {
+  return createImageBitmap(await (await fetch(dataUrl)).blob());
+}
+
+async function encode(image: ImageBitmap, width: number, quality: number): Promise<Blob> {
+  const scale = Math.min(1, width / image.width);
+  const w = Math.max(1, Math.round(image.width * scale));
+  const h = Math.max(1, Math.round(image.height * scale));
+  const canvas = new OffscreenCanvas(w, h);
+  canvas.getContext('2d')!.drawImage(image, 0, 0, w, h);
+  return canvas.convertToBlob({ type: 'image/webp', quality });
+}
+
+/**
+ * Shrinks a picture to a cover: no wider than `width`, as WebP, squeezed until it is no bigger than `maxBytes`
+ * (smaller pictures first, then lower quality). A vault holds one per bookmark, so they must stay small.
+ * Returns base64. The browser may fall back to PNG if it cannot make WebP, which is fine.
+ */
+export async function shrinkCover(
   dataUrl: string,
-  width: number,
-  quality = 0.72,
+  width = 256,
+  maxBytes = maxCoverBytes,
 ): Promise<string> {
-  const image = new Image();
-  image.src = dataUrl;
-  await image.decode();
-  const scale = Math.min(1, width / image.naturalWidth);
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-  canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
-  canvas.getContext('2d')!.drawImage(image, 0, 0, canvas.width, canvas.height);
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, 'image/webp', quality),
-  );
-  if (!blob) throw new Error('Could not encode the cover picture');
-  const bytes = new Uint8Array(await blob.arrayBuffer());
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += 0x8000)
-    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  return btoa(binary);
+  const image = await decode(dataUrl);
+  let best: Blob | undefined;
+  for (const [w, quality] of [
+    [width, 0.72],
+    [width, 0.55],
+    [width, 0.4],
+    [Math.round(width * 0.75), 0.4],
+    [Math.round(width * 0.5), 0.35],
+  ] as const) {
+    const blob = await encode(image, w, quality);
+    if (!best || blob.size < best.size) best = blob;
+    if (blob.size <= maxBytes) break;
+  }
+  image.close();
+  return toBase64(new Uint8Array(await best!.arrayBuffer()));
 }
 
 export const isSavable = (url: string | undefined): url is string =>

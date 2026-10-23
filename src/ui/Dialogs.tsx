@@ -1,4 +1,5 @@
 // The dialogs for editing a bookmark or a folder.
+export { TagDialog } from './TagDialog';
 import { useState, type FormEvent } from 'react';
 import type { Bookmark, BookmarkType, Folder } from '../bookmark-model';
 import { bookmarkTypes } from '../bookmark-model';
@@ -6,8 +7,11 @@ import { buildTree, descendantIds } from '../browse';
 import type { SnapshotReply } from '../messages';
 import { send } from './api';
 import { Dialog } from './Dialog';
-import { I, Icon } from './Icon';
-import { folderColors, folderIconChoices } from './icons';
+import { I } from './Icon';
+import { toBase64 } from '../base64';
+import { HistoryList } from './HistoryList';
+import { IconPicker } from './IconPicker';
+import { renderIconPng, rememberIcon, useIconsFor } from './icon-library';
 import { errorText, FolderSelect, TagInput } from './parts';
 
 interface BookmarkDialogProps {
@@ -16,6 +20,8 @@ interface BookmarkDialogProps {
   bookmark?: Bookmark;
   /** Folder to start in for a new bookmark. */
   folderId?: string | null;
+  /** An address and title to start a new bookmark with. */
+  initial?: { url: string; title: string };
   onClose: () => void;
 }
 
@@ -23,11 +29,12 @@ export function BookmarkDialog({
   snapshot,
   bookmark,
   folderId = null,
+  initial,
   onClose,
 }: BookmarkDialogProps) {
   const tree = buildTree(snapshot.folders, snapshot.bookmarks);
-  const [url, setUrl] = useState(bookmark?.url ?? '');
-  const [title, setTitle] = useState(bookmark?.title ?? '');
+  const [url, setUrl] = useState(bookmark?.url ?? initial?.url ?? '');
+  const [title, setTitle] = useState(bookmark?.title ?? initial?.title ?? '');
   const [folder, setFolder] = useState<string | null>(bookmark ? bookmark.folderId : folderId);
   const [tags, setTags] = useState(bookmark?.tags ?? []);
   const [note, setNote] = useState(bookmark?.note ?? '');
@@ -128,6 +135,12 @@ export function BookmarkDialog({
         </label>
         {error && <div className="callout error">{error}</div>}
       </form>
+      {bookmark && (
+        <details className="history" style={{ marginTop: 10 }}>
+          <summary>Earlier versions</summary>
+          <HistoryList id={bookmark.id} onRestored={onClose} />
+        </details>
+      )}
       <div className="modal-foot" style={{ padding: '4px 0 0' }}>
         {bookmark && (
           <button type="button" className="btn danger" onClick={remove}>
@@ -169,16 +182,29 @@ export function FolderDialog({
   const [color, setColor] = useState(folder?.color ?? '');
   const [parent, setParent] = useState<string | null>(folder ? folder.parentId : parentId);
   const [error, setError] = useState<string>();
+  useIconsFor([icon]);
 
   async function save(e: FormEvent) {
     e.preventDefault();
     try {
+      const iconImage =
+        icon === 'fa-solid:folder' && !color
+          ? undefined
+          : { name: `${icon}|${color}`, png: toBase64(await renderIconPng(icon, color)) };
+      rememberIcon(icon);
       if (folder) {
-        await send('updateFolder', { id: folder.id, patch: { name: name.trim(), icon, color } });
+        await send('updateFolder', {
+          id: folder.id,
+          patch: { name: name.trim(), icon, color, iconImage },
+        });
         if (parent !== folder.parentId)
           await send('moveFolder', { id: folder.id, parentId: parent });
       } else {
-        await send('createFolder', { parentId: parent, name: name.trim(), patch: { icon, color } });
+        await send('createFolder', {
+          parentId: parent,
+          name: name.trim(),
+          patch: { icon, color, iconImage },
+        });
       }
       onClose();
     } catch (err) {
@@ -220,38 +246,7 @@ export function FolderDialog({
             topLabel="Top level"
           />
         </label>
-        <div className="field">
-          <span>Icon</span>
-          <div className="icon-grid">
-            {folderIconChoices.map((key) => (
-              <button
-                type="button"
-                key={key}
-                className={`icon-choice ${key === icon ? 'active' : ''}`}
-                onClick={() => setIcon(key)}
-                aria-label={key.split(':')[1]}
-                style={{ color: key === icon ? undefined : color || undefined }}
-              >
-                <Icon name={key} />
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="field">
-          <span>Color</span>
-          <div className="swatches">
-            {folderColors.map((c) => (
-              <button
-                type="button"
-                key={c || 'none'}
-                className={`swatch ${c === color ? 'active' : ''}`}
-                style={{ ['--c' as string]: c || 'var(--muted)' }}
-                onClick={() => setColor(c)}
-                aria-label={c || 'No color'}
-              />
-            ))}
-          </div>
-        </div>
+        <IconPicker icon={icon} color={color} onIcon={setIcon} onColor={setColor} />
         {error && <div className="callout error">{error}</div>}
       </form>
       <div className="modal-foot" style={{ padding: '4px 0 0' }}>

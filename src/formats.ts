@@ -85,7 +85,6 @@ export function parseNetscape(html: string): ParsedImport {
     const element = name!.toLowerCase();
     lastWasDescription = element === 'dd' && !closing;
     if (element === 'h3' && !closing) {
-      const end = html.search(/<\/h3>/i);
       const from = tag.lastIndex;
       const close = html.slice(from).search(/<\/h3>/i);
       if (close >= 0) {
@@ -148,16 +147,20 @@ export function parseCsv(text: string): string[][] {
   let row: string[] = [];
   let field = '';
   let quoted = false;
-  const source = text.replace(/^﻿/, '');
+  const source = text.replace(/^\uFEFF/, '');
   for (let i = 0; i < source.length; i++) {
     const c = source[i]!;
     if (quoted) {
-      if (c === '"' && source[i + 1] === '"') ((field += '"'), i++);
-      else if (c === '"') quoted = false;
+      if (c === '"' && source[i + 1] === '"') {
+        field += '"';
+        i++;
+      } else if (c === '"') quoted = false;
       else field += c;
     } else if (c === '"') quoted = true;
-    else if (c === ',') (row.push(field), (field = ''));
-    else if (c === '\n' || c === '\r') {
+    else if (c === ',') {
+      row.push(field);
+      field = '';
+    } else if (c === '\n' || c === '\r') {
       if (c === '\r' && source[i + 1] === '\n') i++;
       row.push(field);
       field = '';

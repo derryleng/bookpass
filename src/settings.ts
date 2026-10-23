@@ -20,6 +20,8 @@ export interface Settings {
   defaultLayout: Layout;
   theme: Theme;
   captureCovers: boolean;
+  /** Width in pixels of the stored cover picture. */
+  coverWidth: number;
 }
 
 export const defaultSettings: Settings = {
@@ -29,7 +31,10 @@ export const defaultSettings: Settings = {
   defaultLayout: 'list',
   theme: 'auto',
   captureCovers: true,
+  coverWidth: 256,
 };
+
+export const coverWidths = [128, 256, 384, 512];
 
 export const lockModes: { value: LockMode; label: string; help: string }[] = [
   {
@@ -67,6 +72,7 @@ export function normalizeSettings(raw: Partial<Settings> | undefined): Settings 
   if (!lockModes.some((m) => m.value === s.lockMode)) s.lockMode = defaultSettings.lockMode;
   s.idleMinutes = clampMinutes(s.idleMinutes, defaultSettings.idleMinutes);
   s.systemIdleMinutes = clampMinutes(s.systemIdleMinutes, defaultSettings.systemIdleMinutes);
+  if (!coverWidths.includes(s.coverWidth)) s.coverWidth = defaultSettings.coverWidth;
   return s;
 }
 

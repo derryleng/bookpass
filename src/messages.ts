@@ -1,9 +1,23 @@
 // The messages between the pages (popup, manager, settings) and the background.
 // One table describes every request, so both sides stay in step.
 import type { BookmarkInput, FolderPatch, Image, Snapshot } from './bookmark-model';
+import type { ParsedImport } from './formats';
+import type { BackupInfo } from './helper-client';
+import type { Version } from './history';
+import type { ImportResult } from './importing';
 import type { Settings } from './settings';
 
 export type SaveState = 'saved' | 'dirty' | 'saving' | 'error';
+
+/** A bookmark edited on two computers. One edit won; the other is in the bookmark's history. */
+export interface VersionConflict {
+  id: string;
+  title: string;
+  /** Which edit BookPass kept. */
+  kept: 'this computer' | 'the other copy';
+  /** When the edit that lost was made (ms since 1970). It identifies that version in the history. */
+  lostTime: number;
+}
 
 export interface Status {
   /** ok: reachable. missing: not installed or not allowed. outdated: protocol mismatch. */
@@ -12,16 +26,24 @@ export interface Status {
   vaultPath: string;
   defaultPath: string;
   vaultExists: boolean;
+  /** Size of the vault file, so pages can warn when it grows large. */
+  vaultBytes: number;
   backupCount: number;
   locked: boolean;
+  /** Why the vault locked itself, if something other than the timer did it. */
+  lockReason?: string;
   saveState: SaveState;
   saveError?: string;
+  /** Copies of the vault that a sync tool left next to it, waiting to be merged. */
+  conflictCopies: string[];
+  versionConflicts: VersionConflict[];
   settings: Settings;
 }
 
 export interface SnapshotReply extends Snapshot {
   /** Goes up on every change, so pages can tell when to refresh. */
   rev: number;
+  tagColors: Record<string, string>;
 }
 
 /** Images captured from a page, as base64 so they can cross the message boundary. */
@@ -30,27 +52,58 @@ export interface CaptureData {
   favicon?: { site: string; png: string };
 }
 
+/** The same as FolderPatch, with the folder picture as base64. */
+export type FolderPatchMessage = Omit<FolderPatch, 'iconImage'> & {
+  iconImage?: { name: string; png: string };
+};
+
+/** A master password and, optionally, a key file as base64. */
+export interface Secret {
+  password: string;
+  keyFile?: string;
+}
+
 export interface Requests {
   status: [void, Status];
   setVaultPath: [{ vaultPath: string }, Status];
   setBackupCount: [{ count: number }, Status];
-  createVault: [{ password: string }, Status];
-  unlock: [{ password: string }, Status];
+  createVault: [Secret, Status];
+  unlock: [Secret, Status];
+  newKeyFile: [void, string];
+  changePassword: [{ current: string; next: string }, void];
   lock: [void, Status];
   saveNow: [void, Status];
+  /** Looks at the vault file for changes made outside BookPass and merges them. */
+  checkFile: [void, void];
+  mergeConflictCopy: [{ name: string }, void];
+  resolveConflict: [{ id: string; action: 'restore' | 'dismiss' }, void];
+  listBackups: [void, BackupInfo[]];
+  restoreBackup: [{ name: string; password?: string; keyFile?: string }, void];
   snapshot: [void, SnapshotReply];
   getImage: [{ kind: 'cover' | 'icon'; id: string }, Image | null];
   addBookmark: [{ input: BookmarkInput; capture?: CaptureData }, string];
   updateBookmark: [{ id: string; patch: Partial<BookmarkInput>; capture?: CaptureData }, void];
   moveBookmarks: [{ ids: string[]; folderId: string | null }, void];
+  setOrder: [{ orders: { id: string; order: number }[] }, void];
   trashBookmarks: [{ ids: string[] }, void];
   restoreBookmarks: [{ ids: string[] }, void];
   deleteForever: [{ ids: string[] }, void];
   emptyTrash: [void, void];
-  createFolder: [{ parentId: string | null; name: string; patch?: FolderPatch }, string];
-  updateFolder: [{ id: string; patch: FolderPatch }, void];
+  history: [{ id: string }, Version[]];
+  restoreVersion: [{ id: string; time: number }, void];
+  createFolder: [{ parentId: string | null; name: string; patch?: FolderPatchMessage }, string];
+  updateFolder: [{ id: string; patch: FolderPatchMessage }, void];
   moveFolder: [{ id: string; parentId: string | null }, void];
   trashFolder: [{ id: string }, void];
+  renameTag: [{ from: string; to: string }, void];
+  deleteTag: [{ tag: string }, void];
+  setTagColor: [{ tag: string; color: string }, void];
+  addTags: [{ ids: string[]; tags: string[] }, void];
+  importPreview: [{ parsed: ParsedImport; skipDuplicates: boolean }, ImportResult];
+  importBookmarks: [
+    { parsed: ParsedImport; parentId: string | null; wrapper?: string; skipDuplicates: boolean },
+    ImportResult,
+  ];
   getSettings: [void, Settings];
   setSettings: [Partial<Settings>, Settings];
 }
@@ -58,7 +111,14 @@ export interface Requests {
 export type RequestType = keyof Requests;
 
 /** Requests that do not count as using BookPass, so they never postpone an inactivity lock. */
-export const passiveRequests: RequestType[] = ['status', 'snapshot', 'getImage', 'getSettings'];
+export const passiveRequests: RequestType[] = [
+  'status',
+  'snapshot',
+  'getImage',
+  'getSettings',
+  'checkFile',
+  'listBackups',
+];
 
 export interface RequestEnvelope<K extends RequestType = RequestType> {
   type: K;
