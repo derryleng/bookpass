@@ -8,19 +8,8 @@ import { dirname, join } from 'node:path';
 import type { ElementHandle, Page } from 'puppeteer-core';
 import { password, sleep, startSession } from './e2e-lib.ts';
 
-const {
-  browser,
-  vaultPath,
-  work,
-  check,
-  openPage,
-  text,
-  hasText,
-  click,
-  type,
-  shot,
-  finish,
-} = await startSession('e2e-more-out');
+const { browser, vaultPath, work, check, openPage, text, hasText, click, type, shot, finish } =
+  await startSession('e2e-more-out');
 
 const xc = 'C:/Program Files/KeePassXC/keepassxc-cli.exe';
 const keyFilePath = join(work, 'my.keyx');
