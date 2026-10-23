@@ -6,10 +6,11 @@
   --surface-2: #eef0f4;
   --border: #e1e4ea;
   --text: #1a1d24;
-  --muted: #667085;
+  --muted: #566074;
   --accent: #3d5afe;
   --accent-text: #ffffff;
   --accent-soft: #e8ecff;
+  --accent-strong: #2740d8;
   --danger: #d92d20;
   --danger-soft: #fdecea;
   --warn: #b54708;
@@ -31,6 +32,7 @@
   --accent: #8197ff;
   --accent-text: #0e1118;
   --accent-soft: #232a4a;
+  --accent-strong: #8197ff;
   --danger: #ff7b72;
   --danger-soft: #3a1f1d;
   --warn: #f0a24b;
@@ -51,6 +53,7 @@
     --accent: #8197ff;
     --accent-text: #0e1118;
     --accent-soft: #232a4a;
+    --accent-strong: #8197ff;
     --danger: #ff7b72;
     --danger-soft: #3a1f1d;
     --warn: #f0a24b;
@@ -191,7 +194,7 @@ h3 {
 
 .btn.active {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-strong);
   border-color: transparent;
 }
 
@@ -407,7 +410,7 @@ h3 {
 .nav-item.active,
 .tree-row.active {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-strong);
   font-weight: 600;
 }
 
@@ -541,7 +544,7 @@ h3 {
 
 .segmented .btn.active {
   background: var(--surface);
-  color: var(--accent);
+  color: var(--accent-strong);
   box-shadow: var(--shadow);
 }
 
@@ -932,7 +935,7 @@ dialog.modal::backdrop {
   padding: 2px 5px 2px 9px;
   border-radius: 999px;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-strong);
   font-size: 12.5px;
 }
 
@@ -997,7 +1000,7 @@ dialog.modal::backdrop {
 .icon-choice.active {
   border-color: var(--accent);
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-strong);
 }
 
 .icon-grid {
@@ -1023,6 +1026,8 @@ dialog.modal::backdrop {
 }
 
 .popup-head .brand {
+  margin: 0;
+  font-size: 15px;
   display: flex;
   align-items: center;
   gap: 8px;

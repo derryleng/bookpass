@@ -161,7 +161,7 @@ export function HelperMissing({ status, onRetry }: { status: Status; onRetry: ()
       ? 'Linux'
       : 'Windows';
   return (
-    <div className="gate">
+    <main className="gate">
       <div className="gate-card stack">
         <Logo />
         <h1>
@@ -197,7 +197,7 @@ export function HelperMissing({ status, onRetry }: { status: Status; onRetry: ()
           <I n="rotate-left" /> Check again
         </button>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -227,7 +227,7 @@ export function Setup({ status, onStatus }: { status: Status; onStatus: (s: Stat
   }
 
   return (
-    <div className="gate">
+    <main className="gate">
       <form className="gate-card stack" onSubmit={create}>
         <Logo />
         <div>
@@ -284,7 +284,7 @@ export function Setup({ status, onStatus }: { status: Status; onStatus: (s: Stat
           {busy ? <I n="spinner" spin /> : <I n="lock" />} Create vault
         </button>
       </form>
-    </div>
+    </main>
   );
 }
 
@@ -312,7 +312,7 @@ export function Unlock({ status, onStatus }: { status: Status; onStatus: (s: Sta
   }
 
   return (
-    <div className="gate">
+    <main className="gate">
       <form className="gate-card stack" onSubmit={unlock}>
         <Logo />
         <div>
@@ -357,6 +357,6 @@ export function Unlock({ status, onStatus }: { status: Status; onStatus: (s: Sta
         </button>
         <VaultLocation status={status} onChanged={onStatus} />
       </form>
-    </div>
+    </main>
   );
 }

@@ -15,11 +15,11 @@ export interface PageContext {
 
 function Loading({ text = 'Loading…' }: { text?: string }) {
   return (
-    <div className="gate">
+    <main className="gate">
       <span className="muted">
         <I n="spinner" spin /> {text}
       </span>
-    </div>
+    </main>
   );
 }
 
@@ -46,9 +46,9 @@ export function Shell({ children }: { children: (context: PageContext) => ReactN
 
   if (error) {
     return (
-      <div className="gate">
+      <main className="gate">
         <div className="gate-card callout error">{error}</div>
-      </div>
+      </main>
     );
   }
   if (!status) return <Loading />;

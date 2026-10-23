@@ -120,12 +120,12 @@ function Popup({ status, snapshot }: PageContext) {
   return (
     <>
       <div className="popup-head">
-        <div className="brand">
+        <h1 className="brand">
           <span className="logo">
             <I n="bookmark" />
           </span>
           BookPass
-        </div>
+        </h1>
         <button
           className="btn ghost square"
           title="Open manager"
