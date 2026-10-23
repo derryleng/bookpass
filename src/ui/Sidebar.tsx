@@ -54,12 +54,20 @@ export function Sidebar({ snapshot, selection, onSelect }: Props) {
   const favorites = snapshot.bookmarks.filter((b) => b.favorite).length;
   const topDrop = useDropTarget(null, tree);
 
-  function item(kind: Selection, icon: string, label: string, count?: number, drop?: object) {
+  function item(
+    kind: Selection,
+    icon: string,
+    label: string,
+    count?: number,
+    drop?: ReturnType<typeof useDropTarget>,
+  ) {
     return (
       <button
-        className={`nav-item ${same(selection, kind) ? 'active' : ''} ${(drop as { className?: string })?.className ?? ''}`}
+        className={`nav-item ${same(selection, kind) ? 'active' : ''} ${drop?.className ?? ''}`}
         onClick={() => onSelect(kind)}
-        {...(drop && { ...drop, className: undefined })}
+        onDragOver={drop?.onDragOver}
+        onDragLeave={drop?.onDragLeave}
+        onDrop={drop?.onDrop}
       >
         <I n={icon} />
         <span className="grow">{label}</span>

@@ -368,6 +368,8 @@ export class Vault {
   checkForChanges(): Promise<void> {
     return this.exclusive(async () => {
       if (!this.db || this.saveState === 'saving') return;
+      // Pages also learn about new conflict copies from the status, so tell them to look again.
+      this.emit('status');
       const now = await helper.statVault();
       if (!now.exists || now.sha256 === this.fileHash) return;
       try {
