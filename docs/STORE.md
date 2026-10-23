@@ -58,3 +58,5 @@ No host permissions are requested.
 ## Firefox reviewer notes
 
 The source is in the second zip. Build with `npm ci && npm run build:firefox` using Node 24 or newer; the output is `.output/firefox-mv3`. The extension needs the native helper from the GitHub release to do anything beyond the first screen. Argon2 is `hash-wasm` (WebAssembly), which is why the content security policy allows `wasm-unsafe-eval`.
+
+The linter warns about the `Function` constructor and about `innerHTML`. The first is a line in the kdbxweb library's webpack wrapper (`return this || new Function('return this')()`), and `this` is always set so it never runs, and the content security policy would block it anyway. The second is React setting the text of an element. BookPass never builds markup from bookmark text.
