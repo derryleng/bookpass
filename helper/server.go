@@ -308,9 +308,20 @@ func (s *server) backup() error {
 		return err
 	}
 	base := strings.TrimSuffix(filepath.Base(s.cfg.VaultPath), filepath.Ext(s.cfg.VaultPath))
-	name := fmt.Sprintf("%s-%s.kdbx", base, time.Now().UTC().Format("20060102-150405.000"))
-	if err := copyFile(s.cfg.VaultPath, filepath.Join(dir, name)); err != nil {
-		return err
+	// The name is the time to the microsecond, so backups sort oldest first. A fast disk can finish two saves in
+	// the same microsecond, so a name that is taken moves on to the next one.
+	now := time.Now().UTC()
+	for {
+		name := fmt.Sprintf("%s-%s.kdbx", base, now.Format("20060102-150405.000000"))
+		err := copyFile(s.cfg.VaultPath, filepath.Join(dir, name))
+		if errors.Is(err, fs.ErrExist) {
+			now = now.Add(time.Microsecond)
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		break
 	}
 	entries, err := os.ReadDir(dir)
 	if err != nil {
