@@ -30,6 +30,8 @@ Create vault takes about a second (the password is stretched with Argon2id). The
 
 Open any web page and click the BookPass button (or press `Alt+Shift+B`). The popup shows the page's title, a cover picture, the site and a folder choice, tags and a note. Press Save bookmark. BookPass reads only that page, for its title, description, icon and preview image, or takes a screenshot of the tab if the page offers no picture.
 
+BookPass never asks a favicon service or any other third party about your bookmarks. Pictures come from the page you are on, or from the bookmarked site itself when you press a fetch button. To give a bookmark a site icon or cover, choose Edit and use the Pictures section: fetch it from the site, choose a file of your own, or remove it. In the settings, Pictures also offers "Fetch missing pictures" for every bookmark that has none, for example after an import.
+
 The menu button in the popup opens the manager in a tab, with the folder tree on the left, the bookmarks in the middle, search at the top and settings behind the gear. Until there are bookmarks it shows a short prompt to add one, import your browser's bookmarks, or add an address by hand.
 
 ## 5. Day to day

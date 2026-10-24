@@ -23,6 +23,7 @@ Everything a test reads or writes is under `tests/`, except the Go tests, which 
 | `npm run e2e`                       | Chrome with the built extension and the real helper: first run, saving from the toolbar button with covers and icons, layouts, search, the locking modes, a restarted background, KeePassXC opening the vault                                        |
 | `npm run e2e:more`                  | Key files, import, tags, history, drag and drop, changes made outside BookPass, sync conflict copies, backups, changing the password                                                                                                                 |
 | `npm run e2e:a11y`                  | An axe-core pass over every screen in the light and dark themes                                                                                                                                                                                      |
+| `npm run e2e:pictures`              | The bookmark checkbox and dialog spacing in every layout, choosing and removing a site icon and cover, the picture settings and the fetch dialog                                                                                                     |
 | `npm run e2e:security`              | Storage, network, who may use the helper, and the manifest                                                                                                                                                                                           |
 | `npm run e2e:firefox`               | Firefox with a build made only for the test (it opens its own manager and popup, since a script cannot press the toolbar button): creating and unlocking a vault, saving pages with covers and icons, the lock setting, KeePassXC opening the result |
 | `npm run e2e:perf`                  | A 48 MB vault with 10,000 bookmarks. Make it first with `PERF_VAULT=1 npx vitest run tests/unit/perf.test.ts`                                                                                                                                        |
@@ -46,43 +47,45 @@ The scripts have run on Windows (Chrome 156, Firefox 158) and on Ubuntu 26.04 in
 ### Saving
 
 6. On a normal page click the button. Expect the title, a cover picture and a folder choice. Save it, and see it in the manager with its cover and site icon.
-7. Press `Alt+Shift+B` on another page. Expect the same popup. (If the shortcut is taken, set it at `chrome://extensions/shortcuts`.)
-8. Right click a page, then a link, then an image, and choose the BookPass entry. Expect "OK" on the toolbar button for a moment and a new bookmark each time. Do it once while locked: expect the manager to open with the address ready to save after you unlock.
-9. Open a browser page such as `chrome://extensions`. Expect "BookPass can only save web pages".
-10. Save a page twice. Expect "You saved this page before", and an update, not a duplicate.
-11. Choose "Save several tabs" with a few tabs open, once for all tabs and once for selected tabs. Expect a permission prompt the first time and a new folder with the tabs.
+7. Edit a bookmark that has no pictures (for example an imported one). In Pictures press Fetch from site for the icon: the browser asks to reach all sites, and afterwards the icon appears. Do the same for the cover, then Remove one and Save. Choose a file of your own for each. Open the extension's permissions page in the browser and confirm that "all sites" is not left granted.
+8. In the settings, Pictures, press Fetch missing pictures and run it on an imported vault. Expect progress, a summary of what was added, a Stop button that works, and no permission left standing afterwards. Switch on "Also read preview images that sit on another server" and run it again on a site that keeps its image on a CDN.
+9. Press `Alt+Shift+B` on another page. Expect the same popup. (If the shortcut is taken, set it at `chrome://extensions/shortcuts`.)
+10. Right click a page, then a link, then an image, and choose the BookPass entry. Expect "OK" on the toolbar button for a moment and a new bookmark each time. Do it once while locked: expect the manager to open with the address ready to save after you unlock.
+11. Open a browser page such as `chrome://extensions`. Expect "BookPass can only save web pages".
+12. Save a page twice. Expect "You saved this page before", and an update, not a duplicate.
+13. Choose "Save several tabs" with a few tabs open, once for all tabs and once for selected tabs. Expect a permission prompt the first time and a new folder with the tabs.
 
 ### Organising
 
-12. Create nested folders with different icons and colors. Search the icon picker for `rocket` and `github`. Expect the whole free set to be found.
-13. Drag a bookmark onto a folder, onto Unsorted, and a folder onto another folder. Choose Manual order and drag bookmarks up and down.
-14. Try all four layouts and the "what to show" menu. Open a folder, switch it to Grid, go to another folder, and come back. Expect each folder to remember its own layout.
-15. Tag several bookmarks at once, rename and merge tags in the tag manager, search with `#tag`, `domain:`, `type:video`, `is:fav`. Favorite one.
-16. Trash a bookmark and a folder, restore them, empty the trash.
-17. Edit a bookmark twice and open "Earlier versions". Restore the first one.
+14. Create nested folders with different icons and colors. Search the icon picker for `rocket` and `github`. Expect the whole free set to be found.
+15. Drag a bookmark onto a folder, onto Unsorted, and a folder onto another folder. Choose Manual order and drag bookmarks up and down.
+16. Try all four layouts and the "what to show" menu. Open a folder, switch it to Grid, go to another folder, and come back. Expect each folder to remember its own layout.
+17. Tag several bookmarks at once, rename and merge tags in the tag manager, search with `#tag`, `domain:`, `type:video`, `is:fav`. Favorite one.
+18. Trash a bookmark and a folder, restore them, empty the trash.
+19. Edit a bookmark twice and open "Earlier versions". Restore the first one.
 
 ### Settings and locking
 
-18. Try each locking choice: "when the browser closes", inactivity (set one minute and wait), computer idle or locked (lock the screen and come back), every time (close the manager and popup, then open one), and never (restart the browser and expect no password prompt). Note any that does not behave as the text says.
-19. Change the master password, lock, and unlock with the new one. Make a key file vault on another path and check that the password alone is refused.
-20. Settings, Backups. Expect a list. Restore one and check the bookmarks go back.
-21. Dark and light themes, and a narrow window.
+20. Try each locking choice: "when the browser closes", inactivity (set one minute and wait), computer idle or locked (lock the screen and come back), every time (close the manager and popup, then open one), and never (restart the browser and expect no password prompt). Note any that does not behave as the text says.
+21. Change the master password, lock, and unlock with the new one. Make a key file vault on another path and check that the password alone is refused.
+22. Settings, Backups. Expect a list. Restore one and check the bookmarks go back.
+23. Dark and light themes, and a narrow window.
 
 ### Other programs and computers
 
-22. Open the vault in KeePassXC with the same password. Expect folders as groups and bookmarks as entries. Add an entry there, and expect it in BookPass within about 30 seconds (or when you click the page).
-23. Put the vault in a synced folder (Syncthing, OneDrive or Dropbox) on two computers. Edit different bookmarks on both and check both changes survive. Edit the same bookmark on both and check the notice about it.
-24. Make the sync tool leave a conflict copy (or copy the vault to `bookmarks.sync-conflict-1.kdbx`) and check the "Merge it" notice.
+24. Open the vault in KeePassXC with the same password. Expect folders as groups and bookmarks as entries. Add an entry there, and expect it in BookPass within about 30 seconds (or when you click the page).
+25. Put the vault in a synced folder (Syncthing, OneDrive or Dropbox) on two computers. Edit different bookmarks on both and check both changes survive. Edit the same bookmark on both and check the notice about it.
+26. Make the sync tool leave a conflict copy (or copy the vault to `bookmarks.sync-conflict-1.kdbx`) and check the "Merge it" notice.
 
 ### Import and export
 
-25. Import your browser's bookmarks, then an exported HTML file, then a Raindrop CSV. Expect a preview with counts, duplicates skipped, and a new "Imported" folder.
-26. Export to HTML, CSV and JSON. Import the HTML into a fresh browser profile.
-27. Find duplicates after importing the same bookmarks without skipping.
+27. Import your browser's bookmarks, then an exported HTML file, then a Raindrop CSV. Expect a preview with counts, duplicates skipped, and a new "Imported" folder.
+28. Export to HTML, CSV and JSON. Import the HTML into a fresh browser profile.
+29. Find duplicates after importing the same bookmarks without skipping.
 
 ### Other systems
 
-28. Firefox: load the add-on, check the same first run and saving steps. Add-ons loaded as temporary are removed when Firefox closes, so a daily Firefox needs the signed store version.
-29. Linux with a Flatpak or Snap browser: run the helper and check whether the browser can start it. If not, note which browser and version.
-30. macOS: unpack the helper, clear the quarantine mark, run it, and repeat the first run steps.
-31. The VMware or any other desktop with a real screen: look for anything that is cut off, too small, or hard to read.
+30. Firefox: load the add-on, check the same first run and saving steps. Add-ons loaded as temporary are removed when Firefox closes, so a daily Firefox needs the signed store version.
+31. Linux with a Flatpak or Snap browser: run the helper and check whether the browser can start it. If not, note which browser and version.
+32. macOS: unpack the helper, clear the quarantine mark, run it, and repeat the first run steps.
+33. The VMware or any other desktop with a real screen: look for anything that is cut off, too small, or hard to read.

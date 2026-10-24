@@ -20,17 +20,18 @@
 
 ## Permissions
 
-| Permission                  | Why                                                                                      |
-| --------------------------- | ---------------------------------------------------------------------------------------- |
-| `nativeMessaging`           | Reaches the helper                                                                       |
-| `storage`                   | Settings, and the unlock key in memory                                                   |
-| `activeTab` and `scripting` | Reads the one page you save, only after you press the button or use the menu or shortcut |
-| `contextMenus`              | The right click save entries                                                             |
-| `alarms` and `idle`         | The locking timers                                                                       |
-| `tabs` (optional)           | Asked for when you save several tabs                                                     |
-| `bookmarks` (optional)      | Asked for when you import your browser's bookmarks                                       |
+| Permission                  | Why                                                                                                            |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `nativeMessaging`           | Reaches the helper                                                                                             |
+| `storage`                   | Settings, and the unlock key in memory                                                                         |
+| `activeTab` and `scripting` | Reads the one page you save, only after you press the button or use the menu or shortcut                       |
+| `contextMenus`              | The right click save entries                                                                                   |
+| `alarms` and `idle`         | The locking timers                                                                                             |
+| `tabs` (optional)           | Asked for when you save several tabs                                                                           |
+| `bookmarks` (optional)      | Asked for when you import your browser's bookmarks                                                             |
+| all sites (optional)        | Asked for when you press a button that fetches pictures from your bookmarked sites, and handed back afterwards |
 
-There is no host permission, no content script and no access to all sites. The content security policy is `script-src 'self' 'wasm-unsafe-eval'; object-src 'self'`. `wasm-unsafe-eval` is needed to run Argon2 as WebAssembly, and there is no `unsafe-eval`, inline script or remote code.
+There is no host permission held at rest, no content script and no standing access to any site. The optional all sites permission is requested only when you press a fetch button and is removed again when the job ends. The content security policy is `script-src 'self' 'wasm-unsafe-eval'; object-src 'self'`. `wasm-unsafe-eval` is needed to run Argon2 as WebAssembly, and there is no `unsafe-eval`, inline script or remote code.
 
 ## Review of 24 October 2026
 
@@ -38,10 +39,10 @@ The checks below are automated and run with the end to end scripts (`npm run e2e
 
 - Storage: no bookmark text in `storage.local`, `storage.session`, `localStorage`, IndexedDB or caches. `storage.local` holds only the settings. `storage.session` holds only the unlock key and the last activity time. The unlock key is a hash, not the password.
 - Files: the vault file contains no readable bookmark text. No temporary file is left behind. The helper config holds only the vault path and backup count.
-- Network: the extension pages and the background made no network request during a full session. The only `fetch` calls are in the injected page reader (against the page's own site, to read its images) and on a `data:` URL.
+- Network: the extension pages and the background made no network request during a full session. The `fetch` calls are in the injected page reader (against the page's own site, to read its images) and in the picture fetcher (`src/fetch-pictures.ts`), which runs only after you press a fetch button, with no cookies and no referrer, against the bookmarked site and, only if you allow it, the image server the page names.
 - Logging: the only console output is an error line for an unexpected failure, which prints the request name and the error, never the data.
 - Callers: a second extension asking for the helper is refused by the browser ("forbidden").
-- Manifest: only the permissions above, no host permissions, no content scripts, and the policy above.
+- Manifest: only the permissions above, no required host permissions, `*://*/*` as the one optional host permission, no content scripts, and the policy above.
 - Dependencies: `npm audit --omit=dev` reports no vulnerabilities. kdbxweb is unmaintained since 2021, and its XML library `@xmldom/xmldom` had a high severity advisory, so the repository pins the patched 0.8.15 with an override. Replacing or vendoring kdbxweb is worth considering before 1.0.
 - Format: golden files from BookPass and from KeePassXC open in the tests, and a flipped byte in the signature, header, header hash, encrypted data or last block makes the vault fail to open.
 

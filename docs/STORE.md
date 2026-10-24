@@ -26,7 +26,7 @@ What you can do
 
 How it works
 
-BookPass needs a small helper program to read and write the vault file, because browsers cannot write to a folder of your choice. You install it once (run it and it sets itself up for your user, no administrator rights). The helper only ever sees the encrypted file. BookPass makes no network requests and collects nothing.
+BookPass needs a small helper program to read and write the vault file, because browsers cannot write to a folder of your choice. You install it once (run it and it sets itself up for your user, no administrator rights). The helper only ever sees the encrypted file. BookPass collects nothing and contacts a bookmarked site only when you ask it to fetch that site’s pictures.
 
 Open source. Icons by Font Awesome (CC BY 4.0).
 
@@ -46,7 +46,7 @@ Saves and organises the user's bookmarks in an encrypted local file.
 | tabs (optional)      | Asked for only when the user saves all open tabs                                                                                               |
 | bookmarks (optional) | Asked for only when the user imports their browser bookmarks                                                                                   |
 
-No host permissions are requested.
+No host permission is held. The optional all sites permission is requested only when you press a button that fetches site icons or cover pictures from your bookmarked sites, and removed again afterwards. Requests carry no cookies and no referrer, and go only to the bookmarked sites.
 
 ## Data use answers
 

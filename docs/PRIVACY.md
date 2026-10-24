@@ -1,6 +1,6 @@
 # Privacy policy
 
-BookPass collects nothing. It has no server, no account, no analytics and no telemetry, and the extension makes no network requests.
+BookPass collects nothing. It has no server, no account, no analytics and no telemetry, and the extension makes a network request only when you press a button that fetches pictures from a bookmarked site.
 
 ## What BookPass keeps
 
@@ -13,9 +13,11 @@ BookPass collects nothing. It has no server, no account, no analytics and no tel
 - When you save a page, BookPass reads that one page (its title, description, icon and preview image) or takes a screenshot of the visible tab. This happens only when you press the BookPass button, use its right click menu or its keyboard shortcut.
 - If you choose to save several tabs or import your browser's bookmarks, BookPass asks for the extra permission at that moment and reads titles and addresses only.
 
+- If you ask BookPass to fetch a bookmark's site icon or cover picture, or to fetch the missing pictures of many bookmarks, it asks your browser for permission to reach all sites, makes an ordinary request to each bookmarked site (and, only if you switch on "Also read preview images that sit on another server", to the image server that page names), and hands the permission back when it finishes. Those requests carry no cookies and no referrer. BookPass never asks a favicon service, search engine or any other third party about your bookmarks, and never fetches anything in the background.
+
 ## What leaves your computer
 
-Nothing is sent anywhere by BookPass. If you put your vault file in a folder that a sync tool such as Syncthing, OneDrive or Dropbox keeps in step, that tool copies the encrypted file, under its own terms.
+BookPass sends nothing anywhere, apart from the picture requests above, which go to the sites you bookmarked and nobody else. If you put your vault file in a folder that a sync tool such as Syncthing, OneDrive or Dropbox keeps in step, that tool copies the encrypted file, under its own terms.
 
 ## Contact
 

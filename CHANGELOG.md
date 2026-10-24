@@ -10,6 +10,7 @@ All notable changes are listed here. The project follows [semantic versioning](h
 - A Go native helper that reads and writes the vault atomically with rotating backups, and installs itself for the current user on Windows, macOS and Linux.
 - Folders with icons and colors, tags, favorites, trash, search, four layouts, sorting, manual order, drag and drop, bulk edit, and earlier versions of each bookmark.
 - Saving the current page from the toolbar button, the right click menu or a keyboard shortcut, with a site icon and a cover picture read from the page or taken as a tab screenshot, using only the `activeTab` permission. Saving all or selected tabs.
+- Pictures you control. Fetching a site icon or cover picture for one bookmark from its edit dialog, choosing your own picture from a file, removing either, and "Fetch missing pictures" in the settings for every bookmark that has none. Fetching reads only the bookmarked site, with no cookies and no referrer, after the browser's permission prompt, which is handed back afterwards. Preview images on another server are read only if you switch that on.
 - Locking settings: when the browser closes, after inactivity, when the computer is idle or locked, every time the popup or manager closes, or never.
 - Optional key file, changing the master password, and restoring backups.
 - Merging of changes made by another computer, a sync tool or KeePassXC, with a list of bookmarks edited on both sides and merging of sync tool conflict copies.
