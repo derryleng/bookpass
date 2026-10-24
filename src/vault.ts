@@ -254,14 +254,16 @@ export class Vault {
 
   /** Writes any pending changes, then forgets the vault and the key. */
   async lock(): Promise<Status> {
+    let lost: string | undefined;
     if (this.db && this.saveState !== "saved") {
       try {
         await this.saveNow();
-      } catch {
-        // The error is already recorded. Locking must still work, so the key is dropped anyway.
+      } catch (e) {
+        // Locking must still work, so the key is dropped anyway, but the unlock screen says what was lost.
+        lost = `Changes could not be saved and were lost: ${e instanceof Error ? e.message : String(e)}`;
       }
     }
-    await this.forget();
+    await this.forget(lost);
     return this.status();
   }
 
@@ -428,10 +430,17 @@ export class Vault {
       if (!now.exists || now.sha256 === this.fileHash) return;
       try {
         if (this.saveState === "saved") {
+          const editsBefore = this.edits;
           const file = await helper.readVault();
           if (!file) return;
           const { db } = await this.open(file.bytes, this.creds!);
+          if (!this.db) return; // locked while the file was loading
           this.fileHash = file.sha256;
+          if (this.edits !== editsBefore) {
+            // Edited while the file loaded, so keep those edits and merge the new file into them.
+            this.mergeIn(this.db, db);
+            return;
+          }
           this.db = db;
           this.lastSync = Date.now();
           this.rev++;
