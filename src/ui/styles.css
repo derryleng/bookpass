@@ -1389,3 +1389,27 @@ fieldset.pictures legend {
   background: var(--surface-2) center / cover no-repeat;
   color: var(--muted);
 }
+
+/* The sites a bulk picture fetch would contact, each of which can be left out. */
+fieldset.site-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  min-width: 0;
+}
+
+fieldset.site-list ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+fieldset.site-list li {
+  padding: 3px 0;
+}

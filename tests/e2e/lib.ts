@@ -87,6 +87,13 @@ async function createSession(
     );
     if (req.url === '/cover.svg') return send('image/svg+xml', art('#3d5afe', '#12a594'));
     if (req.url === '/icon.svg') return send('image/svg+xml', icon);
+    // An address that hands the visitor to a different site, as short links and trackers do.
+    if (req.url === '/redirect') {
+      res.writeHead(302, {
+        location: `http://localhost:${req.headers.host?.split(':')[1]}/article`,
+      });
+      return res.end();
+    }
     if (req.url === '/article') {
       return send(
         'text/html',

@@ -185,6 +185,8 @@ interface FolderDialogProps {
   parentId?: string | null;
   onClose: () => void;
   onDeleted?: () => void;
+  /** Opens the tool that fetches missing pictures for some bookmarks. */
+  onFetchPictures?: (scope: string, bookmarks: Bookmark[]) => void;
 }
 
 export function FolderDialog({
@@ -193,6 +195,7 @@ export function FolderDialog({
   parentId = null,
   onClose,
   onDeleted,
+  onFetchPictures,
 }: FolderDialogProps) {
   const tree = buildTree(snapshot.folders, snapshot.bookmarks);
   const [name, setName] = useState(folder?.name ?? '');
@@ -284,6 +287,31 @@ export function FolderDialog({
           />
         </label>
         <IconPicker icon={icon} color={color} onIcon={setIcon} onColor={setColor} />
+        {folder && onFetchPictures && (
+          <div className="field">
+            <span>Pictures</span>
+            <div className="row">
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  const inside = descendantIds(tree, folder.id);
+                  onClose();
+                  onFetchPictures(
+                    `the folder ${folder.name}`,
+                    snapshot.bookmarks.filter((b) => b.folderId !== null && inside.has(b.folderId)),
+                  );
+                }}
+              >
+                <I n="globe" /> Fetch missing pictures…
+              </button>
+            </div>
+            <span className="hint" style={{ fontWeight: 400 }}>
+              For the bookmarks in this folder and the folders inside it. You choose which sites to
+              contact first.
+            </span>
+          </div>
+        )}
         {error && <div className="callout error">{error}</div>}
       </form>
     </Dialog>

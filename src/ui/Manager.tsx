@@ -9,6 +9,7 @@ import { BookmarkDialog } from './Dialogs';
 import { I } from './Icon';
 import { useIconsFor } from './icon-library';
 import { DuplicatesDialog, ExportDialog, ImportDialog } from './ImportExport';
+import { FetchMissingDialog } from './FetchMissing';
 import { FolderSelect, errorText } from './parts';
 import { SettingsPanel } from './SettingsPanel';
 import { Shell, type PageContext } from './Shell';
@@ -91,6 +92,7 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
     return saved ? { initial: saved } : undefined;
   });
   const [tool, setTool] = useState<Tool>();
+  const [fetching, setFetching] = useState<{ scope: string; bookmarks: Bookmark[] }>();
   const [bulkTag, setBulkTag] = useState('');
   const [error, setError] = useState<string>();
   const searchRef = useRef<HTMLInputElement>(null);
@@ -260,6 +262,14 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
                 {label}
               </button>
             ))}
+            <button
+              onClick={(e) => {
+                setFetching({ scope: 'all your bookmarks', bookmarks: snapshot.bookmarks });
+                e.currentTarget.closest('details')?.removeAttribute('open');
+              }}
+            >
+              Fetch missing pictures…
+            </button>
           </div>
         </details>
         <button
@@ -284,6 +294,7 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
         snapshot={snapshot}
         selection={page === 'bookmarks' ? selection : { kind: 'search' }}
         onSelect={open}
+        onFetchPictures={(scope, bookmarks) => setFetching({ scope, bookmarks })}
       />
 
       <main className="main">
@@ -440,6 +451,17 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
                     >
                       <I n="trash" /> Trash
                     </button>
+                    <button
+                      className="btn"
+                      onClick={() =>
+                        setFetching({
+                          scope: `the ${picked.size} selected bookmark${picked.size === 1 ? '' : 's'}`,
+                          bookmarks: snapshot.bookmarks.filter((b) => picked.has(b.id)),
+                        })
+                      }
+                    >
+                      <I n="globe" /> Pictures…
+                    </button>
                   </>
                 )}
                 <button className="btn" onClick={afterBulk}>
@@ -490,6 +512,15 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
         <DuplicatesDialog snapshot={snapshot} onClose={() => setTool(undefined)} />
       )}
       {tool === 'tags' && <TagDialog snapshot={snapshot} onClose={() => setTool(undefined)} />}
+      {fetching && (
+        <FetchMissingDialog
+          bookmarks={fetching.bookmarks}
+          scope={fetching.scope}
+          settings={status.settings}
+          vaultBytes={status.vaultBytes}
+          onClose={() => setFetching(undefined)}
+        />
+      )}
     </div>
   );
 }

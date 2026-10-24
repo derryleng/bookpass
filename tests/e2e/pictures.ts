@@ -2,16 +2,24 @@
 // border and the text in every layout, dialogs have the same room on every side, a bookmark can be given its own
 // site icon and cover and have them taken away, and the settings offer the picture options.
 //
-// Fetching from a site needs the browser's permission prompt, which a script cannot answer, so that part is checked
-// by hand (see docs/TESTING.md).
+// Fetching pictures from a site is tried against the test site, with a build made just for the test (WXT_E2E=1, in
+// tests/output/build) that already holds the permission to reach sites. The browser's real permission prompt cannot be
+// answered by a script, so that is checked by hand (see docs/TESTING.md).
 //
-//   npm run build && npm run helper:build && node tests/e2e/pictures.ts
+//   npm run helper:build && node tests/e2e/pictures.ts
+import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page } from 'puppeteer-core';
-import { fixtures, outputDir, password, sleep, startSession } from './lib.ts';
+import { fixtures, outputDir, password, root, sleep, startSession } from './lib.ts';
 
-const { check, openPage, text, hasText, click, type, shot, finish } =
+execFileSync(process.execPath, [join(root, 'node_modules/wxt/bin/wxt.mjs'), 'build'], {
+  env: { ...process.env, WXT_E2E: '1' },
+  stdio: 'ignore',
+});
+process.env.BOOKPASS_EXTENSION_DIR = join(outputDir, 'build/chrome-mv3');
+
+const { site, check, openPage, text, hasText, click, type, shot, finish } =
   await startSession('pictures');
 
 const importPath = join(fixtures, 'bookmarks.html');
@@ -182,7 +190,116 @@ try {
     !removed.cover.startsWith('url(') && removed.icons === 0,
   );
 
-  // 6. The settings: picture options and the tool for filling in what is missing.
+  // 6. Fetch pictures from a site: for one bookmark, for everything, and for a folder or a selection.
+  const addBookmark = async (url: string, title: string) => {
+    await click(manager, 'button', 'Add bookmark');
+    await manager.waitForSelector('dialog[open] input[type=url]');
+    await manager.type('dialog[open] input[type=url]', url);
+    await manager.type('dialog[open] input:not([type])', title);
+    await click(manager, 'dialog button', 'Save');
+    await sleep(1200);
+  };
+  await addBookmark(`${site}/article`, 'Local article');
+  await addBookmark(`${site}/redirect`, 'Local redirect');
+
+  await manager.evaluate(() =>
+    [...document.querySelectorAll('.bm')]
+      .find((b) => b.textContent?.includes('Local article'))
+      ?.querySelector<HTMLButtonElement>('.bm-actions button[aria-label=Edit]')
+      ?.click(),
+  );
+  await manager.waitForSelector('dialog[open] fieldset.pictures');
+  await manager.evaluate(() => {
+    for (const b of document.querySelectorAll<HTMLButtonElement>(
+      'dialog[open] .picture-actions button',
+    ))
+      if (b.innerText.includes('Fetch from site')) b.click();
+  });
+  const fetched = await manager
+    .waitForFunction(
+      () =>
+        !!document.querySelector('dialog[open] .picture-icon img.favicon') &&
+        !!document.querySelector<HTMLElement>('dialog[open] .picture-cover')?.style.backgroundImage,
+      { timeout: 20000 },
+    )
+    .then(
+      () => true,
+      () => false,
+    );
+  check('one bookmark can fetch its own icon and cover from its site', fetched);
+  await shot(manager, 'fetched-one');
+  await click(manager, 'dialog button', 'Cancel');
+
+  const bulk = await openPage('options.html');
+  await hasText(bulk, 'Pictures');
+  await click(bulk, 'button', 'Fetch missing pictures…');
+  await bulk.waitForSelector('dialog[open] .site-list');
+  const sites = await text(bulk);
+  check(
+    'the fetch dialog lists the sites it would contact',
+    sites.includes('Sites to contact') &&
+      sites.includes('news.test') &&
+      sites.includes('127.0.0.1'),
+  );
+  await bulk.evaluate(() =>
+    [...document.querySelectorAll<HTMLButtonElement>('dialog[open] .site-list button')]
+      .find((b) => b.innerText === 'Untick all')
+      ?.click(),
+  );
+  await bulk.evaluate(() =>
+    [...document.querySelectorAll('dialog[open] .site-list label')]
+      .find((l) => (l as HTMLElement).innerText.includes('127.0.0.1'))
+      ?.querySelector('input')
+      ?.click(),
+  );
+  await sleep(300);
+  check(
+    'sites can be left out',
+    await hasText(bulk, 'Fetch for 2 bookmarks', 3000),
+    'only the test site is ticked',
+  );
+  await shot(bulk, 'fetch-sites');
+  await click(bulk, 'dialog button', 'Fetch for 2 bookmarks');
+  const done = await hasText(bulk, '2 of 2 looked at', 40000);
+  const summary = await text(bulk);
+  check('the bulk fetch runs only for the ticked site', done && !summary.includes('news.test'));
+  check(
+    'an address that redirects to a different site is left alone',
+    summary.includes('redirects to a different site'),
+  );
+  check(
+    'the other bookmark got its cover',
+    /Added \d+ icons? and 1 cover\b/.test(summary),
+    summary.match(/Added[^.]*\./)?.[0],
+  );
+  await shot(bulk, 'fetch-done');
+  await click(bulk, 'dialog button', 'Close');
+
+  // The same tool from a folder and from a picked set of bookmarks.
+  await manager.evaluate(() =>
+    document.querySelector<HTMLButtonElement>('button[aria-label^="Edit Imported"]')?.click(),
+  );
+  await manager.waitForSelector('dialog[open] #folder-form');
+  await click(manager, 'dialog button', 'Fetch missing pictures…');
+  await manager.waitForFunction(() => document.body.innerText.includes('Sites to contact'), {
+    timeout: 5000,
+  });
+  const folderText = await text(manager);
+  check(
+    'a folder can fetch the pictures of its bookmarks',
+    folderText.includes('the folder Imported') && folderText.includes('news.test'),
+  );
+  await click(manager, 'dialog button', 'Cancel');
+  await manager.evaluate(() => document.querySelector<HTMLInputElement>('.bm-check')?.click());
+  await sleep(300);
+  await click(manager, '.bulkbar button', 'Pictures…');
+  await manager.waitForFunction(() => document.body.innerText.includes('the 1 selected bookmark'), {
+    timeout: 5000,
+  });
+  check('the selected bookmarks can fetch their pictures', true);
+  await click(manager, 'dialog button', 'Cancel');
+
+  // 7. The settings: picture options and the tool for filling in what is missing.
   const settings = await openPage('options.html');
   await hasText(settings, 'Pictures');
   const other = 'Also read preview images that sit on another server';

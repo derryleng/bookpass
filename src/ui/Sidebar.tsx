@@ -1,5 +1,5 @@
 import { useMemo, useState, type DragEvent } from 'react';
-import type { Folder } from '../bookmark-model';
+import type { Bookmark, Folder } from '../bookmark-model';
 import { buildTree, descendantIds, tagCounts, type Selection, type TreeNode } from '../browse';
 import type { SnapshotReply } from '../messages';
 import { send } from './api';
@@ -11,6 +11,7 @@ interface Props {
   snapshot: SnapshotReply;
   selection: Selection;
   onSelect: (selection: Selection) => void;
+  onFetchPictures: (scope: string, bookmarks: Bookmark[]) => void;
 }
 
 function same(a: Selection, b: Selection): boolean {
@@ -45,7 +46,7 @@ function useDropTarget(folderId: string | null, tree: TreeNode[]) {
   };
 }
 
-export function Sidebar({ snapshot, selection, onSelect }: Props) {
+export function Sidebar({ snapshot, selection, onSelect, onFetchPictures }: Props) {
   const [dialog, setDialog] = useState<{ folder?: Folder; parentId?: string | null }>();
   const [tagDialog, setTagDialog] = useState(false);
   const tree = useMemo(() => buildTree(snapshot.folders, snapshot.bookmarks), [snapshot]);
@@ -152,6 +153,7 @@ export function Sidebar({ snapshot, selection, onSelect }: Props) {
           folder={dialog.folder}
           parentId={dialog.parentId}
           onClose={() => setDialog(undefined)}
+          onFetchPictures={onFetchPictures}
           onDeleted={() =>
             selection.kind === 'folder' &&
             selection.id === dialog.folder?.id &&

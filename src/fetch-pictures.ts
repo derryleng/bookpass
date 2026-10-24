@@ -4,8 +4,13 @@
 //
 // How it keeps the footprint small:
 //  - Nothing happens until the person asks, and never in the background.
-//  - Requests carry no cookies, no referrer and no extra headers, so the site sees only a plain visit to an address
-//    it already knows about from the bookmark.
+//  - Requests carry no cookies, no referrer and no extra headers, and are never kept in the browser's cache, so the
+//    site sees only a plain visit to an address it already knows about from the bookmark.
+//  - Only https addresses are contacted (a plain http request can be read and changed on the way), except for the
+//    computer's own addresses, which never leave it.
+//  - An address that redirects to a different site is not trusted: whatever it returns is thrown away. A browser does
+//    not let an extension stop a redirect before it is followed, so that other site has been asked once, without
+//    cookies or a referrer.
 //  - The page is read once, only far enough to find its picture links. Icons come from the page's own list, then
 //    from /favicon.ico. A cover is taken only from the address, or one on the same site, unless the person has
 //    allowed covers from other servers.
@@ -41,6 +46,25 @@ interface Options {
   signal?: AbortSignal;
 }
 
+const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]']);
+
+/** Whether BookPass will contact this address: https, or an address on this computer. */
+export function canFetch(url: string): boolean {
+  try {
+    const { protocol, hostname } = new URL(url);
+    return protocol === 'https:' || (protocol === 'http:' && LOOPBACK.has(hostname));
+  } catch {
+    return false;
+  }
+}
+
+/** The same site, allowing for www and other subdomains of it. */
+export function sameSite(a: string, b: string): boolean {
+  const host = (url: string) => new URL(url).hostname.replace(/^www\./, '');
+  const [x, y] = [host(a), host(b)];
+  return x === y || x.endsWith(`.${y}`) || y.endsWith(`.${x}`);
+}
+
 /** A GET with nothing extra sent. Returns the body, cut off at `limit` bytes. */
 async function get(url: string, limit: number, signal?: AbortSignal) {
   const guard = AbortSignal.timeout(TIMEOUT_MS);
@@ -48,8 +72,13 @@ async function get(url: string, limit: number, signal?: AbortSignal) {
     credentials: 'omit',
     referrerPolicy: 'no-referrer',
     redirect: 'follow',
+    cache: 'no-store',
     signal: signal ? AbortSignal.any([guard, signal]) : guard,
   });
+  if (response.url && !sameSite(url, response.url)) {
+    void response.body?.cancel().catch(() => {});
+    throw new Error('The address redirects to a different site, so nothing from it was kept');
+  }
   if (!response.ok || !response.body) throw new Error(`The site answered ${response.status}`);
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];
@@ -87,6 +116,12 @@ export async function fetchPictures(
     result.problems.push('Only web addresses can be fetched.');
     return result;
   }
+  if (!canFetch(pageUrl)) {
+    result.problems.push(
+      'The address is plain http, so it was not contacted. Only https is fetched.',
+    );
+    return result;
+  }
 
   let links = { icons: [] as string[], covers: [] as string[] };
   let base = pageUrl;
@@ -105,7 +140,9 @@ export async function fetchPictures(
 
   if (wish.icon) {
     // Icons the page lists, then the classic place. A page's icon host is the page's own choice, so it is fine.
-    for (const candidate of [...new Set([...links.icons, `${site}/favicon.ico`])].slice(0, 4)) {
+    for (const candidate of [...new Set([...links.icons, `${site}/favicon.ico`])]
+      .filter(canFetch)
+      .slice(0, 4)) {
       try {
         const picture = await get(candidate, MAX_PICTURE_BYTES, options.signal);
         result.icon = {
@@ -121,7 +158,9 @@ export async function fetchPictures(
   }
 
   if (wish.cover) {
-    const allowed = links.covers.filter((href) => options.otherServers || origin(href) === site);
+    const allowed = links.covers.filter(
+      (href) => canFetch(href) && (options.otherServers || origin(href) === site),
+    );
     result.skippedOtherServer = allowed.length < links.covers.length;
     for (const candidate of allowed.slice(0, 2)) {
       try {

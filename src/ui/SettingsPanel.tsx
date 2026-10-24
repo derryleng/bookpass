@@ -284,7 +284,8 @@ export function SettingsPanel({
         </div>
         {fetching && snapshot && (
           <FetchMissingDialog
-            snapshot={snapshot}
+            bookmarks={snapshot.bookmarks}
+            scope="all your bookmarks"
             settings={settings}
             vaultBytes={status.vaultBytes}
             onClose={() => setFetching(false)}
