@@ -1339,8 +1339,14 @@ fieldset.pictures legend {
 
 .pictures-grid {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+}
+
+@media (max-width: 560px) {
+  .pictures-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .picture-slot {
@@ -1376,8 +1382,9 @@ fieldset.pictures legend {
 .picture-cover {
   display: grid;
   place-items: center;
-  width: 160px;
-  height: 100px;
+  width: 100%;
+  max-width: 200px;
+  aspect-ratio: 16 / 10;
   border-radius: 8px;
   background: var(--surface-2) center / cover no-repeat;
   color: var(--muted);

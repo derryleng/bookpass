@@ -129,6 +129,28 @@ try {
     preview.icon && preview.cover.startsWith('url('),
   );
   await shot(manager, 'edit-dialog-chosen');
+  for (const width of [1280, 520]) {
+    await manager.setViewport({ width, height: 800 });
+    await sleep(300);
+    const fit = await manager.evaluate(() => {
+      const inside = document
+        .querySelector('dialog[open] fieldset.pictures')!
+        .getBoundingClientRect();
+      const body = document.querySelector<HTMLElement>('dialog[open] .modal-body')!;
+      const out = [...document.querySelectorAll('dialog[open] .picture-slot *')].filter((e) => {
+        const r = e.getBoundingClientRect();
+        return r.width > 0 && (r.right > inside.right + 0.5 || r.left < inside.left - 0.5);
+      });
+      return { out: out.length, scrolls: body.scrollWidth > body.clientWidth };
+    });
+    check(
+      `the pictures stay inside their box at ${width}px wide`,
+      fit.out === 0 && !fit.scrolls,
+      `${fit.out} outside, sideways scroll ${fit.scrolls}`,
+    );
+    await shot(manager, `edit-dialog-${width}`);
+  }
+  await manager.setViewport({ width: 1280, height: 800 });
   await click(manager, 'dialog button', 'Save');
   await sleep(1500);
   const saved = await manager.evaluate(() => ({
