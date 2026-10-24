@@ -1,5 +1,5 @@
 // Small pieces shared by several screens.
-import { useState, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { domainOf, folderOptions, type TreeNode } from '../browse';
 import { useImage } from './api';
 import { I } from './Icon';
@@ -18,6 +18,43 @@ export function Favicon({
   const size = big ? ' big' : '';
   if (src) return <img className={`favicon${size}`} src={src} alt="" />;
   return <span className={`favicon-letter${size}`}>{(domainOf(url) || '?').charAt(0)}</span>;
+}
+
+/**
+ * A tick box that picks everything in a list. With a symbol (the folder's icon, say) it shows only the symbol until
+ * the pointer is over it or something is picked, and without one it shows only when its heading is hovered.
+ */
+export function SelectAll({
+  ids,
+  picked,
+  onPick,
+  label,
+  children,
+}: {
+  ids: string[];
+  picked: Set<string>;
+  onPick: (ids: string[], on: boolean) => void;
+  label: string;
+  children?: ReactNode;
+}) {
+  const count = ids.filter((id) => picked.has(id)).length;
+  const all = ids.length > 0 && count === ids.length;
+  const box = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (box.current) box.current.indeterminate = count > 0 && !all;
+  }, [count, all]);
+  return (
+    <label className={`select-all ${children ? '' : 'bare'} ${count ? 'on' : ''}`}>
+      {children && <span className="select-all-icon">{children}</span>}
+      <input
+        ref={box}
+        type="checkbox"
+        checked={all}
+        onChange={() => onPick(ids, !all)}
+        aria-label={label}
+      />
+    </label>
+  );
 }
 
 /** A folder picker that shows nesting by indenting. null means the top level (Unsorted). */

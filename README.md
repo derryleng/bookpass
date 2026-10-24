@@ -46,6 +46,8 @@ npm run e2e                # Chrome, the real helper and KeePassXC (Windows)
 npm run e2e:more           # key files, import, tags, history, merging, backups, password change
 npm run e2e:a11y           # accessibility, light and dark
 npm run e2e:pictures       # spacing of lists and dialogs, choosing and removing pictures
+npm run e2e:move           # moving the vault to another folder
+npm run e2e:view           # the view menu, the heading tick box and sections
 npm run e2e:security       # storage, network, who may use the helper, the manifest
 npm run e2e:firefox        # the same kind of run in Firefox
 ```

@@ -1,5 +1,5 @@
 // What the manager shows: which bookmarks, in what order, and how folders nest. Pure logic, no React.
-import type { Bookmark, Folder, Snapshot, ViewSettings } from './bookmark-model';
+import type { Bookmark, Folder, GroupKey, Snapshot, ViewSettings } from './bookmark-model';
 
 export type Selection =
   | { kind: 'all' }
@@ -189,6 +189,103 @@ export function bookmarksFor(
     }
   }
   return sortBookmarks(list, view);
+}
+
+// Grouping
+
+export interface BookmarkGroup {
+  key: string;
+  /** The subheading. Empty when the list is not grouped. */
+  title: string;
+  bookmarks: Bookmark[];
+}
+
+/** Folders in the order the tree shows them, each with its names from the top, for grouping by folder. */
+function folderPaths(folders: Folder[]): Map<string, { names: string[]; order: number }> {
+  const tree = buildTree(folders, []);
+  const out = new Map<string, { names: string[]; order: number }>();
+  const walk = (nodes: TreeNode[], above: string[]) => {
+    for (const node of nodes) {
+      const names = [...above, node.folder.name];
+      out.set(node.folder.id, { names, order: out.size });
+      walk(node.children, names);
+    }
+  };
+  walk(tree, []);
+  return out;
+}
+
+const monthLabel = (ms: number) =>
+  new Date(ms).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+const monthKey = (ms: number) => {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+
+/**
+ * Splits the list, which is already in the order the person chose, into sections. Inside a section the order is kept.
+ * The sections themselves run A to Z for titles and websites, newest first for dates, and in tree order for folders.
+ */
+export function groupBookmarks(
+  list: Bookmark[],
+  group: GroupKey,
+  snapshot: Pick<Snapshot, 'folders'>,
+  selection: Selection,
+): BookmarkGroup[] {
+  if (group === 'none') return [{ key: '', title: '', bookmarks: list }];
+
+  const paths = folderPaths(snapshot.folders);
+  const base = selection.kind === 'folder' ? paths.get(selection.id)?.names.length : undefined;
+  const classify: Record<
+    Exclude<GroupKey, 'none'>,
+    (b: Bookmark) => { key: string; title: string; rank: string | number }
+  > = {
+    folder: (b) => {
+      const path = b.folderId ? paths.get(b.folderId) : undefined;
+      if (!path) return { key: '', title: 'Unsorted', rank: Number.MAX_SAFE_INTEGER };
+      // Inside a folder the sections are named from that folder down, and its own bookmarks take its name.
+      const names = base ? path.names.slice(base - 1) : path.names;
+      const title = names.length > 1 && base ? names.slice(1).join(' / ') : names.join(' / ');
+      return { key: b.folderId!, title, rank: path.order };
+    },
+    title: (b) => {
+      const first = b.title.trim().normalize('NFD')[0]?.toUpperCase() ?? '';
+      const letter = /\p{L}/u.test(first) ? first : '#';
+      return { key: letter, title: letter, rank: letter === '#' ? '' : letter };
+    },
+    website: (b) => {
+      const site = domainOf(b.url);
+      return { key: site, title: site || 'No website', rank: site || '\uffff' };
+    },
+    added: (b) => ({
+      key: monthKey(b.created),
+      title: monthLabel(b.created),
+      rank: monthKey(b.created),
+    }),
+    edited: (b) => ({
+      key: monthKey(b.modified),
+      title: monthLabel(b.modified),
+      rank: monthKey(b.modified),
+    }),
+  };
+
+  const sections = new Map<string, BookmarkGroup & { rank: string | number }>();
+  for (const b of list) {
+    const { key, title, rank } = classify[group](b);
+    const section = sections.get(key) ?? { key, title, bookmarks: [], rank };
+    section.bookmarks.push(b);
+    sections.set(key, section);
+  }
+  const dates = group === 'added' || group === 'edited';
+  return [...sections.values()]
+    .sort((a, b) => {
+      const order =
+        typeof a.rank === 'number' || typeof b.rank === 'number'
+          ? Number(a.rank) - Number(b.rank)
+          : a.rank.localeCompare(String(b.rank), undefined, { sensitivity: 'base' });
+      return dates ? -order : order;
+    })
+    .map(({ key, title, bookmarks }) => ({ key, title, bookmarks }));
 }
 
 /** Tags with how many bookmarks use each, most used first. */

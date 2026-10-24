@@ -1,19 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { defaultView, type Bookmark, type SortKey, type ViewSettings } from '../bookmark-model';
-import { bookmarksFor, buildTree, reorder, type Selection } from '../browse';
+import { defaultView, type Bookmark, type ViewSettings } from '../bookmark-model';
+import { bookmarksFor, buildTree, groupBookmarks, reorder, type Selection } from '../browse';
 import type { Layout } from '../settings';
 import { send } from './api';
 import { Banners } from './Banners';
 import { BookmarkList } from './BookmarkList';
 import { BookmarkDialog } from './Dialogs';
-import { I } from './Icon';
+import { I, Icon } from './Icon';
 import { useIconsFor } from './icon-library';
 import { DuplicatesDialog, ExportDialog, ImportDialog } from './ImportExport';
 import { FetchMissingDialog } from './FetchMissing';
-import { FolderSelect, errorText } from './parts';
+import { FolderSelect, SelectAll, errorText } from './parts';
 import { SettingsPanel } from './SettingsPanel';
 import { Shell, type PageContext } from './Shell';
 import { Sidebar } from './Sidebar';
+import { ViewMenu, viewSummary } from './ViewMenu';
 import { TagDialog } from './TagDialog';
 
 const layouts: { value: Layout; icon: string; label: string }[] = [
@@ -21,14 +22,6 @@ const layouts: { value: Layout; icon: string; label: string }[] = [
   { value: 'grid', icon: 'table-cells-large', label: 'Grid' },
   { value: 'headlines', icon: 'bars', label: 'Headlines' },
   { value: 'masonry', icon: 'border-all', label: 'Masonry' },
-];
-
-const sorts: { value: SortKey; label: string }[] = [
-  { value: 'added', label: 'Date added' },
-  { value: 'edited', label: 'Date edited' },
-  { value: 'title', label: 'Title' },
-  { value: 'domain', label: 'Website' },
-  { value: 'manual', label: 'Manual (drag to reorder)' },
 ];
 
 const VIEW_KEY = 'bookpass.view';
@@ -152,6 +145,30 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
   }, []);
 
   const inTrash = selection.kind === 'trash' && !searching;
+  // Sections by subfolder need a folder with its subfolders on, and the trash has no folders to follow.
+  const group =
+    inTrash || (view.group === 'folder' && folder && !view.subfolders) ? 'none' : view.group;
+  const groups = useMemo(
+    () => groupBookmarks(list, group, snapshot, selection),
+    [list, group, snapshot, selection],
+  );
+  const headIcon = folder ? (
+    <Icon name={folder.icon} />
+  ) : (
+    <I
+      n={
+        {
+          all: 'layer-group',
+          unsorted: 'inbox',
+          favorites: 'star',
+          trash: 'trash',
+          search: 'magnifying-glass',
+          folder: 'folder',
+          tag: 'tag',
+        }[searching ? 'search' : selection.kind]
+      }
+    />
+  );
   const title = searching
     ? 'Search results'
     : {
@@ -164,6 +181,15 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
         tag: selection.kind === 'tag' ? `Tag: ${selection.tag}` : '',
       }[selection.kind];
 
+  const pick = (pickIds: string[], on: boolean) =>
+    setPicked((current) => {
+      const next = new Set(current);
+      for (const id of pickIds) {
+        if (on) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
   const toggle = (id: string) =>
     setPicked((current) => {
       const next = new Set(current);
@@ -182,7 +208,8 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
   }
 
   const save = status.saveState;
-  const manual = view.sort === 'manual' && !searching && selection.kind !== 'trash';
+  const manual =
+    view.sort === 'manual' && group === 'none' && !searching && selection.kind !== 'trash';
 
   return (
     <div className="mgr">
@@ -304,9 +331,23 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
         ) : (
           <>
             <div className="content-head">
-              {folder && <I n="folder" />}
-              <h1>{title}</h1>
-              <span className="muted">{list.length}</span>
+              <div className="head-line">
+                {list.length > 0 && (
+                  <SelectAll
+                    ids={list.map((b) => b.id)}
+                    picked={picked}
+                    onPick={pick}
+                    label={`Select all ${list.length} bookmarks here`}
+                  >
+                    <span style={folder?.color ? { color: folder.color } : undefined}>
+                      {headIcon}
+                    </span>
+                  </SelectAll>
+                )}
+                <h1>{title}</h1>
+                <span className="muted">{list.length}</span>
+              </div>
+              <span className="view-summary">{viewSummary(view, !!folder)}</span>
               <div className="view-controls">
                 {inTrash && snapshot.trash.length > 0 && (
                   <button
@@ -319,35 +360,7 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
                     Empty trash
                   </button>
                 )}
-                {folder && (
-                  <button
-                    className={`btn small ${view.subfolders ? 'active' : ''}`}
-                    onClick={() => updateView({ subfolders: !view.subfolders })}
-                    title="Also show bookmarks from subfolders"
-                  >
-                    <I n="folder-open" /> Subfolders
-                  </button>
-                )}
-                <select
-                  className="select"
-                  value={view.sort}
-                  onChange={(e) => updateView({ sort: e.target.value as SortKey })}
-                  aria-label="Sort by"
-                >
-                  {sorts.map((s) => (
-                    <option key={s.value} value={s.value}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  className="btn square"
-                  onClick={() => updateView({ sortDir: view.sortDir === 'asc' ? 'desc' : 'asc' })}
-                  title={view.sortDir === 'asc' ? 'Ascending' : 'Descending'}
-                  aria-label="Reverse sort order"
-                >
-                  <I n={view.sortDir === 'asc' ? 'arrow-up-wide-short' : 'arrow-down-short-wide'} />
-                </button>
+                <ViewMenu view={view} inFolder={!!folder} onChange={updateView} />
                 <div className="segmented" role="group" aria-label="Layout">
                   {layouts.map((l) => (
                     <button
@@ -362,29 +375,6 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
                     </button>
                   ))}
                 </div>
-                <details className="menu">
-                  <summary className="btn square" title="What to show" aria-label="What to show">
-                    <I n="sliders" />
-                  </summary>
-                  <div className="menu-list">
-                    {(
-                      [
-                        ['showCover', 'Cover pictures'],
-                        ['showNote', 'Notes'],
-                        ['showTags', 'Tags'],
-                      ] as ['showCover' | 'showNote' | 'showTags', string][]
-                    ).map(([key, label]) => (
-                      <label key={key}>
-                        <input
-                          type="checkbox"
-                          checked={view[key]}
-                          onChange={(e) => updateView({ [key]: e.target.checked })}
-                        />
-                        {label}
-                      </label>
-                    ))}
-                  </div>
-                </details>
               </div>
             </div>
 
@@ -474,11 +464,12 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
               <EmptyState searching={searching} selection={selection} onAdd={() => setDialog({})} />
             ) : (
               <BookmarkList
-                bookmarks={list}
+                groups={groups}
                 view={view}
                 selected={picked}
                 inTrash={inTrash}
                 onToggle={toggle}
+                onPick={pick}
                 onEdit={(bookmark) => setDialog({ bookmark })}
                 onTag={(tag) => open({ kind: 'tag', tag })}
                 onReorder={

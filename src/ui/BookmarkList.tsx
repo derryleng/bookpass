@@ -1,20 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Bookmark, ViewSettings } from '../bookmark-model';
-import { domainOf } from '../browse';
+import { domainOf, type BookmarkGroup } from '../browse';
 import { send, useImage } from './api';
 import { isOurs, readDrag, startDrag } from './dnd';
 import { I } from './Icon';
-import { Favicon } from './parts';
+import { Favicon, SelectAll } from './parts';
 
 /** Bookmarks drawn this many at a time, adding more as the page is scrolled. */
 const PAGE = 60;
 
 interface Props {
-  bookmarks: Bookmark[];
+  /** The bookmarks in sections, or a single section with no title when they are not grouped. */
+  groups: BookmarkGroup[];
   view: ViewSettings;
   selected: Set<string>;
   inTrash: boolean;
   onToggle: (id: string) => void;
+  /** Picks or drops several at once, for the tick box of a section. */
+  onPick: (ids: string[], on: boolean) => void;
   onEdit: (bookmark: Bookmark) => void;
   onTag: (tag: string) => void;
   /** Set when the list is in manual order, so dropping one bookmark on another reorders them. */
@@ -22,17 +25,19 @@ interface Props {
 }
 
 export function BookmarkList({
-  bookmarks,
+  groups,
   view,
   selected,
   inTrash,
   onToggle,
+  onPick,
   onEdit,
   onTag,
   onReorder,
 }: Props) {
   // How many are drawn. It starts over when the list is replaced by another one.
-  const listKey = `${bookmarks[0]?.id}:${view.layout}`;
+  const total = groups.reduce((n, g) => n + g.bookmarks.length, 0);
+  const listKey = `${groups[0]?.bookmarks[0]?.id}:${view.layout}:${view.group}`;
   const [paging, setPaging] = useState({ listKey, shown: PAGE });
   const shown = paging.listKey === listKey ? paging.shown : PAGE;
   const sentinel = useRef<HTMLDivElement>(null);
@@ -48,27 +53,54 @@ export function BookmarkList({
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, [bookmarks.length, shown, listKey]);
+  }, [total, shown, listKey]);
+
+  // The sections, with as many bookmarks drawn as have been scrolled to.
+  const { visible } = groups.reduce(
+    (acc, g) => {
+      const part = g.bookmarks.slice(0, Math.max(0, shown - acc.used));
+      if (part.length) acc.visible.push({ ...g, bookmarks: part, all: g.bookmarks });
+      acc.used += g.bookmarks.length;
+      return acc;
+    },
+    { visible: [] as (BookmarkGroup & { all: Bookmark[] })[], used: 0 },
+  );
 
   return (
     <>
-      <div className={`layout-${view.layout} ${selected.size ? 'selecting' : ''}`}>
-        {bookmarks.slice(0, shown).map((b) => (
-          <BookmarkItem
-            key={b.id}
-            bookmark={b}
-            view={view}
-            selected={selected.has(b.id)}
-            inTrash={inTrash}
-            onToggle={() => onToggle(b.id)}
-            onEdit={() => onEdit(b)}
-            onTag={onTag}
-            dragIds={selected.has(b.id) ? [...selected] : [b.id]}
-            onReorder={onReorder}
-          />
-        ))}
-      </div>
-      {shown < bookmarks.length && (
+      {visible.map((group) => (
+        <section className="group" key={group.key} aria-label={group.title || undefined}>
+          {group.title && (
+            <header className="group-head">
+              <SelectAll
+                ids={group.all.map((b) => b.id)}
+                picked={selected}
+                onPick={onPick}
+                label={`Select everything under ${group.title}`}
+              />
+              <h2>{group.title}</h2>
+              <span className="muted">{group.all.length}</span>
+            </header>
+          )}
+          <div className={`layout-${view.layout} ${selected.size ? 'selecting' : ''}`}>
+            {group.bookmarks.map((b) => (
+              <BookmarkItem
+                key={b.id}
+                bookmark={b}
+                view={view}
+                selected={selected.has(b.id)}
+                inTrash={inTrash}
+                onToggle={() => onToggle(b.id)}
+                onEdit={() => onEdit(b)}
+                onTag={onTag}
+                dragIds={selected.has(b.id) ? [...selected] : [b.id]}
+                onReorder={onReorder}
+              />
+            ))}
+          </div>
+        </section>
+      ))}
+      {shown < total && (
         <div className="more" ref={sentinel}>
           <I n="spinner" spin />
         </div>

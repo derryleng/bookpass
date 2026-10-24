@@ -38,6 +38,8 @@ The menu button in the popup opens the manager in a tab, with the folder tree on
 
 - By default the vault stays unlocked until you close the browser, then asks for the password again. Settings has five choices: when the browser closes, after inactivity (you pick the minutes), when the computer is idle or locked, every time you close BookPass, and never (which keeps the unlock key on this computer, with a warning).
 - Right click on a page, link or image saves it. The popup can also save all or just the selected tabs into a new folder.
+- Move the vault: Settings, Vault file, Move vault. Browse opens your system's folder dialog (or type the folder if there is none), the new place is checked before anything moves, a folder that does not exist yet is created, and the backups come along. BookPass stays unlocked.
+- Tick the icon beside a list's heading (hover it to reveal the tick box) to pick everything in the folder, including its subfolders when they are included. The View menu holds sorting, sections (by subfolder, title, website, date added or date edited, each with a subheading and a rule), including subfolders, and what to show on each bookmark. Each folder remembers its own view.
 - The helper keeps rotating backups of the vault, and each bookmark keeps its earlier versions.
 
 ## 6. A second computer

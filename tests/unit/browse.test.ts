@@ -6,6 +6,7 @@ import {
   descendantIds,
   domainOf,
   folderOptions,
+  groupBookmarks,
   matchesQuery,
   reorder,
   normalizeUrl,
@@ -231,5 +232,112 @@ describe('manual order', () => {
 
   it('does nothing for a target that is not in the list', () => {
     expect(reorder(list(1, 2), ['a'], 'zzz', true, 'asc')).toEqual([]);
+  });
+});
+
+describe('grouping', () => {
+  const folders = [
+    folder('r', null, 'Recipes', 1),
+    folder('b', 'r', 'Baking', 1),
+    folder('d', 'b', 'Bread', 1),
+    folder('w', null, 'Work', 2),
+  ];
+  const day = (n: number) => new Date(2026, 9, n, 12).getTime();
+  const list = [
+    bookmark({
+      id: '1',
+      title: 'Pasta',
+      folderId: 'r',
+      url: 'https://www.food.test/a',
+      created: day(24),
+    }),
+    bookmark({
+      id: '2',
+      title: 'Sourdough',
+      folderId: 'b',
+      url: 'https://bread.test/',
+      created: day(3),
+    }),
+    bookmark({
+      id: '3',
+      title: 'Baguette',
+      folderId: 'd',
+      url: 'https://bread.test/b',
+      created: day(1),
+    }),
+    bookmark({
+      id: '4',
+      title: 'Éclair',
+      folderId: 'b',
+      url: 'https://food.test/c',
+      created: new Date(2026, 8, 5).getTime(),
+    }),
+    bookmark({
+      id: '5',
+      title: '2026 plan',
+      folderId: 'w',
+      url: 'https://work.test/',
+      created: day(2),
+    }),
+    bookmark({ id: '6', title: 'Loose', folderId: null, url: 'not a url', created: day(2) }),
+  ];
+  const titles = (groups: ReturnType<typeof groupBookmarks>) => groups.map((g) => g.title);
+  const ids = (groups: ReturnType<typeof groupBookmarks>) =>
+    groups.map((g) => g.bookmarks.map((b) => b.id));
+
+  it('leaves the list as one untitled section when not grouped', () => {
+    const groups = groupBookmarks(list, 'none', { folders }, { kind: 'all' });
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.title).toBe('');
+    expect(groups[0]!.bookmarks).toEqual(list);
+  });
+
+  it('groups by folder with the whole path, in tree order, with unsorted last', () => {
+    const groups = groupBookmarks(list, 'folder', { folders }, { kind: 'all' });
+    expect(titles(groups)).toEqual([
+      'Recipes',
+      'Recipes / Baking',
+      'Recipes / Baking / Bread',
+      'Work',
+      'Unsorted',
+    ]);
+    expect(ids(groups)).toEqual([['1'], ['2', '4'], ['3'], ['5'], ['6']]);
+  });
+
+  it('names sections inside a folder from that folder down', () => {
+    const inRecipes = groupBookmarks(
+      list.filter((b) => b.folderId !== 'w' && b.folderId),
+      'folder',
+      { folders },
+      { kind: 'folder', id: 'r' },
+    );
+    expect(titles(inRecipes)).toEqual(['Recipes', 'Baking', 'Baking / Bread']);
+    const inBaking = groupBookmarks(
+      list.filter((b) => ['b', 'd'].includes(b.folderId ?? '')),
+      'folder',
+      { folders },
+      { kind: 'folder', id: 'b' },
+    );
+    expect(titles(inBaking)).toEqual(['Baking', 'Bread']);
+  });
+
+  it('groups by first letter, ignoring accents, with other characters under #', () => {
+    const groups = groupBookmarks(list, 'title', { folders }, { kind: 'all' });
+    expect(titles(groups)).toEqual(['#', 'B', 'E', 'L', 'P', 'S']);
+    expect(ids(groups)[0]).toEqual(['5']);
+  });
+
+  it('groups by website without www, A to Z, with no website last', () => {
+    const groups = groupBookmarks(list, 'website', { folders }, { kind: 'all' });
+    expect(titles(groups)).toEqual(['bread.test', 'food.test', 'work.test', 'No website']);
+    expect(ids(groups)[1]).toEqual(['1', '4']);
+  });
+
+  it('groups dates by month, newest month first, keeping the order within a month', () => {
+    const groups = groupBookmarks(list, 'added', { folders }, { kind: 'all' });
+    expect(groups).toHaveLength(2);
+    expect(groups[0]!.key).toBe('2026-10');
+    expect(groups[1]!.key).toBe('2026-09');
+    expect(ids(groups)[0]).toEqual(['1', '2', '3', '5', '6']);
   });
 });

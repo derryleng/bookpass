@@ -505,11 +505,19 @@ h3 {
 }
 
 .content-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 2px;
+  margin-bottom: 16px;
+}
+
+.head-line {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 16px;
+  min-width: 0;
 }
 
 .content-head h1 {
@@ -520,7 +528,16 @@ h3 {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-left: auto;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+@media (max-width: 900px) {
+  .view-controls {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    margin-top: 10px;
+  }
 }
 
 .view-controls .select {
@@ -1412,4 +1429,123 @@ fieldset.site-list ul {
 
 fieldset.site-list li {
   padding: 3px 0;
+}
+
+/* A tick box that picks a whole list. Beside a heading it hides until the heading is hovered; over an icon it stands
+   in for the icon while the pointer is over it or anything is picked. */
+.select-all {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+}
+
+.select-all > * {
+  grid-area: 1 / 1;
+}
+
+.select-all input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--accent);
+  opacity: 0;
+}
+
+.select-all:hover input,
+.select-all:focus-within input,
+.select-all.on input,
+.group-head:hover .select-all.bare input {
+  opacity: 1;
+}
+
+.select-all-icon {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 20px;
+}
+
+.select-all:hover .select-all-icon,
+.select-all:focus-within .select-all-icon,
+.select-all.on .select-all-icon {
+  opacity: 0;
+}
+
+.view-summary {
+  grid-column: 1;
+  padding-left: 38px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+/* The sections of a grouped list: a subheading over a rule. */
+.group + .group {
+  margin-top: 26px;
+}
+
+.group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.group-head h2 {
+  font-size: 15px;
+}
+
+/* The view menu: sort, sections, what to include and what to show, in one panel. */
+.view-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 280px;
+  padding: 14px;
+}
+
+.view-panel fieldset {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.view-panel legend {
+  margin-bottom: 6px;
+  padding: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.view-panel .select {
+  width: 100%;
+}
+
+.view-panel .segmented {
+  display: flex;
+}
+
+.view-panel .segmented .btn {
+  flex: 1;
+  justify-content: center;
+}
+
+.view-panel label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
 }

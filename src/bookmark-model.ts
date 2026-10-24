@@ -22,12 +22,16 @@ export const bookmarkTypes: BookmarkType[] = [
 ];
 export type SortKey = 'added' | 'edited' | 'title' | 'domain' | 'manual';
 
+/** What the list is split into sections by. `folder` is the subfolder in a folder, the folder anywhere else. */
+export type GroupKey = 'none' | 'folder' | 'title' | 'website' | 'added' | 'edited';
+
 export interface ViewSettings {
   layout: Layout;
   sort: SortKey;
   sortDir: 'asc' | 'desc';
   /** Show bookmarks from subfolders too. */
   subfolders: boolean;
+  group: GroupKey;
   showCover: boolean;
   showNote: boolean;
   showTags: boolean;
@@ -38,6 +42,7 @@ export const defaultView: ViewSettings = {
   sort: 'added',
   sortDir: 'desc',
   subfolders: false,
+  group: 'none',
   showCover: true,
   showNote: true,
   showTags: true,

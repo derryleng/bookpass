@@ -23,6 +23,8 @@ Everything a test reads or writes is under `tests/`, except the Go tests, which 
 | `npm run e2e`                       | Chrome with the built extension and the real helper: first run, saving from the toolbar button with covers and icons, layouts, search, the locking modes, a restarted background, KeePassXC opening the vault                                          |
 | `npm run e2e:more`                  | Key files, import, tags, history, drag and drop, changes made outside BookPass, sync conflict copies, backups, changing the password                                                                                                                   |
 | `npm run e2e:a11y`                  | An axe-core pass over every screen in the light and dark themes                                                                                                                                                                                        |
+| `npm run e2e:move`                  | Moving the vault: the checked path, a new folder, the folder dialog (stood in for by a file), the typed path fallback, the backups, staying unlocked and saving at the new place, KeePassXC opening the result                                         |
+| `npm run e2e:view`                  | The heading tick box, the View menu, sections by subfolder, title, website and dates in every layout, and a narrow toolbar                                                                                                                             |
 | `npm run e2e:pictures`              | Spacing of lists and dialogs in every layout, choosing and removing pictures, and fetching from the test site with a build made for the test (one bookmark, the bulk dialog with sites left out, a redirect to another site, a folder and a selection) |
 | `npm run e2e:security`              | Storage, network, who may use the helper, and the manifest                                                                                                                                                                                             |
 | `npm run e2e:firefox`               | Firefox with a build made only for the test (it opens its own manager and popup, since a script cannot press the toolbar button): creating and unlocking a vault, saving pages with covers and icons, the lock setting, KeePassXC opening the result   |
@@ -70,22 +72,24 @@ The scripts have run on Windows (Chrome 156, Firefox 158) and on Ubuntu 26.04 in
 21. Change the master password, lock, and unlock with the new one. Make a key file vault on another path and check that the password alone is refused.
 22. Settings, Backups. Expect a list. Restore one and check the bookmarks go back.
 23. Dark and light themes, and a narrow window.
+24. Settings, Vault file, Move vault. Press Browse and expect your system's folder dialog in front of the browser; pick a folder (or type one that does not exist and expect "will be created"), and move. Expect the file and the `backups` folder at the new place and nothing left at the old one. On a computer with no desktop (the WSL console, a server) expect no dialog and a prompt to type the path.
+25. Hover the icon left of a folder's heading. Expect a tick box; tick it and expect every bookmark in the folder picked, and with View, Bookmarks from subfolders on, those in subfolders too. Open View, split into sections by Subfolder, and expect a subheading with a rule per subfolder, each with its own tick box. Try title, website, date added and date edited in each layout.
 
 ### Other programs and computers
 
-24. Open the vault in KeePassXC with the same password. Expect folders as groups and bookmarks as entries. Add an entry there, and expect it in BookPass within about 30 seconds (or when you click the page).
-25. Put the vault in a synced folder (Syncthing, OneDrive or Dropbox) on two computers. Edit different bookmarks on both and check both changes survive. Edit the same bookmark on both and check the notice about it.
-26. Make the sync tool leave a conflict copy (or copy the vault to `bookmarks.sync-conflict-1.kdbx`) and check the "Merge it" notice.
+26. Open the vault in KeePassXC with the same password. Expect folders as groups and bookmarks as entries. Add an entry there, and expect it in BookPass within about 30 seconds (or when you click the page).
+27. Put the vault in a synced folder (Syncthing, OneDrive or Dropbox) on two computers. Edit different bookmarks on both and check both changes survive. Edit the same bookmark on both and check the notice about it.
+28. Make the sync tool leave a conflict copy (or copy the vault to `bookmarks.sync-conflict-1.kdbx`) and check the "Merge it" notice.
 
 ### Import and export
 
-27. Import your browser's bookmarks, then an exported HTML file, then a Raindrop CSV. Expect a preview with counts, duplicates skipped, and a new "Imported" folder.
-28. Export to HTML, CSV and JSON. Import the HTML into a fresh browser profile.
-29. Find duplicates after importing the same bookmarks without skipping.
+29. Import your browser's bookmarks, then an exported HTML file, then a Raindrop CSV. Expect a preview with counts, duplicates skipped, and a new "Imported" folder.
+30. Export to HTML, CSV and JSON. Import the HTML into a fresh browser profile.
+31. Find duplicates after importing the same bookmarks without skipping.
 
 ### Other systems
 
-30. Firefox: load the add-on, check the same first run and saving steps. Add-ons loaded as temporary are removed when Firefox closes, so a daily Firefox needs the signed store version.
-31. Linux with a Flatpak or Snap browser: run the helper and check whether the browser can start it. If not, note which browser and version.
-32. macOS: unpack the helper, clear the quarantine mark, run it, and repeat the first run steps.
-33. The VMware or any other desktop with a real screen: look for anything that is cut off, too small, or hard to read.
+32. Firefox: load the add-on, check the same first run and saving steps. Add-ons loaded as temporary are removed when Firefox closes, so a daily Firefox needs the signed store version.
+33. Linux with a Flatpak or Snap browser: run the helper and check whether the browser can start it. If not, note which browser and version.
+34. macOS: unpack the helper, clear the quarantine mark, run it, and repeat the first run steps.
+35. The VMware or any other desktop with a real screen: look for anything that is cut off, too small, or hard to read.
