@@ -3,15 +3,13 @@ import { describe, expect, it } from "vitest";
 import { canFetch, sameSite } from "../../src/fetch-pictures";
 
 describe("canFetch", () => {
-  it("allows https and addresses on this computer", () => {
+  it("allows http and https addresses", () => {
     expect(canFetch("https://example.org/page")).toBe(true);
+    expect(canFetch("http://example.org/")).toBe(true);
     expect(canFetch("http://localhost:3000/")).toBe(true);
-    expect(canFetch("http://127.0.0.1:8080/x")).toBe(true);
   });
 
-  it("refuses plain http to other computers and anything that is not a web address", () => {
-    expect(canFetch("http://example.org/")).toBe(false);
-    expect(canFetch("http://127.0.0.1.example.org/")).toBe(false);
+  it("refuses anything that is not a web address", () => {
     expect(canFetch("ftp://example.org/")).toBe(false);
     expect(canFetch("javascript:alert(1)")).toBe(false);
     expect(canFetch("not a url")).toBe(false);

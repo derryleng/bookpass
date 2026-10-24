@@ -6,8 +6,6 @@
 //  - Nothing happens until the person asks, and never in the background.
 //  - Requests carry no cookies, no referrer and no extra headers, and are never kept in the browser's cache, so the
 //    site sees only a plain visit to an address it already knows about from the bookmark.
-//  - Only https addresses are contacted (a plain http request can be read and changed on the way), except for the
-//    computer's own addresses, which never leave it.
 //  - An address that redirects to a different site is not trusted: whatever it returns is thrown away. A browser does
 //    not let an extension stop a redirect before it is followed, so that other site has been asked once, without
 //    cookies or a referrer.
@@ -46,15 +44,10 @@ interface Options {
   signal?: AbortSignal;
 }
 
-const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]"]);
-
-/** Whether BookPass will contact this address: https, or an address on this computer. */
+/** Whether this is a web address (http or https), which is all BookPass will contact. */
 export function canFetch(url: string): boolean {
   try {
-    const { protocol, hostname } = new URL(url);
-    return (
-      protocol === "https:" || (protocol === "http:" && LOOPBACK.has(hostname))
-    );
+    return /^https?:$/.test(new URL(url).protocol);
   } catch {
     return false;
   }
@@ -117,14 +110,8 @@ export async function fetchPictures(
   options: Options,
 ): Promise<FetchedPictures> {
   const result: FetchedPictures = { problems: [] };
-  if (!/^https?:\/\//i.test(pageUrl)) {
-    result.problems.push("Only web addresses can be fetched.");
-    return result;
-  }
   if (!canFetch(pageUrl)) {
-    result.problems.push(
-      "The address is plain http, so it was not contacted. Only https is fetched.",
-    );
+    result.problems.push("Only web addresses can be fetched.");
     return result;
   }
 

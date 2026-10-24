@@ -58,7 +58,6 @@ export function FetchMissingDialog({
 
   const web = useMemo(() => bookmarks.filter(isWeb), [bookmarks]);
   const reachable = useMemo(() => web.filter((b) => canFetch(b.url)), [web]);
-  const plain = web.length - reachable.length;
   const missingIcons = reachable.filter((b) => !b.iconId).length;
   const missingCovers = reachable.filter((b) => !b.hasCover).length;
 
@@ -207,8 +206,6 @@ export function FetchMissingDialog({
             Looking at {scope}: {missingIcons} of {reachable.length} have no
             site icon and {missingCovers} have no cover picture. BookPass will
             ask each site you leave ticked for its own icon and preview image.
-            {plain > 0 &&
-              ` ${plain} use${plain === 1 ? "s" : ""} plain http and ${plain === 1 ? "is" : "are"} left out, because only https is fetched.`}
           </p>
           <label className="row">
             <input
