@@ -29,7 +29,8 @@
     "e2e:perf": "node tests/e2e/perf.ts",
     "check": "npm run typecheck && npm run lint && npm test && npm run helper:test",
     "zip:store": "node scripts/zip-store.ts",
-    "e2e:all": "npm run e2e && npm run e2e:more && npm run e2e:a11y && npm run e2e:security"
+    "e2e:all": "npm run e2e && npm run e2e:more && npm run e2e:a11y && npm run e2e:security",
+    "e2e:firefox": "node tests/e2e/firefox.ts"
   },
   "devDependencies": {
     "@types/chrome": "^0.3.6",

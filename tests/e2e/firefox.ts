@@ -6,6 +6,8 @@
 // for it (WXT_E2E=1, in tests/output/build): that build opens its manager when installed, can read any tab, and
 // its popup can be opened in a tab with ?tab=<id>. Everything else is the real extension.
 import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { keepassxcCli, password, root, sleep, startFirefoxSession } from './lib.ts';
 
@@ -131,8 +133,12 @@ try {
 
   // The vault the browser wrote opens in KeePassXC.
   await sleep(2500);
+  // A Snap Firefox starts the helper through a portal with a clean environment, so the vault lands in the default
+  // place instead of the throwaway one.
+  const defaultVault = join(homedir(), '.bookpass', 'bookmarks.kdbx');
+  const written = existsSync(vaultPath) ? vaultPath : defaultVault;
   try {
-    const listing = execFileSync(keepassxcCli, ['ls', '-q', '-R', vaultPath], {
+    const listing = execFileSync(keepassxcCli, ['ls', '-q', '-R', written], {
       input: password + '\n',
       encoding: 'utf8',
     });
