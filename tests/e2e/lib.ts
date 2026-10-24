@@ -1,10 +1,12 @@
 // Shared set up for the end to end checks: a throwaway Chrome profile with the built extension and the real
 // helper, a throwaway vault, and a small web site to save pages from. Windows only for now.
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { createServer } from 'node:http';
 import { join, resolve } from 'node:path';
 import puppeteer, { type Page } from 'puppeteer-core';
+import ids from '../../helper/ids.json' with { type: 'json' };
 
 export const root = resolve(import.meta.dirname, '../..');
 /** Everything a test run writes goes here, and it is ignored by git. */
@@ -82,6 +84,30 @@ export async function startSession(name: string, options: { vaultPath?: string }
 
   // The same step an end user takes: the helper installs itself and registers with the browsers.
   execFileSync('node', [join(root, 'scripts/register-helper.ts')], { stdio: 'ignore' });
+
+  // Windows finds the helper through the registry. On Linux and macOS Chrome looks in NativeMessagingHosts inside
+  // the profile folder it was given, so a throwaway profile needs its own copy of the manifest.
+  if (process.platform !== 'win32') {
+    const installed =
+      process.platform === 'darwin'
+        ? join(homedir(), 'Library/Application Support/BookPass/bookpass-helper')
+        : join(
+            process.env.XDG_DATA_HOME ?? join(homedir(), '.local/share'),
+            'bookpass/bookpass-helper',
+          );
+    const hosts = join(work, 'profile', 'NativeMessagingHosts');
+    mkdirSync(hosts, { recursive: true });
+    writeFileSync(
+      join(hosts, `${ids.hostName}.json`),
+      JSON.stringify({
+        name: ids.hostName,
+        description: 'BookPass native helper',
+        path: installed,
+        type: 'stdio',
+        allowed_origins: ids.chromeIds.map((id) => `chrome-extension://${id}/`),
+      }),
+    );
+  }
 
   const browser = await puppeteer.launch({
     executablePath: chromePath,
