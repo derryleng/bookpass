@@ -51,6 +51,7 @@ npm run e2e:firefox        # the same kind of run in Firefox
 
 ## Documents
 
+- [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md): what a new person goes through, from install to the first bookmark.
 - [docs/FORMAT.md](docs/FORMAT.md): how bookmarks sit in a KDBX file.
 - [docs/PROTOCOL.md](docs/PROTOCOL.md): the messages between the extension and the helper.
 - [docs/SECURITY.md](docs/SECURITY.md): what is protected, how, and the review.
