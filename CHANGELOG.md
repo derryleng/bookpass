@@ -6,6 +6,8 @@ All notable changes are listed here. The project follows [semantic versioning](h
 
 ### Added
 
+- GNU General Public License version 3 as the license, with a LICENSE file. The README is now written for people who use BookPass, and the developer notes moved to docs/DEVELOPING.md.
+
 - A browser extension for Chrome, Edge and Firefox (Manifest V3) that keeps bookmarks in a KeePass KDBX 4.1 file with Argon2id, readable by KeePassXC and KeePass.
 - A Go native helper that reads and writes the vault atomically with rotating backups, and installs itself for the current user on Windows, macOS and Linux.
 - Folders with icons and colors, tags, favorites, trash, search, four layouts, sorting, manual order, drag and drop, bulk edit, and earlier versions of each bookmark.
