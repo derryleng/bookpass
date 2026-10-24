@@ -1,18 +1,19 @@
 // Turning pictures into the small, fixed shapes the vault stores: a 64 pixel PNG icon and a WebP cover.
 // Works in a page and in the background (which has no document), apart from drawing an SVG, which needs a page.
-import { toBase64 } from './base64';
-import { maxCoverBytes } from './constants';
+import { toBase64 } from "./base64";
+import { maxCoverBytes } from "./constants";
 
 type Source = Blob | string;
 
 /** An image as pixels. A string is a data URL. */
 async function decode(source: Source): Promise<ImageBitmap> {
-  const blob = typeof source === 'string' ? await (await fetch(source)).blob() : source;
+  const blob =
+    typeof source === "string" ? await (await fetch(source)).blob() : source;
   try {
     return await createImageBitmap(blob);
   } catch (error) {
     // Browsers will not make a bitmap from an SVG, but a page can draw one.
-    if (typeof document === 'undefined' || !/svg/i.test(blob.type)) throw error;
+    if (typeof document === "undefined" || !/svg/i.test(blob.type)) throw error;
     const url = URL.createObjectURL(blob);
     try {
       const image = new Image();
@@ -21,7 +22,7 @@ async function decode(source: Source): Promise<ImageBitmap> {
       const w = image.naturalWidth || 256;
       const h = image.naturalHeight || 256;
       const canvas = new OffscreenCanvas(w, h);
-      canvas.getContext('2d')!.drawImage(image, 0, 0, w, h);
+      canvas.getContext("2d")!.drawImage(image, 0, 0, w, h);
       return await createImageBitmap(canvas);
     } finally {
       URL.revokeObjectURL(url);
@@ -29,13 +30,17 @@ async function decode(source: Source): Promise<ImageBitmap> {
   }
 }
 
-async function encode(image: ImageBitmap, width: number, quality: number): Promise<Blob> {
+async function encode(
+  image: ImageBitmap,
+  width: number,
+  quality: number,
+): Promise<Blob> {
   const scale = Math.min(1, width / image.width);
   const w = Math.max(1, Math.round(image.width * scale));
   const h = Math.max(1, Math.round(image.height * scale));
   const canvas = new OffscreenCanvas(w, h);
-  canvas.getContext('2d')!.drawImage(image, 0, 0, w, h);
-  return canvas.convertToBlob({ type: 'image/webp', quality });
+  canvas.getContext("2d")!.drawImage(image, 0, 0, w, h);
+  return canvas.convertToBlob({ type: "image/webp", quality });
 }
 
 /**
@@ -73,10 +78,18 @@ export async function toIconPng(source: Source, size = 64): Promise<string> {
   const h = Math.max(1, Math.round(image.height * scale));
   const canvas = new OffscreenCanvas(size, size);
   canvas
-    .getContext('2d')!
-    .drawImage(image, Math.round((size - w) / 2), Math.round((size - h) / 2), w, h);
+    .getContext("2d")!
+    .drawImage(
+      image,
+      Math.round((size - w) / 2),
+      Math.round((size - h) / 2),
+      w,
+      h,
+    );
   image.close();
   return toBase64(
-    new Uint8Array(await (await canvas.convertToBlob({ type: 'image/png' })).arrayBuffer()),
+    new Uint8Array(
+      await (await canvas.convertToBlob({ type: "image/png" })).arrayBuffer(),
+    ),
   );
 }

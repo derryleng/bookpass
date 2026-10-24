@@ -1,8 +1,8 @@
 // Puts imported bookmarks into the vault.
-import { addBookmark, createFolder, inBin } from './bookmark-model';
-import { normalizeUrl } from './browse';
-import type { ParsedImport } from './formats';
-import type { Kdbx } from './kdbx';
+import { addBookmark, createFolder, inBin } from "./bookmark-model";
+import { normalizeUrl } from "./browse";
+import type { ParsedImport } from "./formats";
+import type { Kdbx } from "./kdbx";
 
 export interface ImportResult {
   added: number;
@@ -16,7 +16,7 @@ export function existingUrls(db: Kdbx): Set<string> {
   const urls = new Set<string>();
   for (const entry of db.getDefaultGroup().allEntries()) {
     if (!inBin(db, entry.parentGroup))
-      urls.add(normalizeUrl(String(entry.fields.get('URL') ?? '')));
+      urls.add(normalizeUrl(String(entry.fields.get("URL") ?? "")));
   }
   return urls;
 }
@@ -39,10 +39,11 @@ export function previewImport(
     }
     seen.add(key);
     added++;
-    for (let i = 1; i <= b.folderPath.length; i++) folders.add(b.folderPath.slice(0, i).join('\0'));
+    for (let i = 1; i <= b.folderPath.length; i++)
+      folders.add(b.folderPath.slice(0, i).join("\0"));
   }
   for (const f of parsed.emptyFolders)
-    for (let i = 1; i <= f.length; i++) folders.add(f.slice(0, i).join('\0'));
+    for (let i = 1; i <= f.length; i++) folders.add(f.slice(0, i).join("\0"));
   return { added, skipped, folders: folders.size };
 }
 
@@ -69,7 +70,7 @@ export async function importInto(
   const folderFor = (path: string[]): string | null => {
     let parent = root;
     for (let depth = 1; depth <= path.length; depth++) {
-      const key = path.slice(0, depth).join('\0');
+      const key = path.slice(0, depth).join("\0");
       let id = folders.get(key);
       if (id === undefined) {
         id = createFolder(db, parent, path[depth - 1]!);

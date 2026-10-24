@@ -1,18 +1,18 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { browser } from 'wxt/browser';
-import type { BookmarkType } from '../bookmark-model';
-import { buildTree, domainOf, normalizeUrl } from '../browse';
-import { inspectTab, isSavable, type PageInfo } from '../capture';
-import { shrinkCover } from '../images';
-import { stopCoversVaultBytes } from '../constants';
-import type { ParsedImport } from '../formats';
-import type { CaptureData } from '../messages';
-import { send } from './api';
-import { I } from './Icon';
-import { errorText, FolderSelect, TagInput } from './parts';
-import { Shell, type PageContext } from './Shell';
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { browser } from "wxt/browser";
+import type { BookmarkType } from "../bookmark-model";
+import { buildTree, domainOf, normalizeUrl } from "../browse";
+import { inspectTab, isSavable, type PageInfo } from "../capture";
+import { shrinkCover } from "../images";
+import { stopCoversVaultBytes } from "../constants";
+import type { ParsedImport } from "../formats";
+import type { CaptureData } from "../messages";
+import { send } from "./api";
+import { I } from "./Icon";
+import { errorText, FolderSelect, TagInput } from "./parts";
+import { Shell, type PageContext } from "./Shell";
 
-const LAST_FOLDER = 'bookpass.lastFolder';
+const LAST_FOLDER = "bookpass.lastFolder";
 
 function rememberedFolder(): string | null {
   try {
@@ -24,34 +24,40 @@ function rememberedFolder(): string | null {
 
 function Popup({ status, snapshot }: PageContext) {
   const [page, setPage] = useState<PageInfo>();
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState("");
   const [folder, setFolder] = useState<string | null>(rememberedFolder);
   const [tags, setTags] = useState<string[]>([]);
-  const [note, setNote] = useState('');
+  const [note, setNote] = useState("");
   const [keepCover, setKeepCover] = useState(true);
   const [error, setError] = useState<string>();
   const [done, setDone] = useState<string>();
   const [busy, setBusy] = useState(false);
 
-  const tree = useMemo(() => buildTree(snapshot.folders, snapshot.bookmarks), [snapshot]);
+  const tree = useMemo(
+    () => buildTree(snapshot.folders, snapshot.bookmarks),
+    [snapshot],
+  );
   const allTags = useMemo(
     () => [...new Set(snapshot.bookmarks.flatMap((b) => b.tags))].sort(),
     [snapshot],
   );
 
   // Past a certain size the vault stops taking new cover pictures.
-  const wantCovers = status.settings.captureCovers && status.vaultBytes < stopCoversVaultBytes;
+  const wantCovers =
+    status.settings.captureCovers && status.vaultBytes < stopCoversVaultBytes;
   const otherServers = status.settings.coversFromOtherServers;
 
   // Look at the page the popup was opened on.
   useEffect(() => {
     void (async () => {
       // The end to end build can name the tab to save, since its popup is opened in a tab of its own.
-      const named = __E2E__ ? new URLSearchParams(location.search).get('tab') : null;
+      const named = __E2E__
+        ? new URLSearchParams(location.search).get("tab")
+        : null;
       const tab = named
         ? await browser.tabs.get(Number(named))
         : (await browser.tabs.query({ active: true, currentWindow: true }))[0];
-      if (!tab) return setError('There is no page to save.');
+      if (!tab) return setError("There is no page to save.");
       const info = await inspectTab(tab, wantCovers, otherServers);
       setPage(info);
       setTitle(info.title);
@@ -59,7 +65,10 @@ function Popup({ status, snapshot }: PageContext) {
   }, [wantCovers, otherServers]);
 
   const existing =
-    page && snapshot.bookmarks.find((b) => normalizeUrl(b.url) === normalizeUrl(page.url));
+    page &&
+    snapshot.bookmarks.find(
+      (b) => normalizeUrl(b.url) === normalizeUrl(page.url),
+    );
   // Start from what is already saved for this page, once.
   const [seededFrom, setSeededFrom] = useState<string>();
   if (existing && seededFrom !== existing.id) {
@@ -78,11 +87,14 @@ function Popup({ status, snapshot }: PageContext) {
       const capture: CaptureData = {};
       // An existing cover is kept: saving again should not replace it with a screenshot of whatever is on screen now.
       if (keepCover && page.cover && !existing?.hasCover)
-        capture.cover = await shrinkCover(page.cover, status.settings.coverWidth);
+        capture.cover = await shrinkCover(
+          page.cover,
+          status.settings.coverWidth,
+        );
       if (page.favicon) {
         capture.favicon = {
           site: new URL(page.url).origin,
-          png: page.favicon.replace(/^data:image\/png;base64,/, ''),
+          png: page.favicon.replace(/^data:image\/png;base64,/, ""),
         };
       }
       const input = {
@@ -95,19 +107,19 @@ function Popup({ status, snapshot }: PageContext) {
         tags,
       };
       if (existing)
-        await send('updateBookmark', {
+        await send("updateBookmark", {
           id: existing.id,
           patch: { ...input, excerpt: undefined },
           capture,
         });
-      else await send('addBookmark', { input, capture });
+      else await send("addBookmark", { input, capture });
       try {
         if (folder) localStorage.setItem(LAST_FOLDER, folder);
         else localStorage.removeItem(LAST_FOLDER);
       } catch {
         /* the folder just will not be remembered */
       }
-      setDone(existing ? 'Bookmark updated' : 'Bookmark saved');
+      setDone(existing ? "Bookmark updated" : "Bookmark saved");
       setTimeout(() => window.close(), 900);
     } catch (err) {
       setError(errorText(err));
@@ -115,8 +127,10 @@ function Popup({ status, snapshot }: PageContext) {
     }
   }
 
-  const openManager = (hash = '') => {
-    void browser.tabs.create({ url: browser.runtime.getURL('/manager.html') + hash });
+  const openManager = (hash = "") => {
+    void browser.tabs.create({
+      url: browser.runtime.getURL("/manager.html") + hash,
+    });
     window.close();
   };
 
@@ -144,7 +158,7 @@ function Popup({ status, snapshot }: PageContext) {
           className="btn ghost square"
           title="Settings"
           aria-label="Settings"
-          onClick={() => openManager('#settings')}
+          onClick={() => openManager("#settings")}
         >
           <I n="gear" />
         </button>
@@ -152,7 +166,7 @@ function Popup({ status, snapshot }: PageContext) {
           className="btn ghost square"
           title="Lock"
           aria-label="Lock"
-          onClick={() => void send('lock', undefined)}
+          onClick={() => void send("lock", undefined)}
         >
           <I n="lock" />
         </button>
@@ -160,7 +174,7 @@ function Popup({ status, snapshot }: PageContext) {
 
       {done ? (
         <div className="popup-body">
-          <div className="empty" style={{ padding: '30px 10px' }}>
+          <div className="empty" style={{ padding: "30px 10px" }}>
             <I n="circle-check" />
             <strong>{done}</strong>
           </div>
@@ -179,7 +193,10 @@ function Popup({ status, snapshot }: PageContext) {
         <div className="popup-body stack">
           <div className="callout warn">
             <I n="triangle-exclamation" />
-            <span>BookPass can only save web pages (addresses starting with http or https).</span>
+            <span>
+              BookPass can only save web pages (addresses starting with http or
+              https).
+            </span>
           </div>
           <button className="btn" onClick={() => openManager()}>
             Open manager
@@ -191,15 +208,23 @@ function Popup({ status, snapshot }: PageContext) {
             {existing && (
               <div className="callout">
                 <I n="circle-check" />
-                <span>You saved this page before. Saving again updates that bookmark.</span>
+                <span>
+                  You saved this page before. Saving again updates that
+                  bookmark.
+                </span>
               </div>
             )}
             <div className="popup-preview">
               <div
                 className="popup-cover"
-                style={coverPreview ? { backgroundImage: `url(${coverPreview})` } : undefined}
+                style={
+                  coverPreview
+                    ? { backgroundImage: `url(${coverPreview})` }
+                    : undefined
+                }
               >
-                {!coverPreview && (page.cover ? <span>No cover</span> : <I n="image" />)}
+                {!coverPreview &&
+                  (page.cover ? <span>No cover</span> : <I n="image" />)}
               </div>
               <div className="grow stack" style={{ gap: 6 }}>
                 <label className="field">
@@ -213,14 +238,25 @@ function Popup({ status, snapshot }: PageContext) {
                 </label>
                 <span className="row hint" title={page.url}>
                   {page.favicon ? (
-                    <img className="favicon" src={page.favicon} alt="Site icon" />
+                    <img
+                      className="favicon"
+                      src={page.favicon}
+                      alt="Site icon"
+                    />
                   ) : (
-                    <span className="favicon-letter" title="No site icon could be read">
-                      {(domainOf(page.url) || '?').charAt(0)}
+                    <span
+                      className="favicon-letter"
+                      title="No site icon could be read"
+                    >
+                      {(domainOf(page.url) || "?").charAt(0)}
                     </span>
                   )}
                   <span
-                    style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                    style={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
                   >
                     {domainOf(page.url)}
                   </span>
@@ -259,8 +295,8 @@ function Popup({ status, snapshot }: PageContext) {
           <SaveTabs folder={folder} onDone={setDone} onError={setError} />
           <div className="popup-foot">
             <button className="btn primary" disabled={busy}>
-              {busy ? <I n="spinner" spin /> : <I n="bookmark" />}{' '}
-              {existing ? 'Update bookmark' : 'Save bookmark'}
+              {busy ? <I n="spinner" spin /> : <I n="bookmark" />}{" "}
+              {existing ? "Update bookmark" : "Save bookmark"}
             </button>
           </div>
         </form>
@@ -292,11 +328,15 @@ function SaveTabs({
 }) {
   async function save(selectedOnly: boolean) {
     try {
-      if (!(await browser.permissions.request({ permissions: ['tabs'] }))) {
-        return onError('Saving several tabs needs permission to read their titles and addresses.');
+      if (!(await browser.permissions.request({ permissions: ["tabs"] }))) {
+        return onError(
+          "Saving several tabs needs permission to read their titles and addresses.",
+        );
       }
       const tabs = await browser.tabs.query(
-        selectedOnly ? { currentWindow: true, highlighted: true } : { currentWindow: true },
+        selectedOnly
+          ? { currentWindow: true, highlighted: true }
+          : { currentWindow: true },
       );
       const parsed: ParsedImport = {
         bookmarks: tabs
@@ -305,22 +345,22 @@ function SaveTabs({
             folderPath: [],
             title: t.title || t.url!,
             url: t.url!,
-            note: '',
-            excerpt: '',
+            note: "",
+            excerpt: "",
             tags: [],
             favorite: false,
           })),
         emptyFolders: [],
       };
       if (parsed.bookmarks.length === 0)
-        return onError('None of those tabs are web pages BookPass can save.');
-      const result = await send('importBookmarks', {
+        return onError("None of those tabs are web pages BookPass can save.");
+      const result = await send("importBookmarks", {
         parsed,
         parentId: folder,
-        wrapper: `Tabs ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`,
+        wrapper: `Tabs ${new Date().toISOString().slice(0, 16).replace("T", " ")}`,
         skipDuplicates: false,
       });
-      onDone(`Saved ${result.added} tab${result.added === 1 ? '' : 's'}`);
+      onDone(`Saved ${result.added} tab${result.added === 1 ? "" : "s"}`);
       setTimeout(() => window.close(), 1200);
     } catch (e) {
       onError(errorText(e));
@@ -328,18 +368,27 @@ function SaveTabs({
   }
 
   return (
-    <details className="history" style={{ padding: '0 12px 10px' }}>
+    <details className="history" style={{ padding: "0 12px 10px" }}>
       <summary>Save several tabs…</summary>
       <div className="row" style={{ marginTop: 8 }}>
-        <button type="button" className="btn small" onClick={() => void save(false)}>
+        <button
+          type="button"
+          className="btn small"
+          onClick={() => void save(false)}
+        >
           All tabs in this window
         </button>
-        <button type="button" className="btn small" onClick={() => void save(true)}>
+        <button
+          type="button"
+          className="btn small"
+          onClick={() => void save(true)}
+        >
           Selected tabs
         </button>
       </div>
-      <p className="hint" style={{ margin: '6px 0 0' }}>
-        They go into a new folder. Hold Ctrl or Shift and click tabs to select several.
+      <p className="hint" style={{ margin: "6px 0 0" }}>
+        They go into a new folder. Hold Ctrl or Shift and click tabs to select
+        several.
       </p>
     </details>
   );

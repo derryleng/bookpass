@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Icon } from './Icon';
-import { allIconKeys, loadAllIcons, recentIcons } from './icon-library';
-import { folderColors, folderIconChoices } from './icons';
+import { useEffect, useMemo, useState } from "react";
+import { Icon } from "./Icon";
+import { allIconKeys, loadAllIcons, recentIcons } from "./icon-library";
+import { folderColors, folderIconChoices } from "./icons";
 
 const styles = [
-  { prefix: 'fa-solid:', label: 'Solid' },
-  { prefix: 'fa-regular:', label: 'Regular' },
-  { prefix: 'fa-brands:', label: 'Brands' },
+  { prefix: "fa-solid:", label: "Solid" },
+  { prefix: "fa-regular:", label: "Regular" },
+  { prefix: "fa-brands:", label: "Brands" },
 ];
 const SHOWN = 150;
 
@@ -22,22 +22,26 @@ export function IconPicker({
   onIcon: (key: string) => void;
   onColor: (color: string) => void;
 }) {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [style, setStyle] = useState(styles[0]!.prefix);
   const [all, setAll] = useState<string[]>();
-  const searching = query.trim() !== '';
+  const searching = query.trim() !== "";
 
   // The full set is large, so it loads when the person starts searching.
   useEffect(() => {
-    if (searching && !all) void loadAllIcons().then(() => setAll(allIconKeys()));
+    if (searching && !all)
+      void loadAllIcons().then(() => setAll(allIconKeys()));
   }, [searching, all]);
 
   const shown = useMemo(() => {
-    if (!searching) return [...new Set([...recentIcons(), ...folderIconChoices])];
+    if (!searching)
+      return [...new Set([...recentIcons(), ...folderIconChoices])];
     const words = query.toLowerCase().split(/\s+/).filter(Boolean);
     return (all ?? [])
       .filter(
-        (key) => key.startsWith(style) && words.every((w) => key.slice(style.length).includes(w)),
+        (key) =>
+          key.startsWith(style) &&
+          words.every((w) => key.slice(style.length).includes(w)),
       )
       .slice(0, SHOWN);
   }, [searching, query, all, style]);
@@ -57,7 +61,7 @@ export function IconPicker({
           {searching && (
             <select
               className="select"
-              style={{ width: 'auto' }}
+              style={{ width: "auto" }}
               value={style}
               onChange={(e) => setStyle(e.target.value)}
               aria-label="Icon style"
@@ -77,10 +81,10 @@ export function IconPicker({
               key={key}
               role="option"
               aria-selected={key === icon}
-              className={`icon-choice ${key === icon ? 'active' : ''}`}
+              className={`icon-choice ${key === icon ? "active" : ""}`}
               onClick={() => onIcon(key)}
-              title={key.split(':')[1]}
-              aria-label={key.split(':')[1]}
+              title={key.split(":")[1]}
+              aria-label={key.split(":")[1]}
               style={{ color: key === icon ? undefined : color || undefined }}
             >
               <Icon name={key} />
@@ -89,7 +93,9 @@ export function IconPicker({
           {searching && all && shown.length === 0 && (
             <span className="hint">No icon matches that.</span>
           )}
-          {searching && !all && <span className="hint">Loading the icons…</span>}
+          {searching && !all && (
+            <span className="hint">Loading the icons…</span>
+          )}
         </div>
       </div>
       <div className="field">
@@ -98,11 +104,11 @@ export function IconPicker({
           {folderColors.map((c) => (
             <button
               type="button"
-              key={c || 'none'}
-              className={`swatch ${c === color ? 'active' : ''}`}
-              style={{ ['--c' as string]: c || 'var(--muted)' }}
+              key={c || "none"}
+              className={`swatch ${c === color ? "active" : ""}`}
+              style={{ ["--c" as string]: c || "var(--muted)" }}
               onClick={() => onColor(c)}
-              aria-label={c || 'No color'}
+              aria-label={c || "No color"}
             />
           ))}
         </div>

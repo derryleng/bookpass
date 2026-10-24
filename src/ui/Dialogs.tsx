@@ -1,20 +1,24 @@
 // The dialogs for editing a bookmark or a folder.
-export { TagDialog } from './TagDialog';
-import { useState, type FormEvent } from 'react';
-import type { Bookmark, BookmarkType, Folder } from '../bookmark-model';
-import { bookmarkTypes } from '../bookmark-model';
-import { buildTree, descendantIds } from '../browse';
-import type { SnapshotReply } from '../messages';
-import { send } from './api';
-import { Dialog } from './Dialog';
-import { I } from './Icon';
-import { toBase64 } from '../base64';
-import type { Settings } from '../settings';
-import { HistoryList } from './HistoryList';
-import { PicturesField, pendingToCapture, type PicturePending } from './PicturesField';
-import { IconPicker } from './IconPicker';
-import { renderIconPng, rememberIcon, useIconsFor } from './icon-library';
-import { errorText, FolderSelect, TagInput } from './parts';
+export { TagDialog } from "./TagDialog";
+import { useState, type FormEvent } from "react";
+import type { Bookmark, BookmarkType, Folder } from "../bookmark-model";
+import { bookmarkTypes } from "../bookmark-model";
+import { buildTree, descendantIds } from "../browse";
+import type { SnapshotReply } from "../messages";
+import { send } from "./api";
+import { Dialog } from "./Dialog";
+import { I } from "./Icon";
+import { toBase64 } from "../base64";
+import type { Settings } from "../settings";
+import { HistoryList } from "./HistoryList";
+import {
+  PicturesField,
+  pendingToCapture,
+  type PicturePending,
+} from "./PicturesField";
+import { IconPicker } from "./IconPicker";
+import { renderIconPng, rememberIcon, useIconsFor } from "./icon-library";
+import { errorText, FolderSelect, TagInput } from "./parts";
 
 interface BookmarkDialogProps {
   snapshot: SnapshotReply;
@@ -37,16 +41,20 @@ export function BookmarkDialog({
   onClose,
 }: BookmarkDialogProps) {
   const tree = buildTree(snapshot.folders, snapshot.bookmarks);
-  const [url, setUrl] = useState(bookmark?.url ?? initial?.url ?? '');
-  const [title, setTitle] = useState(bookmark?.title ?? initial?.title ?? '');
-  const [folder, setFolder] = useState<string | null>(bookmark ? bookmark.folderId : folderId);
+  const [url, setUrl] = useState(bookmark?.url ?? initial?.url ?? "");
+  const [title, setTitle] = useState(bookmark?.title ?? initial?.title ?? "");
+  const [folder, setFolder] = useState<string | null>(
+    bookmark ? bookmark.folderId : folderId,
+  );
   const [tags, setTags] = useState(bookmark?.tags ?? []);
-  const [note, setNote] = useState(bookmark?.note ?? '');
-  const [type, setType] = useState<BookmarkType>(bookmark?.type ?? 'link');
+  const [note, setNote] = useState(bookmark?.note ?? "");
+  const [type, setType] = useState<BookmarkType>(bookmark?.type ?? "link");
   const [favorite, setFavorite] = useState(bookmark?.favorite ?? false);
   const [pictures, setPictures] = useState<PicturePending>({});
   const [error, setError] = useState<string>();
-  const allTags = [...new Set(snapshot.bookmarks.flatMap((b) => b.tags))].sort();
+  const allTags = [
+    ...new Set(snapshot.bookmarks.flatMap((b) => b.tags)),
+  ].sort();
 
   async function save(e: FormEvent) {
     e.preventDefault();
@@ -61,8 +69,13 @@ export function BookmarkDialog({
     };
     try {
       const capture = pendingToCapture(pictures);
-      if (bookmark) await send('updateBookmark', { id: bookmark.id, patch: input, capture });
-      else await send('addBookmark', { input, capture });
+      if (bookmark)
+        await send("updateBookmark", {
+          id: bookmark.id,
+          patch: input,
+          capture,
+        });
+      else await send("addBookmark", { input, capture });
       onClose();
     } catch (err) {
       setError(errorText(err));
@@ -72,7 +85,7 @@ export function BookmarkDialog({
   async function remove() {
     if (!bookmark) return;
     try {
-      await send('trashBookmarks', { ids: [bookmark.id] });
+      await send("trashBookmarks", { ids: [bookmark.id] });
       onClose();
     } catch (err) {
       setError(errorText(err));
@@ -81,7 +94,7 @@ export function BookmarkDialog({
 
   return (
     <Dialog
-      title={bookmark ? 'Edit bookmark' : 'Add bookmark'}
+      title={bookmark ? "Edit bookmark" : "Add bookmark"}
       onClose={onClose}
       footer={
         <>
@@ -148,7 +161,11 @@ export function BookmarkDialog({
         </div>
         <label className="field">
           <span>Note</span>
-          <textarea className="textarea" value={note} onChange={(e) => setNote(e.target.value)} />
+          <textarea
+            className="textarea"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
         </label>
         <PicturesField
           bookmark={bookmark}
@@ -198,10 +215,12 @@ export function FolderDialog({
   onFetchPictures,
 }: FolderDialogProps) {
   const tree = buildTree(snapshot.folders, snapshot.bookmarks);
-  const [name, setName] = useState(folder?.name ?? '');
-  const [icon, setIcon] = useState(folder?.icon ?? 'fa-solid:folder');
-  const [color, setColor] = useState(folder?.color ?? '');
-  const [parent, setParent] = useState<string | null>(folder ? folder.parentId : parentId);
+  const [name, setName] = useState(folder?.name ?? "");
+  const [icon, setIcon] = useState(folder?.icon ?? "fa-solid:folder");
+  const [color, setColor] = useState(folder?.color ?? "");
+  const [parent, setParent] = useState<string | null>(
+    folder ? folder.parentId : parentId,
+  );
   const [error, setError] = useState<string>();
   useIconsFor([icon]);
 
@@ -209,19 +228,22 @@ export function FolderDialog({
     e.preventDefault();
     try {
       const iconImage =
-        icon === 'fa-solid:folder' && !color
+        icon === "fa-solid:folder" && !color
           ? undefined
-          : { name: `${icon}|${color}`, png: toBase64(await renderIconPng(icon, color)) };
+          : {
+              name: `${icon}|${color}`,
+              png: toBase64(await renderIconPng(icon, color)),
+            };
       rememberIcon(icon);
       if (folder) {
-        await send('updateFolder', {
+        await send("updateFolder", {
           id: folder.id,
           patch: { name: name.trim(), icon, color, iconImage },
         });
         if (parent !== folder.parentId)
-          await send('moveFolder', { id: folder.id, parentId: parent });
+          await send("moveFolder", { id: folder.id, parentId: parent });
       } else {
-        await send('createFolder', {
+        await send("createFolder", {
           parentId: parent,
           name: name.trim(),
           patch: { icon, color, iconImage },
@@ -236,7 +258,7 @@ export function FolderDialog({
   async function remove() {
     if (!folder) return;
     try {
-      await send('trashFolder', { id: folder.id });
+      await send("trashFolder", { id: folder.id });
       onDeleted?.();
       onClose();
     } catch (err) {
@@ -246,7 +268,7 @@ export function FolderDialog({
 
   return (
     <Dialog
-      title={folder ? 'Edit folder' : 'New folder'}
+      title={folder ? "Edit folder" : "New folder"}
       onClose={onClose}
       footer={
         <>
@@ -286,7 +308,12 @@ export function FolderDialog({
             topLabel="Top level"
           />
         </label>
-        <IconPicker icon={icon} color={color} onIcon={setIcon} onColor={setColor} />
+        <IconPicker
+          icon={icon}
+          color={color}
+          onIcon={setIcon}
+          onColor={setColor}
+        />
         {folder && onFetchPictures && (
           <div className="field">
             <span>Pictures</span>
@@ -299,7 +326,9 @@ export function FolderDialog({
                   onClose();
                   onFetchPictures(
                     `the folder ${folder.name}`,
-                    snapshot.bookmarks.filter((b) => b.folderId !== null && inside.has(b.folderId)),
+                    snapshot.bookmarks.filter(
+                      (b) => b.folderId !== null && inside.has(b.folderId),
+                    ),
                   );
                 }}
               >
@@ -307,8 +336,8 @@ export function FolderDialog({
               </button>
             </div>
             <span className="hint" style={{ fontWeight: 400 }}>
-              For the bookmarks in this folder and the folders inside it. You choose which sites to
-              contact first.
+              For the bookmarks in this folder and the folders inside it. You
+              choose which sites to contact first.
             </span>
           </div>
         )}

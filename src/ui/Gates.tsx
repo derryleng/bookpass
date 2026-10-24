@@ -1,11 +1,11 @@
 // The screens shown before the bookmarks: helper missing, create a vault, unlock.
-import { useState, type FormEvent } from 'react';
-import { toBase64 } from '../base64';
-import { helperDownloadUrl } from '../constants';
-import type { Status } from '../messages';
-import { send } from './api';
-import { I } from './Icon';
-import { errorText } from './parts';
+import { useState, type FormEvent } from "react";
+import { toBase64 } from "../base64";
+import { helperDownloadUrl } from "../constants";
+import type { Status } from "../messages";
+import { send } from "./api";
+import { I } from "./Icon";
+import { errorText } from "./parts";
 
 function Logo() {
   return (
@@ -35,7 +35,7 @@ export function VaultLocation({
   async function apply(e: FormEvent) {
     e.preventDefault();
     try {
-      onChanged(await send('setVaultPath', { vaultPath: path }));
+      onChanged(await send("setVaultPath", { vaultPath: path }));
       setEditing(false);
       setError(undefined);
     } catch (err) {
@@ -54,7 +54,11 @@ export function VaultLocation({
               <I n="folder-open" /> Move vault…
             </button>
           )}
-          <button type="button" className="btn small" onClick={() => setEditing(true)}>
+          <button
+            type="button"
+            className="btn small"
+            onClick={() => setEditing(true)}
+          >
             Use a different file
           </button>
         </div>
@@ -73,8 +77,9 @@ export function VaultLocation({
         />
       </label>
       <p className="hint" style={{ margin: 0 }}>
-        Point this at an existing vault to open it, or at a new name to create one. A folder synced
-        by Syncthing, OneDrive or Dropbox works for using the vault on several computers.
+        Point this at an existing vault to open it, or at a new name to create
+        one. A folder synced by Syncthing, OneDrive or Dropbox works for using
+        the vault on several computers.
       </p>
       {error && (
         <div className="callout error" role="alert">
@@ -109,19 +114,25 @@ export function KeyFileField({
 
   async function pick(file: File | undefined) {
     if (!file) return;
-    onChange({ name: file.name, base64: toBase64(new Uint8Array(await file.arrayBuffer())) });
+    onChange({
+      name: file.name,
+      base64: toBase64(new Uint8Array(await file.arrayBuffer())),
+    });
   }
 
   async function create() {
     try {
-      const base64 = await send('newKeyFile', undefined);
-      const blob = new Blob([atob(base64)], { type: 'application/xml' });
-      const link = document.createElement('a');
+      const base64 = await send("newKeyFile", undefined);
+      const blob = new Blob([atob(base64)], { type: "application/xml" });
+      const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = 'bookpass.keyx';
+      link.download = "bookpass.keyx";
       link.click();
       URL.revokeObjectURL(link.href);
-      onChange({ name: 'bookpass.keyx (just saved to your downloads)', base64 });
+      onChange({
+        name: "bookpass.keyx (just saved to your downloads)",
+        base64,
+      });
     } catch (e) {
       setError(errorText(e));
     }
@@ -133,7 +144,11 @@ export function KeyFileField({
         <div className="row">
           <I n="key" />
           <span className="grow path">{value.name}</span>
-          <button type="button" className="btn small" onClick={() => onChange(undefined)}>
+          <button
+            type="button"
+            className="btn small"
+            onClick={() => onChange(undefined)}
+          >
             Remove
           </button>
         </div>
@@ -141,10 +156,18 @@ export function KeyFileField({
         <div className="row">
           <label className="btn small">
             <I n="key" /> Choose key file
-            <input type="file" hidden onChange={(e) => void pick(e.target.files?.[0])} />
+            <input
+              type="file"
+              hidden
+              onChange={(e) => void pick(e.target.files?.[0])}
+            />
           </label>
           {allowCreate && (
-            <button type="button" className="btn small" onClick={() => void create()}>
+            <button
+              type="button"
+              className="btn small"
+              onClick={() => void create()}
+            >
               Make a new key file
             </button>
           )}
@@ -159,37 +182,48 @@ export function KeyFileField({
   );
 }
 
-export function HelperMissing({ status, onRetry }: { status: Status; onRetry: () => void }) {
+export function HelperMissing({
+  status,
+  onRetry,
+}: {
+  status: Status;
+  onRetry: () => void;
+}) {
   const system = /Mac/i.test(navigator.userAgent)
-    ? 'macOS'
+    ? "macOS"
     : /Linux|X11/i.test(navigator.userAgent)
-      ? 'Linux'
-      : 'Windows';
+      ? "Linux"
+      : "Windows";
   return (
     <main className="gate">
       <div className="gate-card stack">
         <Logo />
         <h1>
-          {status.helper === 'outdated'
-            ? 'Update the BookPass helper'
-            : 'Install the BookPass helper'}
+          {status.helper === "outdated"
+            ? "Update the BookPass helper"
+            : "Install the BookPass helper"}
         </h1>
         <p className="muted" style={{ margin: 0 }}>
-          BookPass keeps your bookmarks in an encrypted file on your computer. Browsers cannot write
-          to a file themselves, so a small helper program does it. The helper only ever sees
-          encrypted data and makes no network connections.
+          BookPass keeps your bookmarks in an encrypted file on your computer.
+          Browsers cannot write to a file themselves, so a small helper program
+          does it. The helper only ever sees encrypted data and makes no network
+          connections.
         </p>
         <ol className="steps">
           <li>
-            <a href={helperDownloadUrl} target="_blank" rel="noreferrer noopener">
+            <a
+              href={helperDownloadUrl}
+              target="_blank"
+              rel="noreferrer noopener"
+            >
               Download the helper for {system}
             </a>
             .
           </li>
           <li>
-            Run it once: double click it on Windows, or run{' '}
-            <span className="path">./bookpass-helper</span> in a terminal on macOS and Linux. It
-            installs itself for your user only.
+            Run it once: double click it on Windows, or run{" "}
+            <span className="path">./bookpass-helper</span> in a terminal on
+            macOS and Linux. It installs itself for your user only.
           </li>
           <li>Come back here and press the button below.</li>
         </ol>
@@ -206,9 +240,15 @@ export function HelperMissing({ status, onRetry }: { status: Status; onRetry: ()
   );
 }
 
-export function Setup({ status, onStatus }: { status: Status; onStatus: (s: Status) => void }) {
-  const [password, setPassword] = useState('');
-  const [again, setAgain] = useState('');
+export function Setup({
+  status,
+  onStatus,
+}: {
+  status: Status;
+  onStatus: (s: Status) => void;
+}) {
+  const [password, setPassword] = useState("");
+  const [again, setAgain] = useState("");
   const [useKeyFile, setUseKeyFile] = useState(false);
   const [keyFile, setKeyFile] = useState<{ name: string; base64: string }>();
   const [error, setError] = useState<string>();
@@ -216,13 +256,16 @@ export function Setup({ status, onStatus }: { status: Status; onStatus: (s: Stat
 
   async function create(e: FormEvent) {
     e.preventDefault();
-    if (password !== again) return setError('The two passwords do not match.');
+    if (password !== again) return setError("The two passwords do not match.");
     if (useKeyFile && !keyFile)
-      return setError('Choose or make a key file, or untick that option.');
+      return setError("Choose or make a key file, or untick that option.");
     setBusy(true);
     try {
       onStatus(
-        await send('createVault', { password, keyFile: useKeyFile ? keyFile?.base64 : undefined }),
+        await send("createVault", {
+          password,
+          keyFile: useKeyFile ? keyFile?.base64 : undefined,
+        }),
       );
     } catch (err) {
       setError(errorText(err));
@@ -238,7 +281,8 @@ export function Setup({ status, onStatus }: { status: Status; onStatus: (s: Stat
         <div>
           <h1>Create your vault</h1>
           <p className="muted" style={{ margin: 0 }}>
-            Your bookmarks are stored in one encrypted file that KeePassXC and KeePass can open too.
+            Your bookmarks are stored in one encrypted file that KeePassXC and
+            KeePass can open too.
           </p>
         </div>
         <VaultLocation status={status} onChanged={onStatus} />
@@ -271,13 +315,17 @@ export function Setup({ status, onStatus }: { status: Status; onStatus: (s: Stat
           />
           <span>Also require a key file</span>
         </label>
-        {useKeyFile && <KeyFileField value={keyFile} onChange={setKeyFile} allowCreate />}
+        {useKeyFile && (
+          <KeyFileField value={keyFile} onChange={setKeyFile} allowCreate />
+        )}
         <div className="callout warn">
           <I n="triangle-exclamation" />
           <span>
-            If you forget this password{useKeyFile ? ' or lose the key file' : ''} your bookmarks
-            cannot be recovered. Nobody can reset it, not even us. The helper keeps your last{' '}
-            {status.backupCount} versions next to the vault file as a safety net.
+            If you forget this password
+            {useKeyFile ? " or lose the key file" : ""} your bookmarks cannot be
+            recovered. Nobody can reset it, not even us. The helper keeps your
+            last {status.backupCount} versions next to the vault file as a
+            safety net.
           </span>
         </div>
         {error && (
@@ -293,8 +341,14 @@ export function Setup({ status, onStatus }: { status: Status; onStatus: (s: Stat
   );
 }
 
-export function Unlock({ status, onStatus }: { status: Status; onStatus: (s: Status) => void }) {
-  const [password, setPassword] = useState('');
+export function Unlock({
+  status,
+  onStatus,
+}: {
+  status: Status;
+  onStatus: (s: Status) => void;
+}) {
+  const [password, setPassword] = useState("");
   const [keyFile, setKeyFile] = useState<{ name: string; base64: string }>();
   const [useKeyFile, setUseKeyFile] = useState(false);
   const [error, setError] = useState<string>();
@@ -306,11 +360,14 @@ export function Unlock({ status, onStatus }: { status: Status; onStatus: (s: Sta
     setError(undefined);
     try {
       onStatus(
-        await send('unlock', { password, keyFile: useKeyFile ? keyFile?.base64 : undefined }),
+        await send("unlock", {
+          password,
+          keyFile: useKeyFile ? keyFile?.base64 : undefined,
+        }),
       );
     } catch (err) {
       setError(errorText(err));
-      setPassword('');
+      setPassword("");
     } finally {
       setBusy(false);
     }
@@ -358,7 +415,8 @@ export function Unlock({ status, onStatus }: { status: Status; onStatus: (s: Sta
           </div>
         )}
         <button className="btn primary" disabled={busy}>
-          {busy ? <I n="spinner" spin /> : <I n="lock-open" />} {busy ? 'Opening…' : 'Unlock'}
+          {busy ? <I n="spinner" spin /> : <I n="lock-open" />}{" "}
+          {busy ? "Opening…" : "Unlock"}
         </button>
         <VaultLocation status={status} onChanged={onStatus} />
       </form>

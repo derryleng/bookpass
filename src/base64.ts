@@ -2,19 +2,24 @@
 
 export function toBase64(bytes: ArrayBuffer | Uint8Array): string {
   const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
-  if ('toBase64' in view && typeof view.toBase64 === 'function')
+  if ("toBase64" in view && typeof view.toBase64 === "function")
     return (view as { toBase64(): string }).toBase64();
-  let binary = '';
+  let binary = "";
   for (let i = 0; i < view.length; i += 0x8000)
     binary += String.fromCharCode(...view.subarray(i, i + 0x8000));
   return btoa(binary);
 }
 
 export function fromBase64(base64: string): Uint8Array<ArrayBuffer> {
-  if ('fromBase64' in Uint8Array && typeof Uint8Array.fromBase64 === 'function') {
-    return (Uint8Array as unknown as { fromBase64(s: string): Uint8Array<ArrayBuffer> }).fromBase64(
-      base64,
-    );
+  if (
+    "fromBase64" in Uint8Array &&
+    typeof Uint8Array.fromBase64 === "function"
+  ) {
+    return (
+      Uint8Array as unknown as {
+        fromBase64(s: string): Uint8Array<ArrayBuffer>;
+      }
+    ).fromBase64(base64);
   }
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
@@ -22,7 +27,9 @@ export function fromBase64(base64: string): Uint8Array<ArrayBuffer> {
   return bytes;
 }
 
-export async function sha256Hex(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
-  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
-  return [...digest].map((b) => b.toString(16).padStart(2, '0')).join('');
+export async function sha256Hex(
+  bytes: Uint8Array<ArrayBuffer>,
+): Promise<string> {
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+  return [...digest].map((b) => b.toString(16).padStart(2, "0")).join("");
 }

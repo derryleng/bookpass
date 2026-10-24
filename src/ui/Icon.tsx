@@ -1,4 +1,4 @@
-import { iconFor } from './icons';
+import { iconFor } from "./icons";
 
 interface Props {
   /** Icon key such as fa-solid:folder. */
@@ -8,11 +8,11 @@ interface Props {
 }
 
 /** Draws a Font Awesome Free icon from its path data, so no icon font or extra package is needed. */
-export function Icon({ name, className = '', spin }: Props) {
+export function Icon({ name, className = "", spin }: Props) {
   const [width, height, , , path] = iconFor(name).icon;
   return (
     <svg
-      className={`icon ${spin ? 'spin' : ''} ${className}`}
+      className={`icon ${spin ? "spin" : ""} ${className}`}
       viewBox={`0 0 ${width} ${height}`}
       fill="currentColor"
       aria-hidden="true"
@@ -24,6 +24,11 @@ export function Icon({ name, className = '', spin }: Props) {
 }
 
 /** Shorthand for the many interface icons, which are all solid. */
-export const I = ({ n, ...rest }: { n: string; className?: string; spin?: boolean }) => (
-  <Icon name={`fa-solid:${n}`} {...rest} />
-);
+export const I = ({
+  n,
+  ...rest
+}: {
+  n: string;
+  className?: string;
+  spin?: boolean;
+}) => <Icon name={`fa-solid:${n}`} {...rest} />;

@@ -6,29 +6,31 @@
 //   cover    -> entry attachment cover.webp
 //   favicon  -> KDBX custom icon, one per site, shared by every entry from it
 //   trash    -> the Recycle Bin group
-import { toBase64 } from './base64';
-import type { Kdbx, KdbxEntry, KdbxGroup } from './kdbx';
-import { KdbxUuid } from './kdbx';
-import type { Layout } from './settings';
+import { toBase64 } from "./base64";
+import type { Kdbx, KdbxEntry, KdbxGroup } from "./kdbx";
+import { KdbxUuid } from "./kdbx";
+import type { Layout } from "./settings";
 
-export type BookmarkType = 'link' | 'article' | 'image' | 'video' | 'document' | 'audio';
+export type BookmarkType =
+  "link" | "article" | "image" | "video" | "document" | "audio";
 export const bookmarkTypes: BookmarkType[] = [
-  'link',
-  'article',
-  'image',
-  'video',
-  'document',
-  'audio',
+  "link",
+  "article",
+  "image",
+  "video",
+  "document",
+  "audio",
 ];
-export type SortKey = 'added' | 'edited' | 'title' | 'domain' | 'manual';
+export type SortKey = "added" | "edited" | "title" | "domain" | "manual";
 
 /** What the list is split into sections by. `folder` is the subfolder in a folder, the folder anywhere else. */
-export type GroupKey = 'none' | 'folder' | 'title' | 'website' | 'added' | 'edited';
+export type GroupKey =
+  "none" | "folder" | "title" | "website" | "added" | "edited";
 
 export interface ViewSettings {
   layout: Layout;
   sort: SortKey;
-  sortDir: 'asc' | 'desc';
+  sortDir: "asc" | "desc";
   /** Show bookmarks from subfolders too. */
   subfolders: boolean;
   group: GroupKey;
@@ -38,11 +40,11 @@ export interface ViewSettings {
 }
 
 export const defaultView: ViewSettings = {
-  layout: 'list',
-  sort: 'added',
-  sortDir: 'desc',
+  layout: "list",
+  sort: "added",
+  sortDir: "desc",
   subfolders: false,
-  group: 'none',
+  group: "none",
   showCover: true,
   showNote: true,
   showTags: true,
@@ -109,21 +111,26 @@ export interface Image {
 }
 
 const entryField = {
-  excerpt: 'bp.excerpt',
-  type: 'bp.type',
-  favorite: 'bp.favorite',
-  order: 'bp.order',
+  excerpt: "bp.excerpt",
+  type: "bp.type",
+  favorite: "bp.favorite",
+  order: "bp.order",
 };
-const groupData = { icon: 'bp.icon', color: 'bp.color', view: 'bp.view', order: 'bp.order' };
-const coverName = 'cover.webp';
-export const defaultFolderIcon = 'fa-solid:folder';
+const groupData = {
+  icon: "bp.icon",
+  color: "bp.color",
+  view: "bp.view",
+  order: "bp.order",
+};
+const coverName = "cover.webp";
+export const defaultFolderIcon = "fa-solid:folder";
 
 // Small helpers around kdbxweb's loose types.
 
 export function text(entry: KdbxEntry, name: string): string {
   const value = entry.fields.get(name);
-  if (value === undefined || value === null) return '';
-  return typeof value === 'string' ? value : value.getText();
+  if (value === undefined || value === null) return "";
+  return typeof value === "string" ? value : value.getText();
 }
 
 export function setText(entry: KdbxEntry, name: string, value: string) {
@@ -137,17 +144,20 @@ function data(group: KdbxGroup, key: string): string | undefined {
 
 function setData(group: KdbxGroup, key: string, value: string | undefined) {
   group.customData ??= new Map();
-  if (value === undefined || value === '') group.customData.delete(key);
+  if (value === undefined || value === "") group.customData.delete(key);
   else group.customData.set(key, { value, lastModified: new Date() });
 }
 
 function binaryBytes(value: unknown): ArrayBuffer | undefined {
   const inner =
-    value && typeof value === 'object' && 'value' in value
+    value && typeof value === "object" && "value" in value
       ? (value as { value: unknown }).value
       : value;
   if (inner instanceof ArrayBuffer) return inner;
-  if (inner && typeof (inner as { getBinary?: unknown }).getBinary === 'function') {
+  if (
+    inner &&
+    typeof (inner as { getBinary?: unknown }).getBinary === "function"
+  ) {
     return (inner as { getBinary(): ArrayBuffer }).getBinary();
   }
   return undefined;
@@ -177,10 +187,10 @@ function readFolder(group: KdbxGroup, parentId: string | null): Folder {
   return {
     id: group.uuid.id,
     parentId,
-    name: group.name ?? '',
-    note: group.notes ?? '',
+    name: group.name ?? "",
+    note: group.notes ?? "",
     icon: data(group, groupData.icon) ?? defaultFolderIcon,
-    color: data(group, groupData.color) ?? '',
+    color: data(group, groupData.color) ?? "",
     order: Number(data(group, groupData.order)) || 0,
     view: parseView(data(group, groupData.view)),
     expanded: group.expanded ?? false,
@@ -192,28 +202,31 @@ function readBookmark(entry: KdbxEntry, folderId: string | null): Bookmark {
   return {
     id: entry.uuid.id,
     folderId,
-    title: text(entry, 'Title'),
-    url: text(entry, 'URL'),
-    note: text(entry, 'Notes'),
+    title: text(entry, "Title"),
+    url: text(entry, "URL"),
+    note: text(entry, "Notes"),
     excerpt: text(entry, entryField.excerpt),
-    type: bookmarkTypes.includes(type) ? type : 'link',
-    favorite: text(entry, entryField.favorite) === '1',
+    type: bookmarkTypes.includes(type) ? type : "link",
+    favorite: text(entry, entryField.favorite) === "1",
     tags: [...entry.tags],
     order: Number(text(entry, entryField.order)) || 0,
     created: entry.times.creationTime?.getTime() ?? 0,
     modified: entry.times.lastModTime?.getTime() ?? 0,
     hasCover: entry.binaries.has(coverName),
-    iconId: entry.customIcon && !entry.customIcon.empty ? entry.customIcon.id : null,
+    iconId:
+      entry.customIcon && !entry.customIcon.empty ? entry.customIcon.id : null,
   };
 }
 
 export function readSnapshot(db: Kdbx): Snapshot {
   const snapshot: Snapshot = { folders: [], bookmarks: [], trash: [] };
   const walk = (group: KdbxGroup, parentId: string | null) => {
-    for (const entry of group.entries) snapshot.bookmarks.push(readBookmark(entry, parentId));
+    for (const entry of group.entries)
+      snapshot.bookmarks.push(readBookmark(entry, parentId));
     for (const child of group.groups) {
       if (isBin(db, child)) {
-        for (const entry of child.allEntries()) snapshot.trash.push(readBookmark(entry, null));
+        for (const entry of child.allEntries())
+          snapshot.trash.push(readBookmark(entry, null));
         continue;
       }
       snapshot.folders.push(readFolder(child, parentId));
@@ -221,10 +234,12 @@ export function readSnapshot(db: Kdbx): Snapshot {
     }
   };
   const root = db.getDefaultGroup();
-  for (const entry of root.entries) snapshot.bookmarks.push(readBookmark(entry, null));
+  for (const entry of root.entries)
+    snapshot.bookmarks.push(readBookmark(entry, null));
   for (const child of root.groups) {
     if (isBin(db, child)) {
-      for (const entry of child.allEntries()) snapshot.trash.push(readBookmark(entry, null));
+      for (const entry of child.allEntries())
+        snapshot.trash.push(readBookmark(entry, null));
       continue;
     }
     snapshot.folders.push(readFolder(child, null));
@@ -234,14 +249,15 @@ export function readSnapshot(db: Kdbx): Snapshot {
 }
 
 export function findEntry(db: Kdbx, id: string): KdbxEntry {
-  for (const entry of db.getDefaultGroup().allEntries()) if (entry.uuid.id === id) return entry;
-  throw new Error('Bookmark not found');
+  for (const entry of db.getDefaultGroup().allEntries())
+    if (entry.uuid.id === id) return entry;
+  throw new Error("Bookmark not found");
 }
 
 export function findGroup(db: Kdbx, id: string | null): KdbxGroup {
   if (id === null) return db.getDefaultGroup();
   const group = db.getGroup(id);
-  if (!group || inBin(db, group)) throw new Error('Folder not found');
+  if (!group || inBin(db, group)) throw new Error("Folder not found");
   return group;
 }
 
@@ -254,28 +270,34 @@ export function getCover(db: Kdbx, id: string): Image | null {
 /** Covers are WebP where the browser can make it, but PNG or JPEG are fine too, so look at the bytes. */
 function sniffMime(bytes: ArrayBuffer): string {
   const b = new Uint8Array(bytes, 0, Math.min(12, bytes.byteLength));
-  if (b[0] === 0x89 && b[1] === 0x50) return 'image/png';
-  if (b[0] === 0xff && b[1] === 0xd8) return 'image/jpeg';
-  return 'image/webp';
+  if (b[0] === 0x89 && b[1] === 0x50) return "image/png";
+  if (b[0] === 0xff && b[1] === 0xd8) return "image/jpeg";
+  return "image/webp";
 }
 
 /** Bytes of a stored favicon. */
 export function getIcon(db: Kdbx, iconId: string): Image | null {
   const icon = db.meta.customIcons.get(iconId);
-  return icon ? { base64: toBase64(icon.data), mime: 'image/png' } : null;
+  return icon ? { base64: toBase64(icon.data), mime: "image/png" } : null;
 }
 
 // Writing bookmarks
 
-function applyBookmark(entry: KdbxEntry, patch: Partial<BookmarkInput> & { order?: number }) {
-  if (patch.title !== undefined) entry.fields.set('Title', patch.title);
-  if (patch.url !== undefined) entry.fields.set('URL', patch.url);
-  if (patch.note !== undefined) setText(entry, 'Notes', patch.note);
-  if (patch.excerpt !== undefined) setText(entry, entryField.excerpt, patch.excerpt);
+function applyBookmark(
+  entry: KdbxEntry,
+  patch: Partial<BookmarkInput> & { order?: number },
+) {
+  if (patch.title !== undefined) entry.fields.set("Title", patch.title);
+  if (patch.url !== undefined) entry.fields.set("URL", patch.url);
+  if (patch.note !== undefined) setText(entry, "Notes", patch.note);
+  if (patch.excerpt !== undefined)
+    setText(entry, entryField.excerpt, patch.excerpt);
   if (patch.type !== undefined)
-    setText(entry, entryField.type, patch.type === 'link' ? '' : patch.type);
-  if (patch.favorite !== undefined) setText(entry, entryField.favorite, patch.favorite ? '1' : '');
-  if (patch.order !== undefined) setText(entry, entryField.order, String(patch.order));
+    setText(entry, entryField.type, patch.type === "link" ? "" : patch.type);
+  if (patch.favorite !== undefined)
+    setText(entry, entryField.favorite, patch.favorite ? "1" : "");
+  if (patch.order !== undefined)
+    setText(entry, entryField.order, String(patch.order));
   if (patch.tags !== undefined)
     entry.tags = [...new Set(patch.tags.map((t) => t.trim()).filter(Boolean))];
 }
@@ -312,7 +334,11 @@ export function setFavicon(
   if (!id) {
     const uuid = KdbxUuid.random();
     id = uuid.id;
-    db.meta.customIcons.set(id, { data: png.slice().buffer, name: site, lastModified: new Date() });
+    db.meta.customIcons.set(id, {
+      data: png.slice().buffer,
+      name: site,
+      lastModified: new Date(),
+    });
   }
   entry.customIcon = new KdbxUuid(id);
 }
@@ -322,15 +348,15 @@ export interface Capture {
   /** `site` names the picture. Several bookmarks share the one named for their site. */
   favicon?: { site: string; png: Uint8Array; replace?: boolean };
   /** Take these pictures away from the bookmark. Anything new in this capture is added afterwards. */
-  clear?: ('cover' | 'icon')[];
+  clear?: ("cover" | "icon")[];
 }
 
 /** The name of an icon the person chose for one bookmark. */
 export const customIconName = (id: string) => `custom:${id}`;
 
 function applyCapture(db: Kdbx, entry: KdbxEntry, capture: Capture) {
-  if (capture.clear?.includes('cover')) entry.binaries.delete(coverName);
-  if (capture.clear?.includes('icon')) entry.customIcon = undefined;
+  if (capture.clear?.includes("cover")) entry.binaries.delete(coverName);
+  if (capture.clear?.includes("icon")) entry.customIcon = undefined;
   if (capture.clear?.length) db.cleanup({ customIcons: true, binaries: true });
 }
 
@@ -344,7 +370,13 @@ async function storeCapture(db: Kdbx, entry: KdbxEntry, capture: Capture) {
   applyCapture(db, entry, capture);
   if (capture.cover) await setCover(db, entry, capture.cover);
   if (capture.favicon) {
-    setFavicon(db, entry, capture.favicon.site, capture.favicon.png, capture.favicon.replace);
+    setFavicon(
+      db,
+      entry,
+      capture.favicon.site,
+      capture.favicon.png,
+      capture.favicon.replace,
+    );
   }
 }
 
@@ -368,20 +400,26 @@ export async function updateBookmark(
 ) {
   const entry = findEntry(db, id);
   // Moving a bookmark in the manual order is not an edit worth a history entry.
-  const onlyOrder = Object.keys(patch).every((key) => key === 'order');
+  const onlyOrder = Object.keys(patch).every((key) => key === "order");
   if (!onlyOrder) entry.pushHistory(); // keeps the old version so an edit can be recovered
   applyBookmark(entry, patch);
-  if (patch.folderId !== undefined) db.move(entry, findGroup(db, patch.folderId));
+  if (patch.folderId !== undefined)
+    db.move(entry, findGroup(db, patch.folderId));
   await storeCapture(db, entry, capture);
   if (!onlyOrder) entry.times.update();
 }
 
 /** Sets the manual order of several bookmarks at once. */
 export function setOrders(db: Kdbx, orders: { id: string; order: number }[]) {
-  for (const { id, order } of orders) setText(findEntry(db, id), entryField.order, String(order));
+  for (const { id, order } of orders)
+    setText(findEntry(db, id), entryField.order, String(order));
 }
 
-export function moveBookmarks(db: Kdbx, ids: string[], folderId: string | null) {
+export function moveBookmarks(
+  db: Kdbx,
+  ids: string[],
+  folderId: string | null,
+) {
   const target = findGroup(db, folderId);
   for (const id of ids) {
     const entry = findEntry(db, id);
@@ -398,8 +436,12 @@ export function trashBookmarks(db: Kdbx, ids: string[]) {
 export function restoreBookmarks(db: Kdbx, ids: string[]) {
   for (const id of ids) {
     const entry = findEntry(db, id);
-    const previous = entry.previousParentGroup && db.getGroup(entry.previousParentGroup);
-    db.move(entry, previous && !inBin(db, previous) ? previous : db.getDefaultGroup());
+    const previous =
+      entry.previousParentGroup && db.getGroup(entry.previousParentGroup);
+    db.move(
+      entry,
+      previous && !inBin(db, previous) ? previous : db.getDefaultGroup(),
+    );
   }
 }
 
@@ -433,15 +475,27 @@ function applyFolder(group: KdbxGroup, patch: FolderPatch) {
   if (patch.note !== undefined) group.notes = patch.note;
   if (patch.expanded !== undefined) group.expanded = patch.expanded;
   if (patch.icon !== undefined)
-    setData(group, groupData.icon, patch.icon === defaultFolderIcon ? '' : patch.icon);
+    setData(
+      group,
+      groupData.icon,
+      patch.icon === defaultFolderIcon ? "" : patch.icon,
+    );
   if (patch.color !== undefined) setData(group, groupData.color, patch.color);
-  if (patch.order !== undefined) setData(group, groupData.order, String(patch.order));
-  if (patch.view !== undefined) setData(group, groupData.view, JSON.stringify(patch.view));
+  if (patch.order !== undefined)
+    setData(group, groupData.order, String(patch.order));
+  if (patch.view !== undefined)
+    setData(group, groupData.view, JSON.stringify(patch.view));
 }
 
 /** Points a folder at a stored picture, reusing one that is already there. */
-function setFolderPicture(db: Kdbx, group: KdbxGroup, picture: { name: string; png: Uint8Array }) {
-  let id = [...db.meta.customIcons].find(([, icon]) => icon.name === picture.name)?.[0];
+function setFolderPicture(
+  db: Kdbx,
+  group: KdbxGroup,
+  picture: { name: string; png: Uint8Array },
+) {
+  let id = [...db.meta.customIcons].find(
+    ([, icon]) => icon.name === picture.name,
+  )?.[0];
   if (!id) {
     id = KdbxUuid.random().id;
     db.meta.customIcons.set(id, {
@@ -470,14 +524,14 @@ export function updateFolder(db: Kdbx, id: string, patch: FolderPatch) {
   applyFolder(group, patch);
   if (patch.iconImage) setFolderPicture(db, group, patch.iconImage);
   // Opening or closing a folder in the tree is not an edit worth a new modification time.
-  if (Object.keys(patch).some((k) => k !== 'expanded')) group.times.update();
+  if (Object.keys(patch).some((k) => k !== "expanded")) group.times.update();
 }
 
 export function moveFolder(db: Kdbx, id: string, parentId: string | null) {
   const group = findGroup(db, id);
   const target = findGroup(db, parentId);
   for (let g: KdbxGroup | undefined = target; g; g = g.parentGroup) {
-    if (g === group) throw new Error('A folder cannot move into itself');
+    if (g === group) throw new Error("A folder cannot move into itself");
   }
   db.move(group, target);
   group.times.update();

@@ -1,7 +1,7 @@
 // Moving bookmarks in from other places and out to files: import, export and the duplicate finder.
-import { useMemo, useState } from 'react';
-import { browser } from 'wxt/browser';
-import { buildTree, normalizeUrl } from '../browse';
+import { useMemo, useState } from "react";
+import { browser } from "wxt/browser";
+import { buildTree, normalizeUrl } from "../browse";
 import {
   fromBrowserTree,
   parseNetscape,
@@ -11,13 +11,13 @@ import {
   toRaindropCsv,
   type BrowserNode,
   type ParsedImport,
-} from '../formats';
-import type { ImportResult } from '../importing';
-import type { SnapshotReply } from '../messages';
-import { send } from './api';
-import { Dialog } from './Dialog';
-import { I } from './Icon';
-import { errorText, FolderSelect } from './parts';
+} from "../formats";
+import type { ImportResult } from "../importing";
+import type { SnapshotReply } from "../messages";
+import { send } from "./api";
+import { Dialog } from "./Dialog";
+import { I } from "./Icon";
+import { errorText, FolderSelect } from "./parts";
 
 /** Works out the format from what the file contains, not what it is called. */
 export function parseBookmarkFile(text: string): ParsedImport {
@@ -33,9 +33,12 @@ export function ImportDialog({
   snapshot: SnapshotReply;
   onClose: () => void;
 }) {
-  const tree = useMemo(() => buildTree(snapshot.folders, snapshot.bookmarks), [snapshot]);
+  const tree = useMemo(
+    () => buildTree(snapshot.folders, snapshot.bookmarks),
+    [snapshot],
+  );
   const [parsed, setParsed] = useState<ParsedImport>();
-  const [source, setSource] = useState('');
+  const [source, setSource] = useState("");
   const [preview, setPreview] = useState<ImportResult>();
   const [done, setDone] = useState<ImportResult>();
   const [skipDuplicates, setSkipDuplicates] = useState(true);
@@ -48,7 +51,9 @@ export function ImportDialog({
   async function load(next: ParsedImport, name: string, skip = skipDuplicates) {
     setParsed(next);
     setSource(name);
-    setPreview(await send('importPreview', { parsed: next, skipDuplicates: skip }));
+    setPreview(
+      await send("importPreview", { parsed: next, skipDuplicates: skip }),
+    );
   }
 
   async function chooseFile(file: File | undefined) {
@@ -66,11 +71,15 @@ export function ImportDialog({
   async function fromBrowser() {
     setError(undefined);
     try {
-      if (!(await browser.permissions.request({ permissions: ['bookmarks'] }))) {
-        return setError('BookPass needs the bookmarks permission to read your browser bookmarks.');
+      if (
+        !(await browser.permissions.request({ permissions: ["bookmarks"] }))
+      ) {
+        return setError(
+          "BookPass needs the bookmarks permission to read your browser bookmarks.",
+        );
       }
       const roots = (await browser.bookmarks.getTree()) as BrowserNode[];
-      await load(fromBrowserTree(roots), 'your browser bookmarks');
+      await load(fromBrowserTree(roots), "your browser bookmarks");
     } catch (e) {
       setError(errorText(e));
     }
@@ -81,7 +90,7 @@ export function ImportDialog({
     setBusy(true);
     try {
       setDone(
-        await send('importBookmarks', {
+        await send("importBookmarks", {
           parsed,
           parentId: parent,
           wrapper: wrap ? `Imported ${today}` : undefined,
@@ -102,9 +111,11 @@ export function ImportDialog({
           <div className="callout" role="status">
             <I n="circle-check" />
             <span>
-              Imported {done.added} bookmark{done.added === 1 ? '' : 's'} and {done.folders} folder
-              {done.folders === 1 ? '' : 's'}.
-              {done.skipped > 0 && ` ${done.skipped} already in your vault were skipped.`}
+              Imported {done.added} bookmark{done.added === 1 ? "" : "s"} and{" "}
+              {done.folders} folder
+              {done.folders === 1 ? "" : "s"}.
+              {done.skipped > 0 &&
+                ` ${done.skipped} already in your vault were skipped.`}
             </span>
           </div>
           <div className="modal-foot" style={{ padding: 0 }}>
@@ -117,8 +128,8 @@ export function ImportDialog({
       ) : (
         <>
           <p className="hint" style={{ margin: 0 }}>
-            Bookmark files from Chrome, Firefox, Raindrop (HTML or CSV) and most other services
-            work. The whole file is read here, on your computer.
+            Bookmark files from Chrome, Firefox, Raindrop (HTML or CSV) and most
+            other services work. The whole file is read here, on your computer.
           </p>
           <div className="row">
             <label className="btn">
@@ -139,10 +150,11 @@ export function ImportDialog({
               <div className="callout" role="status">
                 <I n="circle-check" />
                 <span>
-                  {source}: {preview.added} bookmark{preview.added === 1 ? '' : 's'} to import
+                  {source}: {preview.added} bookmark
+                  {preview.added === 1 ? "" : "s"} to import
                   {preview.skipped > 0 && `, ${preview.skipped} already here`}
                   {preview.folders > 0 &&
-                    `, ${preview.folders} folder${preview.folders === 1 ? '' : 's'} to create`}
+                    `, ${preview.folders} folder${preview.folders === 1 ? "" : "s"} to create`}
                   .
                 </span>
               </div>
@@ -155,10 +167,16 @@ export function ImportDialog({
                     void load(parsed, source, e.target.checked);
                   }}
                 />
-                <span>Skip bookmarks whose address is already in the vault</span>
+                <span>
+                  Skip bookmarks whose address is already in the vault
+                </span>
               </label>
               <label className="row">
-                <input type="checkbox" checked={wrap} onChange={(e) => setWrap(e.target.checked)} />
+                <input
+                  type="checkbox"
+                  checked={wrap}
+                  onChange={(e) => setWrap(e.target.checked)}
+                />
                 <span>Put them in a new folder called Imported {today}</span>
               </label>
               <label className="field">
@@ -197,7 +215,7 @@ export function ImportDialog({
 }
 
 function download(name: string, type: string, text: string) {
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = URL.createObjectURL(new Blob([text], { type }));
   link.download = name;
   link.click();
@@ -218,15 +236,20 @@ export function ExportDialog({
       <div className="callout warn">
         <I n="triangle-exclamation" />
         <span>
-          Exported files are not encrypted. Anyone who gets a copy can read every address and note.
-          Your vault file, which is encrypted, already opens in KeePassXC and is the better backup.
+          Exported files are not encrypted. Anyone who gets a copy can read
+          every address and note. Your vault file, which is encrypted, already
+          opens in KeePassXC and is the better backup.
         </span>
       </div>
       <div className="stack" style={{ gap: 8 }}>
         <button
           className="btn"
           onClick={() =>
-            download(`bookpass-${stamp}.html`, 'text/html', toNetscape(folders, bookmarks))
+            download(
+              `bookpass-${stamp}.html`,
+              "text/html",
+              toNetscape(folders, bookmarks),
+            )
           }
         >
           <I n="file-lines" /> HTML for browsers and most services
@@ -234,7 +257,11 @@ export function ExportDialog({
         <button
           className="btn"
           onClick={() =>
-            download(`bookpass-${stamp}.csv`, 'text/csv', toRaindropCsv(folders, bookmarks))
+            download(
+              `bookpass-${stamp}.csv`,
+              "text/csv",
+              toRaindropCsv(folders, bookmarks),
+            )
           }
         >
           <I n="file-lines" /> CSV with folders, tags and notes
@@ -242,15 +269,21 @@ export function ExportDialog({
         <button
           className="btn"
           onClick={() =>
-            download(`bookpass-${stamp}.json`, 'application/json', toJson(folders, bookmarks))
+            download(
+              `bookpass-${stamp}.json`,
+              "application/json",
+              toJson(folders, bookmarks),
+            )
           }
         >
           <I n="file-lines" /> JSON with everything
         </button>
       </div>
       <p className="hint" style={{ margin: 0 }}>
-        {bookmarks.length} bookmark{bookmarks.length === 1 ? '' : 's'} in {folders.length} folder
-        {folders.length === 1 ? '' : 's'}. Cover pictures and icons stay in the vault.
+        {bookmarks.length} bookmark{bookmarks.length === 1 ? "" : "s"} in{" "}
+        {folders.length} folder
+        {folders.length === 1 ? "" : "s"}. Cover pictures and icons stay in the
+        vault.
       </p>
     </Dialog>
   );
@@ -275,7 +308,7 @@ export function DuplicatesDialog({
   const [error, setError] = useState<string>();
 
   const trash = (ids: string[]) =>
-    void send('trashBookmarks', { ids }).catch((e) => setError(errorText(e)));
+    void send("trashBookmarks", { ids }).catch((e) => setError(errorText(e)));
   const extras = groups.flatMap((g) =>
     [...g]
       .sort((a, b) => b.created - a.created)
@@ -293,26 +326,38 @@ export function DuplicatesDialog({
       ) : (
         <>
           <p className="hint" style={{ margin: 0 }}>
-            Addresses that differ only by a trailing slash or a #fragment count as the same page.
+            Addresses that differ only by a trailing slash or a #fragment count
+            as the same page.
           </p>
           <ul className="tag-list">
             {groups.map((group) => (
-              <li key={group[0]!.id} className="panel" style={{ margin: 0, padding: 12 }}>
-                <div className="hint" style={{ wordBreak: 'break-all' }}>
+              <li
+                key={group[0]!.id}
+                className="panel"
+                style={{ margin: 0, padding: 12 }}
+              >
+                <div className="hint" style={{ wordBreak: "break-all" }}>
                   {group[0]!.url}
                 </div>
                 {group.map((b) => (
                   <div key={b.id} className="row" style={{ marginTop: 6 }}>
                     <span className="grow" style={{ minWidth: 0 }}>
-                      {b.title}{' '}
+                      {b.title}{" "}
                       <span className="hint">
-                        in {b.folderId ? (folderName.get(b.folderId) ?? 'a folder') : 'Unsorted'},{' '}
-                        {new Date(b.created).toLocaleDateString()}
+                        in{" "}
+                        {b.folderId
+                          ? (folderName.get(b.folderId) ?? "a folder")
+                          : "Unsorted"}
+                        , {new Date(b.created).toLocaleDateString()}
                       </span>
                     </span>
                     <button
                       className="btn small"
-                      onClick={() => trash(group.filter((x) => x.id !== b.id).map((x) => x.id))}
+                      onClick={() =>
+                        trash(
+                          group.filter((x) => x.id !== b.id).map((x) => x.id),
+                        )
+                      }
                     >
                       Keep this one
                     </button>
@@ -322,7 +367,8 @@ export function DuplicatesDialog({
             ))}
           </ul>
           <button className="btn" onClick={() => trash(extras)}>
-            <I n="trash" /> Keep only the newest of each ({extras.length} to trash)
+            <I n="trash" /> Keep only the newest of each ({extras.length} to
+            trash)
           </button>
         </>
       )}

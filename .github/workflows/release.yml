@@ -4,7 +4,7 @@ name: Release
 
 on:
   push:
-    tags: ['v*']
+    tags: ["v*"]
 
 permissions:
   contents: write
@@ -38,12 +38,24 @@ jobs:
     strategy:
       matrix:
         include:
-          - { goos: windows, goarch: amd64, file: bookpass-helper-windows-amd64.exe }
-          - { goos: windows, goarch: arm64, file: bookpass-helper-windows-arm64.exe }
+          - {
+              goos: windows,
+              goarch: amd64,
+              file: bookpass-helper-windows-amd64.exe,
+            }
+          - {
+              goos: windows,
+              goarch: arm64,
+              file: bookpass-helper-windows-arm64.exe,
+            }
           - { goos: linux, goarch: amd64, file: bookpass-helper-linux-amd64 }
           - { goos: linux, goarch: arm64, file: bookpass-helper-linux-arm64 }
           - { goos: darwin, goarch: amd64, file: bookpass-helper-macos-intel }
-          - { goos: darwin, goarch: arm64, file: bookpass-helper-macos-apple-silicon }
+          - {
+              goos: darwin,
+              goarch: arm64,
+              file: bookpass-helper-macos-apple-silicon,
+            }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -52,7 +64,7 @@ jobs:
       - name: Build
         working-directory: helper
         env:
-          CGO_ENABLED: '0'
+          CGO_ENABLED: "0"
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
         run: go build -trimpath -ldflags "-s -w" -o "../${{ matrix.file }}" .
@@ -105,7 +117,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: dist
-          pattern: '{extension,helper-bookpass-*}'
+          pattern: "{extension,helper-bookpass-*}"
           merge-multiple: true
       - name: Signed programs replace the unsigned ones, when there are any
         uses: actions/download-artifact@v4

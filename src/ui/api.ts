@@ -1,13 +1,13 @@
 // How pages talk to the background.
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { browser } from 'wxt/browser';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { browser } from "wxt/browser";
 import {
   pagePortName,
   type BroadcastEvent,
   type RequestType,
   type Requests,
   type ResponseEnvelope,
-} from '../messages';
+} from "../messages";
 
 export class RequestError extends Error {
   constructor(
@@ -24,7 +24,8 @@ export async function send<K extends RequestType>(
 ): Promise<Requests[K][1]> {
   const response = (await browser.runtime.sendMessage({ type, payload })) as
     ResponseEnvelope<Requests[K][1]> | undefined;
-  if (!response) throw new RequestError('BookPass did not answer. Reload the page.');
+  if (!response)
+    throw new RequestError("BookPass did not answer. Reload the page.");
   if (!response.ok) throw new RequestError(response.error, response.code);
   return response.value;
 }
@@ -38,14 +39,20 @@ export function usePagePort() {
 }
 
 /** Calls back when the background says the vault or its status changed. */
-export function useBroadcast(callback: (event: BroadcastEvent['event']) => void) {
+export function useBroadcast(
+  callback: (event: BroadcastEvent["event"]) => void,
+) {
   const latest = useRef(callback);
   useEffect(() => {
     latest.current = callback;
   });
   useEffect(() => {
     const listener = (message: unknown) => {
-      if (typeof message === 'object' && message !== null && 'event' in message) {
+      if (
+        typeof message === "object" &&
+        message !== null &&
+        "event" in message
+      ) {
         latest.current((message as BroadcastEvent).event);
       }
       return false;
@@ -56,19 +63,22 @@ export function useBroadcast(callback: (event: BroadcastEvent['event']) => void)
 }
 
 /** Loads one of the background's read-only answers and loads it again when the background says it changed. */
-function useRemote<K extends 'status' | 'snapshot'>(
+function useRemote<K extends "status" | "snapshot">(
   type: K,
-  event: BroadcastEvent['event'],
+  event: BroadcastEvent["event"],
   enabled = true,
 ) {
   const [tick, setTick] = useState(0);
-  const [state, setState] = useState<{ data?: Requests[K][1]; error?: string }>({});
+  const [state, setState] = useState<{ data?: Requests[K][1]; error?: string }>(
+    {},
+  );
   useEffect(() => {
     if (!enabled) return;
     let live = true;
     send(type, undefined as Requests[K][0]).then(
       (data) => live && setState({ data }),
-      (e) => live && setState({ error: e instanceof Error ? e.message : String(e) }),
+      (e) =>
+        live && setState({ error: e instanceof Error ? e.message : String(e) }),
     );
     return () => {
       live = false;
@@ -87,27 +97,31 @@ function useRemote<K extends 'status' | 'snapshot'>(
 }
 
 export function useStatus() {
-  const { data, error, refresh, set } = useRemote('status', 'status');
+  const { data, error, refresh, set } = useRemote("status", "status");
   return { status: data, error, refresh, setStatus: set };
 }
 
 /** The bookmarks and folders, kept fresh. Only loads while `enabled` (the vault is unlocked). */
 export function useSnapshot(enabled: boolean) {
-  const { data, error, refresh } = useRemote('snapshot', 'changed', enabled);
+  const { data, error, refresh } = useRemote("snapshot", "changed", enabled);
   return { snapshot: data, error, refresh };
 }
 
 const images = new Map<string, Promise<string | null>>();
 
 /** A cover or favicon as a data URL. Cached, because the same favicon shows up on many bookmarks. */
-export function useImage(kind: 'cover' | 'icon', id: string | null, version = 0): string | null {
+export function useImage(
+  kind: "cover" | "icon",
+  id: string | null,
+  version = 0,
+): string | null {
   const key = `${kind}:${id}:${version}`;
   const [loaded, setLoaded] = useState<{ key: string; url: string | null }>();
   useEffect(() => {
     if (!id) return;
     let cached = images.get(key);
     if (!cached) {
-      cached = send('getImage', { kind, id }).then((image) =>
+      cached = send("getImage", { kind, id }).then((image) =>
         image ? `data:${image.mime};base64,${image.base64}` : null,
       );
       images.set(key, cached);

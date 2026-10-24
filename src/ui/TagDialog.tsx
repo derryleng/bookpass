@@ -1,17 +1,23 @@
-import { useState } from 'react';
-import { tagCounts } from '../browse';
-import type { SnapshotReply } from '../messages';
-import { send } from './api';
-import { Dialog } from './Dialog';
-import { I } from './Icon';
-import { folderColors } from './icons';
-import { errorText } from './parts';
+import { useState } from "react";
+import { tagCounts } from "../browse";
+import type { SnapshotReply } from "../messages";
+import { send } from "./api";
+import { Dialog } from "./Dialog";
+import { I } from "./Icon";
+import { folderColors } from "./icons";
+import { errorText } from "./parts";
 
 /** Rename, merge, color and delete tags. Renaming a tag to the name of another one merges the two. */
-export function TagDialog({ snapshot, onClose }: { snapshot: SnapshotReply; onClose: () => void }) {
+export function TagDialog({
+  snapshot,
+  onClose,
+}: {
+  snapshot: SnapshotReply;
+  onClose: () => void;
+}) {
   const tags = tagCounts(snapshot.bookmarks);
   const [editing, setEditing] = useState<string>();
-  const [name, setName] = useState('');
+  const [name, setName] = useState("");
   const [error, setError] = useState<string>();
 
   async function run(job: () => Promise<unknown>) {
@@ -35,7 +41,7 @@ export function TagDialog({ snapshot, onClose }: { snapshot: SnapshotReply; onCl
                 className="row"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  void run(() => send('renameTag', { from: tag, to: name }));
+                  void run(() => send("renameTag", { from: tag, to: name }));
                 }}
               >
                 <input
@@ -46,28 +52,37 @@ export function TagDialog({ snapshot, onClose }: { snapshot: SnapshotReply; onCl
                   aria-label={`New name for ${tag}`}
                 />
                 <button className="btn primary small">Rename</button>
-                <button type="button" className="btn small" onClick={() => setEditing(undefined)}>
+                <button
+                  type="button"
+                  className="btn small"
+                  onClick={() => setEditing(undefined)}
+                >
                   Cancel
                 </button>
               </form>
             ) : (
               <div className="row">
-                <span className="grow" style={{ color: snapshot.tagColors[tag] }}>
+                <span
+                  className="grow"
+                  style={{ color: snapshot.tagColors[tag] }}
+                >
                   {tag}
                 </span>
                 <span className="count">{count}</span>
                 <select
                   className="select"
-                  style={{ width: 'auto' }}
-                  value={snapshot.tagColors[tag] ?? ''}
+                  style={{ width: "auto" }}
+                  value={snapshot.tagColors[tag] ?? ""}
                   onChange={(e) =>
-                    void run(() => send('setTagColor', { tag, color: e.target.value }))
+                    void run(() =>
+                      send("setTagColor", { tag, color: e.target.value }),
+                    )
                   }
                   aria-label={`Color of ${tag}`}
                 >
                   {folderColors.map((c) => (
                     <option key={c} value={c}>
-                      {c ? c : 'No color'}
+                      {c ? c : "No color"}
                     </option>
                   ))}
                 </select>
@@ -85,8 +100,8 @@ export function TagDialog({ snapshot, onClose }: { snapshot: SnapshotReply; onCl
                   aria-label={`Delete ${tag}`}
                   onClick={() =>
                     confirm(
-                      `Remove the tag "${tag}" from ${count} bookmark${count === 1 ? '' : 's'}?`,
-                    ) && void run(() => send('deleteTag', { tag }))
+                      `Remove the tag "${tag}" from ${count} bookmark${count === 1 ? "" : "s"}?`,
+                    ) && void run(() => send("deleteTag", { tag }))
                   }
                 >
                   <I n="trash" />

@@ -1,5 +1,5 @@
-import { useEffect, useRef, type ReactNode } from 'react';
-import { I } from './Icon';
+import { useEffect, useRef, type ReactNode } from "react";
+import { I } from "./Icon";
 
 interface Props {
   title: string;
@@ -25,7 +25,11 @@ export function Dialog({ title, onClose, children, footer }: Props) {
     >
       <div className="modal-head">
         <h2>{title}</h2>
-        <button className="btn ghost square" onClick={onClose} aria-label="Close">
+        <button
+          className="btn ghost square"
+          onClick={onClose}
+          aria-label="Close"
+        >
           <I n="xmark" />
         </button>
       </div>

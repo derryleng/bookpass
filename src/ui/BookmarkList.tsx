@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
-import type { Bookmark, ViewSettings } from '../bookmark-model';
-import { domainOf, type BookmarkGroup } from '../browse';
-import { send, useImage } from './api';
-import { isOurs, readDrag, startDrag } from './dnd';
-import { I } from './Icon';
-import { Favicon, SelectAll } from './parts';
+import { useEffect, useRef, useState } from "react";
+import type { Bookmark, ViewSettings } from "../bookmark-model";
+import { domainOf, type BookmarkGroup } from "../browse";
+import { send, useImage } from "./api";
+import { isOurs, readDrag, startDrag } from "./dnd";
+import { I } from "./Icon";
+import { Favicon, SelectAll } from "./parts";
 
 /** Bookmarks drawn this many at a time, adding more as the page is scrolled. */
 const PAGE = 60;
@@ -47,9 +47,10 @@ export function BookmarkList({
     if (!node) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries.some((e) => e.isIntersecting)) setPaging({ listKey, shown: shown + PAGE });
+        if (entries.some((e) => e.isIntersecting))
+          setPaging({ listKey, shown: shown + PAGE });
       },
-      { rootMargin: '400px' },
+      { rootMargin: "400px" },
     );
     observer.observe(node);
     return () => observer.disconnect();
@@ -59,7 +60,8 @@ export function BookmarkList({
   const { visible } = groups.reduce(
     (acc, g) => {
       const part = g.bookmarks.slice(0, Math.max(0, shown - acc.used));
-      if (part.length) acc.visible.push({ ...g, bookmarks: part, all: g.bookmarks });
+      if (part.length)
+        acc.visible.push({ ...g, bookmarks: part, all: g.bookmarks });
       acc.used += g.bookmarks.length;
       return acc;
     },
@@ -69,7 +71,11 @@ export function BookmarkList({
   return (
     <>
       {visible.map((group) => (
-        <section className="group" key={group.key} aria-label={group.title || undefined}>
+        <section
+          className="group"
+          key={group.key}
+          aria-label={group.title || undefined}
+        >
           {group.title && (
             <header className="group-head">
               <SelectAll
@@ -82,7 +88,9 @@ export function BookmarkList({
               <span className="muted">{group.all.length}</span>
             </header>
           )}
-          <div className={`layout-${view.layout} ${selected.size ? 'selecting' : ''}`}>
+          <div
+            className={`layout-${view.layout} ${selected.size ? "selecting" : ""}`}
+          >
             {group.bookmarks.map((b) => (
               <BookmarkItem
                 key={b.id}
@@ -121,7 +129,7 @@ function BookmarkItem({
   onReorder,
 }: {
   dragIds: string[];
-  onReorder?: Props['onReorder'];
+  onReorder?: Props["onReorder"];
   bookmark: Bookmark;
   view: ViewSettings;
   selected: boolean;
@@ -132,29 +140,35 @@ function BookmarkItem({
 }) {
   const wantsCover =
     view.showCover &&
-    (view.layout === 'grid' || view.layout === 'masonry' || view.layout === 'list');
-  const cover = useImage('cover', wantsCover && b.hasCover ? b.id : null, b.modified);
+    (view.layout === "grid" ||
+      view.layout === "masonry" ||
+      view.layout === "list");
+  const cover = useImage(
+    "cover",
+    wantsCover && b.hasCover ? b.id : null,
+    b.modified,
+  );
   const domain = domainOf(b.url);
-  const showCoverBox = wantsCover && (view.layout !== 'list' || b.hasCover);
-  const [dropMark, setDropMark] = useState<'before' | 'after'>();
+  const showCoverBox = wantsCover && (view.layout !== "list" || b.hasCover);
+  const [dropMark, setDropMark] = useState<"before" | "after">();
 
   return (
     <article
-      className={`bm ${selected ? 'selected' : ''} ${dropMark ? `drop-${dropMark}` : ''}`}
+      className={`bm ${selected ? "selected" : ""} ${dropMark ? `drop-${dropMark}` : ""}`}
       draggable={!inTrash}
-      onDragStart={(e) => startDrag(e, { kind: 'bookmarks', ids: dragIds })}
+      onDragStart={(e) => startDrag(e, { kind: "bookmarks", ids: dragIds })}
       onDragOver={(e) => {
         if (!onReorder || !isOurs(e)) return;
         e.preventDefault();
         const box = e.currentTarget.getBoundingClientRect();
-        setDropMark(e.clientY < box.top + box.height / 2 ? 'before' : 'after');
+        setDropMark(e.clientY < box.top + box.height / 2 ? "before" : "after");
       }}
       onDragLeave={() => setDropMark(undefined)}
       onDrop={(e) => {
         const payload = readDrag(e);
-        const before = dropMark === 'before';
+        const before = dropMark === "before";
         setDropMark(undefined);
-        if (onReorder && payload?.kind === 'bookmarks') {
+        if (onReorder && payload?.kind === "bookmarks") {
           e.preventDefault();
           onReorder(payload.ids, b.id, before);
         }
@@ -168,15 +182,23 @@ function BookmarkItem({
         aria-label={`Select ${b.title}`}
       />
       {showCoverBox && (
-        <div className="bm-cover" style={cover ? { backgroundImage: `url(${cover})` } : undefined}>
+        <div
+          className="bm-cover"
+          style={cover ? { backgroundImage: `url(${cover})` } : undefined}
+        >
           {!cover && <Favicon iconId={b.iconId} url={b.url} />}
         </div>
       )}
       <div className="bm-body">
-        {view.layout === 'headlines' ? (
+        {view.layout === "headlines" ? (
           <>
             <Favicon iconId={b.iconId} url={b.url} />
-            <a className="bm-title" href={b.url} target="_blank" rel="noreferrer noopener">
+            <a
+              className="bm-title"
+              href={b.url}
+              target="_blank"
+              rel="noreferrer noopener"
+            >
               {b.title || b.url}
             </a>
             <span className="bm-meta grow">
@@ -221,7 +243,7 @@ function BookmarkItem({
               className="btn ghost square"
               title="Restore"
               aria-label="Restore"
-              onClick={() => void send('restoreBookmarks', { ids: [b.id] })}
+              onClick={() => void send("restoreBookmarks", { ids: [b.id] })}
             >
               <I n="rotate-left" />
             </button>
@@ -229,7 +251,7 @@ function BookmarkItem({
               className="btn ghost square"
               title="Delete forever"
               aria-label="Delete forever"
-              onClick={() => void send('deleteForever', { ids: [b.id] })}
+              onClick={() => void send("deleteForever", { ids: [b.id] })}
             >
               <I n="trash" />
             </button>
@@ -237,16 +259,24 @@ function BookmarkItem({
         ) : (
           <>
             <button
-              className={`btn ghost square fav ${b.favorite ? 'on' : ''}`}
-              title={b.favorite ? 'Remove from favorites' : 'Add to favorites'}
+              className={`btn ghost square fav ${b.favorite ? "on" : ""}`}
+              title={b.favorite ? "Remove from favorites" : "Add to favorites"}
               aria-label="Toggle favorite"
               onClick={() =>
-                void send('updateBookmark', { id: b.id, patch: { favorite: !b.favorite } })
+                void send("updateBookmark", {
+                  id: b.id,
+                  patch: { favorite: !b.favorite },
+                })
               }
             >
               <I n="star" />
             </button>
-            <button className="btn ghost square" title="Edit" aria-label="Edit" onClick={onEdit}>
+            <button
+              className="btn ghost square"
+              title="Edit"
+              aria-label="Edit"
+              onClick={onEdit}
+            >
               <I n="pen" />
             </button>
           </>

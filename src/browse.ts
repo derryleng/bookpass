@@ -1,20 +1,26 @@
 // What the manager shows: which bookmarks, in what order, and how folders nest. Pure logic, no React.
-import type { Bookmark, Folder, GroupKey, Snapshot, ViewSettings } from './bookmark-model';
+import type {
+  Bookmark,
+  Folder,
+  GroupKey,
+  Snapshot,
+  ViewSettings,
+} from "./bookmark-model";
 
 export type Selection =
-  | { kind: 'all' }
-  | { kind: 'unsorted' }
-  | { kind: 'favorites' }
-  | { kind: 'trash' }
-  | { kind: 'folder'; id: string }
-  | { kind: 'tag'; tag: string }
-  | { kind: 'search' };
+  | { kind: "all" }
+  | { kind: "unsorted" }
+  | { kind: "favorites" }
+  | { kind: "trash" }
+  | { kind: "folder"; id: string }
+  | { kind: "tag"; tag: string }
+  | { kind: "search" };
 
 export function domainOf(url: string): string {
   try {
-    return new URL(url).hostname.replace(/^www\./, '');
+    return new URL(url).hostname.replace(/^www\./, "");
   } catch {
-    return '';
+    return "";
   }
 }
 
@@ -22,8 +28,8 @@ export function domainOf(url: string): string {
 export function normalizeUrl(url: string): string {
   try {
     const u = new URL(url);
-    u.hash = '';
-    return u.href.replace(/\/$/, '').toLowerCase();
+    u.hash = "";
+    return u.href.replace(/\/$/, "").toLowerCase();
   } catch {
     return url.trim().toLowerCase();
   }
@@ -40,27 +46,40 @@ export interface TreeNode {
   total: number;
 }
 
-export function buildTree(folders: Folder[], bookmarks: Bookmark[]): TreeNode[] {
+export function buildTree(
+  folders: Folder[],
+  bookmarks: Bookmark[],
+): TreeNode[] {
   const own = new Map<string, number>();
-  for (const b of bookmarks) if (b.folderId) own.set(b.folderId, (own.get(b.folderId) ?? 0) + 1);
+  for (const b of bookmarks)
+    if (b.folderId) own.set(b.folderId, (own.get(b.folderId) ?? 0) + 1);
 
   const nodes = new Map<string, TreeNode>();
   for (const folder of folders)
-    nodes.set(folder.id, { folder, children: [], own: own.get(folder.id) ?? 0, total: 0 });
+    nodes.set(folder.id, {
+      folder,
+      children: [],
+      own: own.get(folder.id) ?? 0,
+      total: 0,
+    });
 
   const roots: TreeNode[] = [];
   for (const node of nodes.values()) {
-    const parent = node.folder.parentId ? nodes.get(node.folder.parentId) : undefined;
+    const parent = node.folder.parentId
+      ? nodes.get(node.folder.parentId)
+      : undefined;
     (parent ? parent.children : roots).push(node);
   }
 
   const byOrder = (a: TreeNode, b: TreeNode) =>
-    a.folder.order - b.folder.order || a.folder.name.localeCompare(b.folder.name);
+    a.folder.order - b.folder.order ||
+    a.folder.name.localeCompare(b.folder.name);
   const finish = (list: TreeNode[]) => {
     list.sort(byOrder);
     for (const node of list) {
       finish(node.children);
-      node.total = node.own + node.children.reduce((sum, c) => sum + c.total, 0);
+      node.total =
+        node.own + node.children.reduce((sum, c) => sum + c.total, 0);
     }
   };
   finish(roots);
@@ -93,7 +112,10 @@ export interface FolderOption {
 }
 
 /** Folders in tree order with their depth, for a folder picker. `exclude` hides folders that cannot be chosen. */
-export function folderOptions(tree: TreeNode[], exclude: Set<string> = new Set()): FolderOption[] {
+export function folderOptions(
+  tree: TreeNode[],
+  exclude: Set<string> = new Set(),
+): FolderOption[] {
   const out: FolderOption[] = [];
   const walk = (nodes: TreeNode[], depth: number) => {
     for (const node of nodes) {
@@ -114,19 +136,20 @@ export function folderOptions(tree: TreeNode[], exclude: Set<string> = new Set()
  *   is:fav  favorites      type:video  one kind of page      has:note   has:cover
  */
 export function matchesQuery(b: Bookmark, query: string): boolean {
-  const haystack = `${b.title} ${b.url} ${b.note} ${b.excerpt} ${b.tags.join(' ')}`.toLowerCase();
+  const haystack =
+    `${b.title} ${b.url} ${b.note} ${b.excerpt} ${b.tags.join(" ")}`.toLowerCase();
   for (const raw of query.toLowerCase().split(/\s+/).filter(Boolean)) {
-    if (raw.startsWith('#')) {
+    if (raw.startsWith("#")) {
       if (!b.tags.some((t) => t.toLowerCase() === raw.slice(1))) return false;
-    } else if (raw.startsWith('domain:')) {
+    } else if (raw.startsWith("domain:")) {
       if (!domainOf(b.url).includes(raw.slice(7))) return false;
-    } else if (raw === 'is:fav') {
+    } else if (raw === "is:fav") {
       if (!b.favorite) return false;
-    } else if (raw.startsWith('type:')) {
+    } else if (raw.startsWith("type:")) {
       if (b.type !== raw.slice(5)) return false;
-    } else if (raw === 'has:note') {
+    } else if (raw === "has:note") {
       if (!b.note) return false;
-    } else if (raw === 'has:cover') {
+    } else if (raw === "has:cover") {
       if (!b.hasCover) return false;
     } else if (!haystack.includes(raw)) {
       return false;
@@ -137,16 +160,20 @@ export function matchesQuery(b: Bookmark, query: string): boolean {
 
 export function sortBookmarks(
   list: Bookmark[],
-  view: Pick<ViewSettings, 'sort' | 'sortDir'>,
+  view: Pick<ViewSettings, "sort" | "sortDir">,
 ): Bookmark[] {
-  const compare: Record<ViewSettings['sort'], (a: Bookmark, b: Bookmark) => number> = {
+  const compare: Record<
+    ViewSettings["sort"],
+    (a: Bookmark, b: Bookmark) => number
+  > = {
     added: (a, b) => a.created - b.created,
     edited: (a, b) => a.modified - b.modified,
-    title: (a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }),
+    title: (a, b) =>
+      a.title.localeCompare(b.title, undefined, { sensitivity: "base" }),
     domain: (a, b) => domainOf(a.url).localeCompare(domainOf(b.url)),
     manual: (a, b) => a.order - b.order,
   };
-  const sign = view.sortDir === 'asc' ? 1 : -1;
+  const sign = view.sortDir === "asc" ? 1 : -1;
   return [...list].sort(
     (a, b) => sign * compare[view.sort](a, b) || a.title.localeCompare(b.title),
   );
@@ -163,27 +190,29 @@ export function bookmarksFor(
     list = snapshot.bookmarks.filter((b) => matchesQuery(b, query));
   } else {
     switch (selection.kind) {
-      case 'all':
-      case 'search':
+      case "all":
+      case "search":
         list = snapshot.bookmarks;
         break;
-      case 'unsorted':
+      case "unsorted":
         list = snapshot.bookmarks.filter((b) => b.folderId === null);
         break;
-      case 'favorites':
+      case "favorites":
         list = snapshot.bookmarks.filter((b) => b.favorite);
         break;
-      case 'trash':
+      case "trash":
         list = snapshot.trash;
         break;
-      case 'tag':
+      case "tag":
         list = snapshot.bookmarks.filter((b) => b.tags.includes(selection.tag));
         break;
-      case 'folder': {
+      case "folder": {
         const ids = view.subfolders
           ? descendantIds(buildTree(snapshot.folders, []), selection.id)
           : new Set([selection.id]);
-        list = snapshot.bookmarks.filter((b) => b.folderId !== null && ids.has(b.folderId));
+        list = snapshot.bookmarks.filter(
+          (b) => b.folderId !== null && ids.has(b.folderId),
+        );
         break;
       }
     }
@@ -201,7 +230,9 @@ export interface BookmarkGroup {
 }
 
 /** Folders in the order the tree shows them, each with its names from the top, for grouping by folder. */
-function folderPaths(folders: Folder[]): Map<string, { names: string[]; order: number }> {
+function folderPaths(
+  folders: Folder[],
+): Map<string, { names: string[]; order: number }> {
   const tree = buildTree(folders, []);
   const out = new Map<string, { names: string[]; order: number }>();
   const walk = (nodes: TreeNode[], above: string[]) => {
@@ -216,10 +247,13 @@ function folderPaths(folders: Folder[]): Map<string, { names: string[]; order: n
 }
 
 const monthLabel = (ms: number) =>
-  new Date(ms).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  new Date(ms).toLocaleDateString(undefined, {
+    month: "long",
+    year: "numeric",
+  });
 const monthKey = (ms: number) => {
   const d = new Date(ms);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 };
 
 /**
@@ -229,33 +263,40 @@ const monthKey = (ms: number) => {
 export function groupBookmarks(
   list: Bookmark[],
   group: GroupKey,
-  snapshot: Pick<Snapshot, 'folders'>,
+  snapshot: Pick<Snapshot, "folders">,
   selection: Selection,
 ): BookmarkGroup[] {
-  if (group === 'none') return [{ key: '', title: '', bookmarks: list }];
+  if (group === "none") return [{ key: "", title: "", bookmarks: list }];
 
   const paths = folderPaths(snapshot.folders);
-  const base = selection.kind === 'folder' ? paths.get(selection.id)?.names.length : undefined;
+  const base =
+    selection.kind === "folder"
+      ? paths.get(selection.id)?.names.length
+      : undefined;
   const classify: Record<
-    Exclude<GroupKey, 'none'>,
+    Exclude<GroupKey, "none">,
     (b: Bookmark) => { key: string; title: string; rank: string | number }
   > = {
     folder: (b) => {
       const path = b.folderId ? paths.get(b.folderId) : undefined;
-      if (!path) return { key: '', title: 'Unsorted', rank: Number.MAX_SAFE_INTEGER };
+      if (!path)
+        return { key: "", title: "Unsorted", rank: Number.MAX_SAFE_INTEGER };
       // Inside a folder the sections are named from that folder down, and its own bookmarks take its name.
       const names = base ? path.names.slice(base - 1) : path.names;
-      const title = names.length > 1 && base ? names.slice(1).join(' / ') : names.join(' / ');
+      const title =
+        names.length > 1 && base
+          ? names.slice(1).join(" / ")
+          : names.join(" / ");
       return { key: b.folderId!, title, rank: path.order };
     },
     title: (b) => {
-      const first = b.title.trim().normalize('NFD')[0]?.toUpperCase() ?? '';
-      const letter = /\p{L}/u.test(first) ? first : '#';
-      return { key: letter, title: letter, rank: letter === '#' ? '' : letter };
+      const first = b.title.trim().normalize("NFD")[0]?.toUpperCase() ?? "";
+      const letter = /\p{L}/u.test(first) ? first : "#";
+      return { key: letter, title: letter, rank: letter === "#" ? "" : letter };
     },
     website: (b) => {
       const site = domainOf(b.url);
-      return { key: site, title: site || 'No website', rank: site || '\uffff' };
+      return { key: site, title: site || "No website", rank: site || "\uffff" };
     },
     added: (b) => ({
       key: monthKey(b.created),
@@ -276,22 +317,27 @@ export function groupBookmarks(
     section.bookmarks.push(b);
     sections.set(key, section);
   }
-  const dates = group === 'added' || group === 'edited';
+  const dates = group === "added" || group === "edited";
   return [...sections.values()]
     .sort((a, b) => {
       const order =
-        typeof a.rank === 'number' || typeof b.rank === 'number'
+        typeof a.rank === "number" || typeof b.rank === "number"
           ? Number(a.rank) - Number(b.rank)
-          : a.rank.localeCompare(String(b.rank), undefined, { sensitivity: 'base' });
+          : a.rank.localeCompare(String(b.rank), undefined, {
+              sensitivity: "base",
+            });
       return dates ? -order : order;
     })
     .map(({ key, title, bookmarks }) => ({ key, title, bookmarks }));
 }
 
 /** Tags with how many bookmarks use each, most used first. */
-export function tagCounts(bookmarks: Bookmark[]): { tag: string; count: number }[] {
+export function tagCounts(
+  bookmarks: Bookmark[],
+): { tag: string; count: number }[] {
   const counts = new Map<string, number>();
-  for (const b of bookmarks) for (const tag of b.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+  for (const b of bookmarks)
+    for (const tag of b.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
   return [...counts]
     .map(([tag, count]) => ({ tag, count }))
     .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
@@ -308,7 +354,7 @@ export function reorder(
   ids: string[],
   targetId: string,
   before: boolean,
-  dir: 'asc' | 'desc',
+  dir: "asc" | "desc",
 ): { id: string; order: number }[] {
   const moving = list.filter((b) => ids.includes(b.id));
   const rest = list.filter((b) => !ids.includes(b.id));
@@ -317,7 +363,7 @@ export function reorder(
   const insertAt = before ? at : at + 1;
   const prev = rest[insertAt - 1];
   const next = rest[insertAt];
-  const sign = dir === 'asc' ? 1 : -1;
+  const sign = dir === "asc" ? 1 : -1;
   // The values just outside the gap, extended one step past the end of the list where there is no neighbour.
   const count = moving.length;
   const from = prev ? prev.order : next ? next.order - sign * (count + 1) : 0;
@@ -328,6 +374,10 @@ export function reorder(
   if (distinct) return moving.map((b, i) => ({ id: b.id, order: values[i]! }));
 
   // Neighbours with the same value leave no room, so number the whole list in the new sequence.
-  const sequence = [...rest.slice(0, insertAt), ...moving, ...rest.slice(insertAt)];
+  const sequence = [
+    ...rest.slice(0, insertAt),
+    ...moving,
+    ...rest.slice(insertAt),
+  ];
   return sequence.map((b, i) => ({ id: b.id, order: sign * (i + 1) * 1000 }));
 }

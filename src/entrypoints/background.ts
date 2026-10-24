@@ -1,10 +1,10 @@
-import { browser } from 'wxt/browser';
-import { defineBackground } from 'wxt/utils/define-background';
-import * as model from '../bookmark-model';
-import { startContextMenu } from '../context-menu';
-import { getHistory, restoreVersion } from '../history';
-import { importInto, previewImport } from '../importing';
-import { startLockManager } from '../lock-manager';
+import { browser } from "wxt/browser";
+import { defineBackground } from "wxt/utils/define-background";
+import * as model from "../bookmark-model";
+import { startContextMenu } from "../context-menu";
+import { getHistory, restoreVersion } from "../history";
+import { importInto, previewImport } from "../importing";
+import { startLockManager } from "../lock-manager";
 import {
   AppError,
   pagePortName,
@@ -14,17 +14,22 @@ import {
   type RequestType,
   type Requests,
   type ResponseEnvelope,
-} from '../messages';
-import { addTags, deleteTag, renameTag, setTagColor } from '../tags';
-import { Vault } from '../vault';
+} from "../messages";
+import { addTags, deleteTag, renameTag, setTagColor } from "../tags";
+import { Vault } from "../vault";
 
-type Handlers = { [K in RequestType]: (payload: Requests[K][0]) => Promise<Requests[K][1]> };
+type Handlers = {
+  [K in RequestType]: (payload: Requests[K][0]) => Promise<Requests[K][1]>;
+};
 
 export default defineBackground(() => {
   // The Firefox end to end build opens the manager itself, since a script cannot navigate to an extension page.
   if (__E2E__) {
     browser.runtime.onInstalled.addListener(
-      () => void browser.tabs.create({ url: browser.runtime.getURL('/manager.html') }),
+      () =>
+        void browser.tabs.create({
+          url: browser.runtime.getURL("/manager.html"),
+        }),
     );
   }
 
@@ -34,8 +39,10 @@ export default defineBackground(() => {
   void ready.then(() => locks.applyIdleSettings());
 
   // Tell every open page when something changed, so they can refresh.
-  const broadcast = (event: BroadcastEvent['event']) => {
-    browser.runtime.sendMessage({ event } satisfies BroadcastEvent).catch(() => {}); // no page open is fine
+  const broadcast = (event: BroadcastEvent["event"]) => {
+    browser.runtime
+      .sendMessage({ event } satisfies BroadcastEvent)
+      .catch(() => {}); // no page open is fine
   };
   vault.onEvent(broadcast);
   startContextMenu(vault);
@@ -61,13 +68,18 @@ export default defineBackground(() => {
     resolveConflict: ({ id, action }) => vault.resolveConflict(id, action),
     listBackups: () => vault.listBackups(),
     restoreBackup: ({ name, password, keyFile }) =>
-      vault.restoreBackup(name, password === undefined ? undefined : { password, keyFile }),
+      vault.restoreBackup(
+        name,
+        password === undefined ? undefined : { password, keyFile },
+      ),
     snapshot: () => vault.snapshot(),
     getImage: ({ kind, id }) => vault.image(kind, id),
     addBookmark: ({ input, capture }) =>
       vault.edit((db) => model.addBookmark(db, input, Vault.capture(capture))),
     updateBookmark: ({ id, patch, capture }) =>
-      vault.edit((db) => model.updateBookmark(db, id, patch, Vault.capture(capture))),
+      vault.edit((db) =>
+        model.updateBookmark(db, id, patch, Vault.capture(capture)),
+      ),
     moveBookmarks: ({ ids, folderId }) =>
       vault.edit((db) => model.moveBookmarks(db, ids, folderId)),
     setPictures: ({ items }) =>
@@ -76,26 +88,36 @@ export default defineBackground(() => {
           await model.setPictures(db, id, Vault.capture(capture));
       }),
     setOrder: ({ orders }) => vault.edit((db) => model.setOrders(db, orders)),
-    trashBookmarks: ({ ids }) => vault.edit((db) => model.trashBookmarks(db, ids)),
-    restoreBookmarks: ({ ids }) => vault.edit((db) => model.restoreBookmarks(db, ids)),
-    deleteForever: ({ ids }) => vault.edit((db) => model.deleteForever(db, ids)),
+    trashBookmarks: ({ ids }) =>
+      vault.edit((db) => model.trashBookmarks(db, ids)),
+    restoreBookmarks: ({ ids }) =>
+      vault.edit((db) => model.restoreBookmarks(db, ids)),
+    deleteForever: ({ ids }) =>
+      vault.edit((db) => model.deleteForever(db, ids)),
     emptyTrash: () => vault.edit((db) => model.emptyTrash(db)),
     history: ({ id }) => vault.read((db) => getHistory(db, id)),
-    restoreVersion: ({ id, time }) => vault.edit((db) => restoreVersion(db, id, time)),
+    restoreVersion: ({ id, time }) =>
+      vault.edit((db) => restoreVersion(db, id, time)),
     createFolder: ({ parentId, name, patch }) =>
-      vault.edit((db) => model.createFolder(db, parentId, name, Vault.folderPatch(patch))),
+      vault.edit((db) =>
+        model.createFolder(db, parentId, name, Vault.folderPatch(patch)),
+      ),
     updateFolder: ({ id, patch }) =>
       vault.edit((db) => model.updateFolder(db, id, Vault.folderPatch(patch)!)),
-    moveFolder: ({ id, parentId }) => vault.edit((db) => model.moveFolder(db, id, parentId)),
+    moveFolder: ({ id, parentId }) =>
+      vault.edit((db) => model.moveFolder(db, id, parentId)),
     trashFolder: ({ id }) => vault.edit((db) => model.trashFolder(db, id)),
     renameTag: ({ from, to }) => vault.edit((db) => renameTag(db, from, to)),
     deleteTag: ({ tag }) => vault.edit((db) => deleteTag(db, tag)),
-    setTagColor: ({ tag, color }) => vault.edit((db) => setTagColor(db, tag, color)),
+    setTagColor: ({ tag, color }) =>
+      vault.edit((db) => setTagColor(db, tag, color)),
     addTags: ({ ids, tags }) => vault.edit((db) => addTags(db, ids, tags)),
     importPreview: ({ parsed, skipDuplicates }) =>
       vault.read((db) => previewImport(db, parsed, skipDuplicates)),
     importBookmarks: ({ parsed, parentId, wrapper, skipDuplicates }) =>
-      vault.edit((db) => importInto(db, parsed, parentId, wrapper, skipDuplicates)),
+      vault.edit((db) =>
+        importInto(db, parsed, parentId, wrapper, skipDuplicates),
+      ),
     getSettings: async () => vault.settings,
     setSettings: async (patch) => {
       const settings = await vault.setSettings(patch);
@@ -109,10 +131,13 @@ export default defineBackground(() => {
     await ready;
     try {
       if (!passiveRequests.includes(request.type)) locks.touch();
-      const handler = handlers[request.type] as (payload: unknown) => Promise<unknown>;
+      const handler = handlers[request.type] as (
+        payload: unknown,
+      ) => Promise<unknown>;
       return { ok: true, value: await handler(request.payload) };
     } catch (e) {
-      if (!(e instanceof AppError)) console.error('BookPass request failed', request.type, e);
+      if (!(e instanceof AppError))
+        console.error("BookPass request failed", request.type, e);
       return {
         ok: false,
         error: e instanceof Error ? e.message : String(e),
@@ -122,7 +147,8 @@ export default defineBackground(() => {
   }
 
   browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    if (typeof message !== 'object' || message === null || !('type' in message)) return false; // a broadcast, not a request
+    if (typeof message !== "object" || message === null || !("type" in message))
+      return false; // a broadcast, not a request
     void handle(message as RequestEnvelope).then(sendResponse);
     return true; // the answer comes later
   });

@@ -1,17 +1,21 @@
 // Fetches the site icon and cover picture for the bookmarks that are missing one, in one go: for everything, for a
 // folder or for the bookmarks picked in the list. It reaches each site with a plain request (see fetch-pictures.ts)
 // only after the person has started it, only for the sites they leave ticked, and can be stopped at any time.
-import { useMemo, useRef, useState } from 'react';
-import type { Bookmark } from '../bookmark-model';
-import { stopCoversVaultBytes } from '../constants';
-import { canFetch, fetchPictures, type FetchedPictures } from '../fetch-pictures';
-import type { CaptureData } from '../messages';
-import type { Settings } from '../settings';
-import { send } from './api';
-import { Dialog } from './Dialog';
-import { I } from './Icon';
-import { errorText } from './parts';
-import { withSiteAccess } from './site-access';
+import { useMemo, useRef, useState } from "react";
+import type { Bookmark } from "../bookmark-model";
+import { stopCoversVaultBytes } from "../constants";
+import {
+  canFetch,
+  fetchPictures,
+  type FetchedPictures,
+} from "../fetch-pictures";
+import type { CaptureData } from "../messages";
+import type { Settings } from "../settings";
+import { send } from "./api";
+import { Dialog } from "./Dialog";
+import { I } from "./Icon";
+import { errorText } from "./parts";
+import { withSiteAccess } from "./site-access";
 
 const WORKERS = 3;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -92,7 +96,8 @@ export function FetchMissingDialog({
       nothing: 0,
       reasons: new Map(),
     };
-    const publish = () => setProgress({ ...now, reasons: new Map(now.reasons) });
+    const publish = () =>
+      setProgress({ ...now, reasons: new Map(now.reasons) });
     publish();
 
     // The bookmarks of one site go one after another, with a pause, so no site is hit with a burst of requests.
@@ -101,7 +106,7 @@ export function FetchMissingDialog({
     const flush = async () => {
       const batch = pending;
       pending = [];
-      if (batch.length) await send('setPictures', { items: batch });
+      if (batch.length) await send("setPictures", { items: batch });
     };
 
     try {
@@ -112,7 +117,7 @@ export function FetchMissingDialog({
             group && !controller.signal.aborted;
             group = queue.shift()
           ) {
-            let siteIcon: FetchedPictures['icon'];
+            let siteIcon: FetchedPictures["icon"];
             for (const b of group) {
               if (controller.signal.aborted) break;
               const needIcon = wantIcons && !b.iconId;
@@ -143,7 +148,8 @@ export function FetchMissingDialog({
               } else {
                 now.nothing++;
               }
-              for (const p of got.problems) now.reasons.set(p, (now.reasons.get(p) ?? 0) + 1);
+              for (const p of got.problems)
+                now.reasons.set(p, (now.reasons.get(p) ?? 0) + 1);
               now.done++;
               if (pending.length >= 10) await flush();
               publish();
@@ -178,7 +184,7 @@ export function FetchMissingDialog({
           ) : (
             <>
               <button className="btn" onClick={onClose}>
-                {finished ? 'Close' : 'Cancel'}
+                {finished ? "Close" : "Cancel"}
               </button>
               {!finished && (
                 <button
@@ -186,7 +192,8 @@ export function FetchMissingDialog({
                   disabled={targetCount === 0}
                   onClick={() => void start()}
                 >
-                  <I n="globe" /> Fetch for {targetCount} bookmark{targetCount === 1 ? '' : 's'}
+                  <I n="globe" /> Fetch for {targetCount} bookmark
+                  {targetCount === 1 ? "" : "s"}
                 </button>
               )}
             </>
@@ -197,11 +204,11 @@ export function FetchMissingDialog({
       {!progress && (
         <>
           <p className="hint" style={{ margin: 0 }}>
-            Looking at {scope}: {missingIcons} of {reachable.length} have no site icon and{' '}
-            {missingCovers} have no cover picture. BookPass will ask each site you leave ticked for
-            its own icon and preview image.
+            Looking at {scope}: {missingIcons} of {reachable.length} have no
+            site icon and {missingCovers} have no cover picture. BookPass will
+            ask each site you leave ticked for its own icon and preview image.
             {plain > 0 &&
-              ` ${plain} use${plain === 1 ? 's' : ''} plain http and ${plain === 1 ? 'is' : 'are'} left out, because only https is fetched.`}
+              ` ${plain} use${plain === 1 ? "s" : ""} plain http and ${plain === 1 ? "is" : "are"} left out, because only https is fetched.`}
           </p>
           <label className="row">
             <input
@@ -220,7 +227,7 @@ export function FetchMissingDialog({
             />
             <span>
               Cover pictures ({missingCovers})
-              {coversPaused ? ', paused because the vault is large' : ''}
+              {coversPaused ? ", paused because the vault is large" : ""}
             </span>
           </label>
           {sites.size > 0 && (
@@ -229,7 +236,11 @@ export function FetchMissingDialog({
                 Sites to contact ({targets.length} of {sites.size})
               </legend>
               <div className="row">
-                <button type="button" className="btn small" onClick={() => setSkipSites(new Set())}>
+                <button
+                  type="button"
+                  className="btn small"
+                  onClick={() => setSkipSites(new Set())}
+                >
                   Tick all
                 </button>
                 <button
@@ -249,7 +260,9 @@ export function FetchMissingDialog({
                         checked={!skipSites.has(site)}
                         onChange={() => toggleSite(site)}
                       />
-                      <span className="grow">{site.replace(/^https?:\/\//, '')}</span>
+                      <span className="grow">
+                        {site.replace(/^https?:\/\//, "")}
+                      </span>
                       <span className="muted">{list.length}</span>
                     </label>
                   </li>
@@ -260,15 +273,17 @@ export function FetchMissingDialog({
           <div className="callout">
             <I n="shield" />
             <span>
-              Your browser will ask for permission to reach all sites, and the permission is taken
-              back when this finishes. Each request has no cookies and no referrer and is not kept
-              in the cache, so a site sees only an ordinary visit to a page you bookmarked. Requests
-              are spread out with random pauses. Nothing goes to any other service. If a bookmark
-              redirects to a different site, what it returns is thrown away, though that site has
-              been asked once. Covers on a different server than the page are{' '}
+              Your browser will ask for permission to reach all sites, and the
+              permission is taken back when this finishes. Each request has no
+              cookies and no referrer and is not kept in the cache, so a site
+              sees only an ordinary visit to a page you bookmarked. Requests are
+              spread out with random pauses. Nothing goes to any other service.
+              If a bookmark redirects to a different site, what it returns is
+              thrown away, though that site has been asked once. Covers on a
+              different server than the page are{" "}
               {settings.coversFromOtherServers
-                ? 'fetched, as your settings allow'
-                : 'skipped, as your settings say'}
+                ? "fetched, as your settings allow"
+                : "skipped, as your settings say"}
               .
             </span>
           </div>
@@ -279,14 +294,15 @@ export function FetchMissingDialog({
           <progress
             value={progress.done}
             max={Math.max(1, progress.total)}
-            style={{ width: '100%' }}
+            style={{ width: "100%" }}
           />
           <p style={{ margin: 0 }} role="status">
-            {progress.done} of {progress.total} looked at. Added {progress.icons} icon
-            {progress.icons === 1 ? '' : 's'} and {progress.covers} cover
-            {progress.covers === 1 ? '' : 's'}.
+            {progress.done} of {progress.total} looked at. Added{" "}
+            {progress.icons} icon
+            {progress.icons === 1 ? "" : "s"} and {progress.covers} cover
+            {progress.covers === 1 ? "" : "s"}.
             {progress.nothing > 0 && ` ${progress.nothing} had nothing to add.`}
-            {finished && stopped && ' Stopped early.'}
+            {finished && stopped && " Stopped early."}
           </p>
           {finished && progress.reasons.size > 0 && (
             <ul className="tag-list hint">

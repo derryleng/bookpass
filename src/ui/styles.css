@@ -18,11 +18,11 @@
   --ok: #1a7f4b;
   --shadow: 0 1px 2px rgb(16 24 40 / 6%), 0 4px 14px rgb(16 24 40 / 6%);
   --radius: 10px;
-  --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   color-scheme: light;
 }
 
-:root[data-theme='dark'] {
+:root[data-theme="dark"] {
   --bg: #101216;
   --surface: #181b21;
   --surface-2: #20242c;
@@ -43,7 +43,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
+  :root:not([data-theme="light"]) {
     --bg: #101216;
     --surface: #181b21;
     --surface-2: #20242c;
@@ -317,7 +317,7 @@ h3 {
   display: grid;
   grid-template-columns: 270px 1fr;
   grid-template-rows: 56px 1fr;
-  grid-template-areas: 'top top' 'side main';
+  grid-template-areas: "top top" "side main";
 }
 
 .topbar {
@@ -1171,7 +1171,7 @@ dialog.modal::backdrop {
   .mgr {
     grid-template-columns: 1fr;
     grid-template-rows: 56px auto 1fr;
-    grid-template-areas: 'top' 'side' 'main';
+    grid-template-areas: "top" "side" "main";
   }
 
   .sidebar {
@@ -1223,7 +1223,7 @@ label.btn input[hidden] {
   background: var(--accent-soft);
 }
 
-.bm[draggable='true'] {
+.bm[draggable="true"] {
   cursor: grab;
 }
 

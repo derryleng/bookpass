@@ -1,11 +1,11 @@
 // The vault service. It lives in the background, owns the open vault and the unlock key,
 // and is the only code that reads or writes the vault file (through the helper).
-import { browser } from 'wxt/browser';
-import { fromBase64, toBase64 } from './base64';
-import * as model from './bookmark-model';
-import * as helper from './helper-client';
-import { restoreVersion } from './history';
-import { clearKey, loadKey, saveKey, setDiskCopy } from './key-store';
+import { browser } from "wxt/browser";
+import { fromBase64, toBase64 } from "./base64";
+import * as model from "./bookmark-model";
+import * as helper from "./helper-client";
+import { restoreVersion } from "./history";
+import { clearKey, loadKey, saveKey, setDiskCopy } from "./key-store";
 import {
   changePassword,
   createKeyFile,
@@ -18,8 +18,8 @@ import {
   openDatabase,
   saveDatabase,
   type Kdbx,
-} from './kdbx';
-import { keepsKeyOnDisk } from './lock';
+} from "./kdbx";
+import { keepsKeyOnDisk } from "./lock";
 import {
   AppError,
   type CaptureData,
@@ -30,28 +30,28 @@ import {
   type Status,
   type VaultPathCheck,
   type VersionConflict,
-} from './messages';
-import { defaultSettings, normalizeSettings, type Settings } from './settings';
-import { readTagColors } from './tags';
+} from "./messages";
+import { defaultSettings, normalizeSettings, type Settings } from "./settings";
+import { readTagColors } from "./tags";
 
 /** Saves are batched: edits within this time of each other become one write of the file. */
 const SAVE_DELAY_MS = 1500;
 const MAX_MERGE_ATTEMPTS = 3;
 
-type Listener = (event: 'changed' | 'status') => void;
+type Listener = (event: "changed" | "status") => void;
 type Creds = ReturnType<typeof credentialsFromKey>;
 
 export class Vault {
   private db?: Kdbx;
   private creds?: Creds;
   /** Hash of the file as we last read or wrote it. Empty when the file does not exist. */
-  private fileHash = '';
+  private fileHash = "";
   /** When BookPass and the file last agreed (ms since 1970). Edits after this are unsaved or unseen. */
   private lastSync = 0;
   private rev = 0;
   /** Counts edits, so a save can tell whether more arrived while it ran. */
   private edits = 0;
-  private saveState: SaveState = 'saved';
+  private saveState: SaveState = "saved";
   private saveError?: string;
   private saveTimer?: ReturnType<typeof setTimeout>;
   /** Everything that reads or writes the file runs one at a time. */
@@ -66,7 +66,7 @@ export class Vault {
     this.listeners.push(listener);
   }
 
-  private emit(event: 'changed' | 'status') {
+  private emit(event: "changed" | "status") {
     for (const listener of this.listeners) listener(event);
   }
 
@@ -79,7 +79,7 @@ export class Vault {
   // Settings
 
   async loadSettings(): Promise<Settings> {
-    const stored = (await browser.storage.local.get('settings')).settings as
+    const stored = (await browser.storage.local.get("settings")).settings as
       Partial<Settings> | undefined;
     this.settings = normalizeSettings(stored);
     return this.settings;
@@ -92,7 +92,7 @@ export class Vault {
     const key = await loadKey();
     if (key) await setDiskCopy(keepsKeyOnDisk(this.settings) ? key : undefined);
     else if (!keepsKeyOnDisk(this.settings)) await setDiskCopy(undefined);
-    this.emit('status');
+    this.emit("status");
     return this.settings;
   }
 
@@ -100,13 +100,13 @@ export class Vault {
 
   async status(): Promise<Status> {
     const base: Status = {
-      helper: 'ok',
+      helper: "ok",
       saveState: this.saveState,
       saveError: this.saveError,
       settings: this.settings,
       backupCount: 5,
-      vaultPath: '',
-      defaultPath: '',
+      vaultPath: "",
+      defaultPath: "",
       vaultExists: false,
       vaultBytes: 0,
       locked: true,
@@ -129,14 +129,15 @@ export class Vault {
         vaultExists: info.exists,
         vaultBytes: info.size,
         locked: !key,
-        conflictCopies: key && info.exists ? await helper.findConflictCopies() : [],
+        conflictCopies:
+          key && info.exists ? await helper.findConflictCopies() : [],
       };
     } catch (e) {
       if (e instanceof helper.HelperOutdatedError) {
-        return { ...base, helper: 'outdated', helperMessage: e.message };
+        return { ...base, helper: "outdated", helperMessage: e.message };
       }
-      if (e instanceof AppError && e.code === 'helper') {
-        return { ...base, helper: 'missing', helperMessage: e.message };
+      if (e instanceof AppError && e.code === "helper") {
+        return { ...base, helper: "missing", helperMessage: e.message };
       }
       throw e;
     }
@@ -157,7 +158,8 @@ export class Vault {
     try {
       return { path: await helper.pickFolder(), unavailable: false };
     } catch (e) {
-      if (e instanceof AppError && e.code === 'unavailable') return { path: '', unavailable: true };
+      if (e instanceof AppError && e.code === "unavailable")
+        return { path: "", unavailable: true };
       throw e;
     }
   }
@@ -191,23 +193,31 @@ export class Vault {
   }
 
   async createVault(secret: Secret): Promise<Status> {
-    if (secret.password.length < 1) throw new AppError('Choose a master password.');
+    if (secret.password.length < 1)
+      throw new AppError("Choose a master password.");
     if ((await helper.vaultInfo()).exists) {
-      throw new AppError('A vault file already exists at that path.', 'vault-exists');
+      throw new AppError(
+        "A vault file already exists at that path.",
+        "vault-exists",
+      );
     }
     const creds = await this.credentials(secret);
     const db = newDatabase(creds);
-    this.fileHash = '';
+    this.fileHash = "";
     this.adopt(db, creds);
     await this.saveNow(); // the first write creates the file; a conflict here means someone else made it meanwhile
     await saveKey(keyOf(creds), keepsKeyOnDisk(this.settings));
-    this.emit('status');
+    this.emit("status");
     return this.status();
   }
 
   async unlock(secret: Secret): Promise<Status> {
     const file = await helper.readVault();
-    if (!file) throw new AppError('There is no vault file at that path yet.', 'no-vault');
+    if (!file)
+      throw new AppError(
+        "There is no vault file at that path yet.",
+        "no-vault",
+      );
     const creds = await this.credentials(secret);
     const { db, upgraded } = await this.open(file.bytes, creds);
     this.fileHash = file.sha256;
@@ -215,7 +225,7 @@ export class Vault {
     this.adopt(db, creds);
     await saveKey(keyOf(creds), keepsKeyOnDisk(this.settings));
     if (upgraded) this.markDirty();
-    this.emit('status');
+    this.emit("status");
     return this.status();
   }
 
@@ -223,8 +233,11 @@ export class Vault {
     try {
       return await openDatabase(bytes, creds);
     } catch (e) {
-      if ((e as { code?: string }).code === 'InvalidKey') {
-        throw new AppError('Wrong master password, or the wrong key file.', 'wrong-password');
+      if ((e as { code?: string }).code === "InvalidKey") {
+        throw new AppError(
+          "Wrong master password, or the wrong key file.",
+          "wrong-password",
+        );
       }
       throw e;
     }
@@ -236,12 +249,12 @@ export class Vault {
     this.lastSync = Date.now();
     this.versionConflicts = [];
     this.rev++;
-    this.emit('changed');
+    this.emit("changed");
   }
 
   /** Writes any pending changes, then forgets the vault and the key. */
   async lock(): Promise<Status> {
-    if (this.db && this.saveState !== 'saved') {
+    if (this.db && this.saveState !== "saved") {
       try {
         await this.saveNow();
       } catch {
@@ -257,14 +270,14 @@ export class Vault {
     clearTimeout(this.saveTimer);
     this.db = this.creds = undefined;
     this.opening = undefined;
-    this.saveState = 'saved';
+    this.saveState = "saved";
     this.saveError = undefined;
     this.versionConflicts = [];
     this.lockReason = reason;
     await clearKey();
     this.rev++;
-    this.emit('status');
-    this.emit('changed');
+    this.emit("status");
+    this.emit("changed");
   }
 
   /** The open vault. After the background restarts it is reopened from the file with the stored key. */
@@ -272,9 +285,9 @@ export class Vault {
     if (this.db) return this.db;
     this.opening ??= (async () => {
       const key = await loadKey();
-      if (!key) throw new AppError('The vault is locked.', 'locked');
+      if (!key) throw new AppError("The vault is locked.", "locked");
       const file = await helper.readVault();
-      if (!file) throw new AppError('The vault file is missing.', 'no-vault');
+      if (!file) throw new AppError("The vault file is missing.", "no-vault");
       const creds = credentialsFromKey(key);
       const { db } = await this.open(file.bytes, creds);
       this.fileHash = file.sha256;
@@ -290,12 +303,16 @@ export class Vault {
 
   async snapshot(): Promise<SnapshotReply> {
     const db = await this.ensureOpen();
-    return { rev: this.rev, ...model.readSnapshot(db), tagColors: readTagColors(db) };
+    return {
+      rev: this.rev,
+      ...model.readSnapshot(db),
+      tagColors: readTagColors(db),
+    };
   }
 
-  async image(kind: 'cover' | 'icon', id: string) {
+  async image(kind: "cover" | "icon", id: string) {
     const db = await this.ensureOpen();
-    return kind === 'cover' ? model.getCover(db, id) : model.getIcon(db, id);
+    return kind === "cover" ? model.getCover(db, id) : model.getIcon(db, id);
   }
 
   /** Runs an edit, then schedules a save. */
@@ -325,23 +342,31 @@ export class Vault {
     };
   }
 
-  static folderPatch(patch: FolderPatchMessage | undefined): model.FolderPatch | undefined {
+  static folderPatch(
+    patch: FolderPatchMessage | undefined,
+  ): model.FolderPatch | undefined {
     if (!patch) return undefined;
     const { iconImage, ...rest } = patch;
     return iconImage
-      ? { ...rest, iconImage: { name: iconImage.name, png: fromBase64(iconImage.png) } }
+      ? {
+          ...rest,
+          iconImage: { name: iconImage.name, png: fromBase64(iconImage.png) },
+        }
       : rest;
   }
 
   private markDirty() {
     this.rev++;
     this.edits++;
-    this.saveState = 'dirty';
+    this.saveState = "dirty";
     this.saveError = undefined;
     clearTimeout(this.saveTimer);
-    this.saveTimer = setTimeout(() => void this.saveNow().catch(() => {}), SAVE_DELAY_MS);
-    this.emit('changed');
-    this.emit('status');
+    this.saveTimer = setTimeout(
+      () => void this.saveNow().catch(() => {}),
+      SAVE_DELAY_MS,
+    );
+    this.emit("changed");
+    this.emit("status");
   }
 
   // Saving
@@ -356,8 +381,8 @@ export class Vault {
     const db = this.db;
     if (!db) return;
     const editsAtStart = this.edits;
-    this.saveState = 'saving';
-    this.emit('status');
+    this.saveState = "saving";
+    this.emit("status");
     try {
       for (let attempt = 1; ; attempt++) {
         try {
@@ -366,21 +391,25 @@ export class Vault {
           this.lastSync = Date.now();
           break;
         } catch (e) {
-          if (!(e instanceof AppError) || e.code !== 'conflict' || attempt >= MAX_MERGE_ATTEMPTS) {
+          if (
+            !(e instanceof AppError) ||
+            e.code !== "conflict" ||
+            attempt >= MAX_MERGE_ATTEMPTS
+          ) {
             throw e;
           }
           await this.mergeFromDisk(db);
         }
       }
       // Edits made while the write ran leave the vault dirty again.
-      this.saveState = this.edits === editsAtStart ? 'saved' : 'dirty';
+      this.saveState = this.edits === editsAtStart ? "saved" : "dirty";
       this.saveError = undefined;
     } catch (e) {
-      this.saveState = 'error';
+      this.saveState = "error";
       this.saveError = e instanceof Error ? e.message : String(e);
       throw e;
     } finally {
-      this.emit('status');
+      this.emit("status");
     }
   }
 
@@ -392,13 +421,13 @@ export class Vault {
    */
   checkForChanges(): Promise<void> {
     return this.exclusive(async () => {
-      if (!this.db || this.saveState === 'saving') return;
+      if (!this.db || this.saveState === "saving") return;
       // Pages also learn about new conflict copies from the status, so tell them to look again.
-      this.emit('status');
+      this.emit("status");
       const now = await helper.statVault();
       if (!now.exists || now.sha256 === this.fileHash) return;
       try {
-        if (this.saveState === 'saved') {
+        if (this.saveState === "saved") {
           const file = await helper.readVault();
           if (!file) return;
           const { db } = await this.open(file.bytes, this.creds!);
@@ -406,14 +435,14 @@ export class Vault {
           this.db = db;
           this.lastSync = Date.now();
           this.rev++;
-          this.emit('changed');
+          this.emit("changed");
         } else {
           await this.mergeFromDisk(this.db);
         }
       } catch (e) {
-        if (e instanceof AppError && e.code === 'wrong-password') {
+        if (e instanceof AppError && e.code === "wrong-password") {
           await this.forget(
-            'The master password was changed on another computer. Enter the new one.',
+            "The master password was changed on another computer. Enter the new one.",
           );
           return;
         }
@@ -426,7 +455,7 @@ export class Vault {
   private async mergeFromDisk(db: Kdbx) {
     const file = await helper.readVault();
     if (!file) {
-      this.fileHash = '';
+      this.fileHash = "";
       return;
     }
     const { db: remote } = await this.open(file.bytes, this.creds!);
@@ -439,36 +468,37 @@ export class Vault {
     const conflicts = findEditConflicts(db, remote, this.lastSync);
     mergeRemote(db, remote);
     for (const c of conflicts) {
-      const kept = c.remoteTime > c.localTime ? 'the other copy' : 'this computer';
+      const kept =
+        c.remoteTime > c.localTime ? "the other copy" : "this computer";
       this.versionConflicts = [
         ...this.versionConflicts.filter((v) => v.id !== c.id),
         {
           id: c.id,
           title: c.title,
           kept,
-          lostTime: kept === 'this computer' ? c.remoteTime : c.localTime,
+          lostTime: kept === "this computer" ? c.remoteTime : c.localTime,
         },
       ];
     }
     this.lastSync = Date.now();
     this.rev++;
-    this.emit('changed');
-    this.emit('status');
+    this.emit("changed");
+    this.emit("status");
   }
 
   /** Merges a copy a sync tool left next to the vault, then moves it out of the way. */
   mergeConflictCopy(name: string): Promise<void> {
     return this.exclusive(async () => {
       const db = await this.ensureOpen();
-      const file = await helper.readVault({ source: 'conflict', name });
-      if (!file) throw new AppError('That copy has gone.');
+      const file = await helper.readVault({ source: "conflict", name });
+      if (!file) throw new AppError("That copy has gone.");
       let remote: Kdbx;
       try {
         remote = (await this.open(file.bytes, this.creds!)).db;
       } catch (e) {
-        if (e instanceof AppError && e.code === 'wrong-password') {
+        if (e instanceof AppError && e.code === "wrong-password") {
           throw new AppError(
-            'That copy uses a different master password. Open it in KeePassXC to merge it by hand.',
+            "That copy uses a different master password. Open it in KeePassXC to merge it by hand.",
           );
         }
         throw e;
@@ -477,15 +507,15 @@ export class Vault {
       this.edits++;
       await this.write();
       await helper.archiveConflictCopy(name);
-      this.emit('status');
+      this.emit("status");
     });
   }
 
-  resolveConflict(id: string, action: 'restore' | 'dismiss'): Promise<void> {
+  resolveConflict(id: string, action: "restore" | "dismiss"): Promise<void> {
     const conflict = this.versionConflicts.find((c) => c.id === id);
     this.versionConflicts = this.versionConflicts.filter((c) => c.id !== id);
-    this.emit('status');
-    if (action === 'restore' && conflict) {
+    this.emit("status");
+    if (action === "restore" && conflict) {
       return this.edit((db) => restoreVersion(db, id, conflict.lostTime));
     }
     return Promise.resolve();
@@ -501,17 +531,17 @@ export class Vault {
   restoreBackup(name: string, secret?: Secret): Promise<void> {
     return this.exclusive(async () => {
       await this.ensureOpen();
-      const file = await helper.readVault({ source: 'backup', name });
-      if (!file) throw new AppError('That backup has gone.');
+      const file = await helper.readVault({ source: "backup", name });
+      if (!file) throw new AppError("That backup has gone.");
       const creds = secret ? await this.credentials(secret) : this.creds!;
       let restored: Kdbx;
       try {
         restored = (await this.open(file.bytes, creds)).db;
       } catch (e) {
-        if (e instanceof AppError && e.code === 'wrong-password') {
+        if (e instanceof AppError && e.code === "wrong-password") {
           throw new AppError(
-            'That backup uses a different master password or key file. Enter the ones it was saved with.',
-            'wrong-password',
+            "That backup uses a different master password or key file. Enter the ones it was saved with.",
+            "wrong-password",
           );
         }
         throw e;
@@ -523,18 +553,18 @@ export class Vault {
       this.versionConflicts = [];
       this.rev++;
       await this.write();
-      this.emit('changed');
+      this.emit("changed");
     });
   }
 
   changePassword(current: string, next: string): Promise<void> {
     return this.exclusive(async () => {
       const db = await this.ensureOpen();
-      if (next.length < 1) throw new AppError('Choose a new master password.');
+      if (next.length < 1) throw new AppError("Choose a new master password.");
       const check = await credentialsFromPassword(current);
       const same = (a: Creds) => toBase64(a.passwordHash!.getBinary());
       if (same(check) !== same(this.creds!)) {
-        throw new AppError('The current password is wrong.', 'wrong-password');
+        throw new AppError("The current password is wrong.", "wrong-password");
       }
       this.creds = await changePassword(db, next);
       await saveKey(keyOf(this.creds), keepsKeyOnDisk(this.settings));

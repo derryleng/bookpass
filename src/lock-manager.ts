@@ -1,12 +1,12 @@
 // Watches for the moments the vault should lock: a timer, the computer going idle, and pages closing.
 // The rules themselves are in lock.ts.
-import { browser } from 'wxt/browser';
-import { idleDetectionSeconds, shouldLock, type LockState } from './lock';
-import { loadKey } from './key-store';
-import type { Vault } from './vault';
+import { browser } from "wxt/browser";
+import { idleDetectionSeconds, shouldLock, type LockState } from "./lock";
+import { loadKey } from "./key-store";
+import type { Vault } from "./vault";
 
-const ALARM = 'bookpass-lock-check';
-const ACTIVITY_KEY = 'lastActivity';
+const ALARM = "bookpass-lock-check";
+const ACTIVITY_KEY = "lastActivity";
 /** How long after the last page closes before "every time" mode locks, so popup to manager hand-offs survive. */
 const CLOSE_GRACE_MS = 2000;
 
@@ -15,12 +15,17 @@ type Port = ReturnType<typeof browser.runtime.connect>;
 export function startLockManager(vault: Vault) {
   let lastActivity = Date.now();
   let persistedAt = 0;
-  let systemState: LockState['systemState'] = 'active';
+  let systemState: LockState["systemState"] = "active";
   const pages = new Set<Port>();
 
   async function check() {
     if (!(await loadKey())) return; // already locked
-    const state: LockState = { now: Date.now(), lastActivity, systemState, openPages: pages.size };
+    const state: LockState = {
+      now: Date.now(),
+      lastActivity,
+      systemState,
+      openPages: pages.size,
+    };
     if (shouldLock(vault.settings, state)) await vault.lock();
   }
 
@@ -46,7 +51,7 @@ export function startLockManager(vault: Vault) {
   });
 
   vault.onEvent((event) => {
-    if (event === 'status') applyIdleSettings();
+    if (event === "status") applyIdleSettings();
   });
 
   return {

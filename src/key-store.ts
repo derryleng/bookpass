@@ -3,13 +3,17 @@
 //
 // Normally it lives in storage.session: memory only, gone when the browser closes, and never
 // readable by web pages. Only the explicit "never lock" setting also writes it to disk.
-import { browser } from 'wxt/browser';
+import { browser } from "wxt/browser";
 
-const KEY = 'unlockKey';
+const KEY = "unlockKey";
 
 export async function loadKey(): Promise<string | undefined> {
-  const fromSession = (await browser.storage.session.get(KEY))[KEY] as string | undefined;
-  return fromSession ?? ((await browser.storage.local.get(KEY))[KEY] as string | undefined);
+  const fromSession = (await browser.storage.session.get(KEY))[KEY] as
+    string | undefined;
+  return (
+    fromSession ??
+    ((await browser.storage.local.get(KEY))[KEY] as string | undefined)
+  );
 }
 
 export async function saveKey(key: string, alsoOnDisk: boolean): Promise<void> {
@@ -20,7 +24,10 @@ export async function saveKey(key: string, alsoOnDisk: boolean): Promise<void> {
 
 /** Removes the key everywhere, which locks the vault. */
 export async function clearKey(): Promise<void> {
-  await Promise.all([browser.storage.session.remove(KEY), browser.storage.local.remove(KEY)]);
+  await Promise.all([
+    browser.storage.session.remove(KEY),
+    browser.storage.local.remove(KEY),
+  ]);
 }
 
 /** Adds or removes the on disk copy without touching the in memory one. */

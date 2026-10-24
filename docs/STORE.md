@@ -12,16 +12,16 @@ The extension needs a small helper program to read and write the vault file, bec
 
 ## Permission justifications
 
-| Permission           | Justification                                                                                                                           |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| nativeMessaging      | Talks to the helper, which reads and writes the encrypted vault file                                                                    |
-| storage              | Keeps the settings and, while unlocked, the unlock key in memory                                                                        |
-| activeTab, scripting | Reads the title, description, icon and preview image of the one page the user saves, and screenshots that tab as its cover              |
-| contextMenus         | Adds Save page, Save link and Save image to the right click menu                                                                        |
-| alarms, idle         | Lock the vault after the time the user chose                                                                                            |
-| tabs (optional)      | Asked for only when the user saves all open tabs                                                                                        |
-| bookmarks (optional) | Asked for only when the user imports their browser bookmarks                                                                            |
-| all sites (optional) | Asked for only when the user presses a button that fetches icons or covers from bookmarked sites, and removed afterwards                |
+| Permission           | Justification                                                                                                              |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| nativeMessaging      | Talks to the helper, which reads and writes the encrypted vault file                                                       |
+| storage              | Keeps the settings and, while unlocked, the unlock key in memory                                                           |
+| activeTab, scripting | Reads the title, description, icon and preview image of the one page the user saves, and screenshots that tab as its cover |
+| contextMenus         | Adds Save page, Save link and Save image to the right click menu                                                           |
+| alarms, idle         | Lock the vault after the time the user chose                                                                               |
+| tabs (optional)      | Asked for only when the user saves all open tabs                                                                           |
+| bookmarks (optional) | Asked for only when the user imports their browser bookmarks                                                               |
+| all sites (optional) | Asked for only when the user presses a button that fetches icons or covers from bookmarked sites, and removed afterwards   |
 
 No host permission is held at rest. Requests carry no cookies and no referrer and go only to the bookmarked sites.
 

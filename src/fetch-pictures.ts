@@ -16,8 +16,8 @@
 //    allowed covers from other servers.
 //  - Only pictures are kept, and only after being shrunk. Nothing else from the page is stored.
 //  - There is no third party lookup service, so no one but the site hears about the bookmark.
-import { shrinkCover, toIconPng } from './images';
-import { findPictureLinks } from './pictures';
+import { shrinkCover, toIconPng } from "./images";
+import { findPictureLinks } from "./pictures";
 
 const MAX_PAGE_BYTES = 1_000_000;
 const MAX_PICTURE_BYTES = 3_000_000;
@@ -46,13 +46,15 @@ interface Options {
   signal?: AbortSignal;
 }
 
-const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]']);
+const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
 /** Whether BookPass will contact this address: https, or an address on this computer. */
 export function canFetch(url: string): boolean {
   try {
     const { protocol, hostname } = new URL(url);
-    return protocol === 'https:' || (protocol === 'http:' && LOOPBACK.has(hostname));
+    return (
+      protocol === "https:" || (protocol === "http:" && LOOPBACK.has(hostname))
+    );
   } catch {
     return false;
   }
@@ -60,7 +62,7 @@ export function canFetch(url: string): boolean {
 
 /** The same site, allowing for www and other subdomains of it. */
 export function sameSite(a: string, b: string): boolean {
-  const host = (url: string) => new URL(url).hostname.replace(/^www\./, '');
+  const host = (url: string) => new URL(url).hostname.replace(/^www\./, "");
   const [x, y] = [host(a), host(b)];
   return x === y || x.endsWith(`.${y}`) || y.endsWith(`.${x}`);
 }
@@ -69,17 +71,20 @@ export function sameSite(a: string, b: string): boolean {
 async function get(url: string, limit: number, signal?: AbortSignal) {
   const guard = AbortSignal.timeout(TIMEOUT_MS);
   const response = await fetch(url, {
-    credentials: 'omit',
-    referrerPolicy: 'no-referrer',
-    redirect: 'follow',
-    cache: 'no-store',
+    credentials: "omit",
+    referrerPolicy: "no-referrer",
+    redirect: "follow",
+    cache: "no-store",
     signal: signal ? AbortSignal.any([guard, signal]) : guard,
   });
   if (response.url && !sameSite(url, response.url)) {
     void response.body?.cancel().catch(() => {});
-    throw new Error('The address redirects to a different site, so nothing from it was kept');
+    throw new Error(
+      "The address redirects to a different site, so nothing from it was kept",
+    );
   }
-  if (!response.ok || !response.body) throw new Error(`The site answered ${response.status}`);
+  if (!response.ok || !response.body)
+    throw new Error(`The site answered ${response.status}`);
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
@@ -98,7 +103,7 @@ async function get(url: string, limit: number, signal?: AbortSignal) {
   }
   return {
     bytes: bytes.subarray(0, Math.min(total, limit)),
-    type: response.headers.get('content-type') ?? '',
+    type: response.headers.get("content-type") ?? "",
     finalUrl: response.url || url,
     complete: total < limit,
   };
@@ -113,12 +118,12 @@ export async function fetchPictures(
 ): Promise<FetchedPictures> {
   const result: FetchedPictures = { problems: [] };
   if (!/^https?:\/\//i.test(pageUrl)) {
-    result.problems.push('Only web addresses can be fetched.');
+    result.problems.push("Only web addresses can be fetched.");
     return result;
   }
   if (!canFetch(pageUrl)) {
     result.problems.push(
-      'The address is plain http, so it was not contacted. Only https is fetched.',
+      "The address is plain http, so it was not contacted. Only https is fetched.",
     );
     return result;
   }
@@ -128,38 +133,50 @@ export async function fetchPictures(
   try {
     const page = await get(pageUrl, MAX_PAGE_BYTES, options.signal);
     base = page.finalUrl;
-    if (/html|xml/i.test(page.type) || page.type === '') {
-      links = findPictureLinks(new TextDecoder().decode(page.bytes), page.finalUrl);
+    if (/html|xml/i.test(page.type) || page.type === "") {
+      links = findPictureLinks(
+        new TextDecoder().decode(page.bytes),
+        page.finalUrl,
+      );
     } else {
-      result.problems.push('The address is not a web page, so it lists no pictures.');
+      result.problems.push(
+        "The address is not a web page, so it lists no pictures.",
+      );
     }
   } catch (error) {
-    result.problems.push(`The page could not be read: ${(error as Error).message}.`);
+    result.problems.push(
+      `The page could not be read: ${(error as Error).message}.`,
+    );
   }
   const site = origin(base);
 
   if (wish.icon) {
     // Icons the page lists, then the classic place. A page's icon host is the page's own choice, so it is fine.
-    for (const candidate of [...new Set([...links.icons, `${site}/favicon.ico`])]
+    for (const candidate of [
+      ...new Set([...links.icons, `${site}/favicon.ico`]),
+    ]
       .filter(canFetch)
       .slice(0, 4)) {
       try {
         const picture = await get(candidate, MAX_PICTURE_BYTES, options.signal);
         result.icon = {
           site,
-          png: await toIconPng(new Blob([picture.bytes as BlobPart], { type: picture.type })),
+          png: await toIconPng(
+            new Blob([picture.bytes as BlobPart], { type: picture.type }),
+          ),
         };
         break;
       } catch {
         /* try the next one */
       }
     }
-    if (!result.icon) result.problems.push('No site icon could be read.');
+    if (!result.icon) result.problems.push("No site icon could be read.");
   }
 
   if (wish.cover) {
     const allowed = links.covers.filter(
-      (href) => canFetch(href) && (options.otherServers || origin(href) === site),
+      (href) =>
+        canFetch(href) && (options.otherServers || origin(href) === site),
     );
     result.skippedOtherServer = allowed.length < links.covers.length;
     for (const candidate of allowed.slice(0, 2)) {
@@ -177,10 +194,10 @@ export async function fetchPictures(
     if (!result.cover) {
       result.problems.push(
         links.covers.length === 0
-          ? 'The page does not list a cover picture.'
+          ? "The page does not list a cover picture."
           : result.skippedOtherServer && allowed.length === 0
-            ? 'The cover picture is on another server, which is not allowed in the settings.'
-            : 'The cover picture could not be read.',
+            ? "The cover picture is on another server, which is not allowed in the settings."
+            : "The cover picture could not be read.",
       );
     }
   }

@@ -1,11 +1,11 @@
 // Every BookPass page runs inside this: it checks the helper and the vault, shows the right gate screen,
 // and only renders the page itself once the vault is unlocked and loaded.
-import { useEffect, type ReactNode } from 'react';
-import type { SnapshotReply, Status } from '../messages';
-import { forgetImages, usePagePort, useSnapshot, useStatus } from './api';
-import { HelperMissing, Setup, Unlock } from './Gates';
-import { I } from './Icon';
-import './styles.css';
+import { useEffect, type ReactNode } from "react";
+import type { SnapshotReply, Status } from "../messages";
+import { forgetImages, usePagePort, useSnapshot, useStatus } from "./api";
+import { HelperMissing, Setup, Unlock } from "./Gates";
+import { I } from "./Icon";
+import "./styles.css";
 
 export interface PageContext {
   status: Status;
@@ -13,7 +13,7 @@ export interface PageContext {
   refreshStatus: () => void;
 }
 
-function Loading({ text = 'Loading…' }: { text?: string }) {
+function Loading({ text = "Loading…" }: { text?: string }) {
   return (
     <main className="gate">
       <span className="muted">
@@ -23,12 +23,16 @@ function Loading({ text = 'Loading…' }: { text?: string }) {
   );
 }
 
-export function Shell({ children }: { children: (context: PageContext) => ReactNode }) {
+export function Shell({
+  children,
+}: {
+  children: (context: PageContext) => ReactNode;
+}) {
   usePagePort();
   const { status, error, refresh, setStatus } = useStatus();
 
   useEffect(() => {
-    const theme = status?.settings.theme ?? 'auto';
+    const theme = status?.settings.theme ?? "auto";
     document.documentElement.dataset.theme = theme;
   }, [status?.settings.theme]);
 
@@ -36,7 +40,8 @@ export function Shell({ children }: { children: (context: PageContext) => ReactN
     if (status?.locked) forgetImages();
   }, [status?.locked]);
 
-  const unlocked = !!status && status.helper === 'ok' && status.vaultExists && !status.locked;
+  const unlocked =
+    !!status && status.helper === "ok" && status.vaultExists && !status.locked;
   const { snapshot, error: snapshotError } = useSnapshot(unlocked);
 
   // The vault locked behind our back (for example the key was cleared): look at the status again.
@@ -52,8 +57,10 @@ export function Shell({ children }: { children: (context: PageContext) => ReactN
     );
   }
   if (!status) return <Loading />;
-  if (status.helper !== 'ok') return <HelperMissing status={status} onRetry={refresh} />;
-  if (!status.vaultExists) return <Setup status={status} onStatus={setStatus} />;
+  if (status.helper !== "ok")
+    return <HelperMissing status={status} onRetry={refresh} />;
+  if (!status.vaultExists)
+    return <Setup status={status} onStatus={setStatus} />;
   if (status.locked) return <Unlock status={status} onStatus={setStatus} />;
   if (!snapshot) return <Loading text="Opening your vault…" />;
   return <>{children({ status, snapshot, refreshStatus: refresh })}</>;
