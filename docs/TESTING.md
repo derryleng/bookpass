@@ -15,24 +15,25 @@ Everything a test reads or writes is under `tests/`, except the Go tests, which 
 
 ## Automatic
 
-| Command                             | What it checks                                                                                                                                                                                                |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run typecheck`, `npm run lint` | Types and style                                                                                                                                                                                               |
-| `npm test`                          | Unit tests: the vault format, the bookmark model, locking rules, search and sorting, import and export formats, golden and tampered files, key files, password change, merging                                |
-| `npm run helper:test`               | The helper: atomic writes, conflicts, backups, the one file rule, the installer for each operating system                                                                                                     |
-| `npm run e2e`                       | Chrome with the built extension and the real helper: first run, saving from the toolbar button with covers and icons, layouts, search, the locking modes, a restarted background, KeePassXC opening the vault |
-| `npm run e2e:more`                  | Key files, import, tags, history, drag and drop, changes made outside BookPass, sync conflict copies, backups, changing the password                                                                          |
-| `npm run e2e:a11y`                  | An axe-core pass over every screen in the light and dark themes                                                                                                                                               |
-| `npm run e2e:security`              | Storage, network, who may use the helper, and the manifest                                                                                                                                                    |
-| `npm run e2e:perf`                  | A 48 MB vault with 10,000 bookmarks. Make it first with `PERF_VAULT=1 npx vitest run tests/unit/perf.test.ts`                                                                                                 |
+| Command                             | What it checks                                                                                                                                                                                                                                       |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run typecheck`, `npm run lint` | Types and style                                                                                                                                                                                                                                      |
+| `npm test`                          | Unit tests: the vault format, the bookmark model, locking rules, search and sorting, import and export formats, golden and tampered files, key files, password change, merging                                                                       |
+| `npm run helper:test`               | The helper: atomic writes, conflicts, backups, the one file rule, the installer for each operating system                                                                                                                                            |
+| `npm run e2e`                       | Chrome with the built extension and the real helper: first run, saving from the toolbar button with covers and icons, layouts, search, the locking modes, a restarted background, KeePassXC opening the vault                                        |
+| `npm run e2e:more`                  | Key files, import, tags, history, drag and drop, changes made outside BookPass, sync conflict copies, backups, changing the password                                                                                                                 |
+| `npm run e2e:a11y`                  | An axe-core pass over every screen in the light and dark themes                                                                                                                                                                                      |
+| `npm run e2e:security`              | Storage, network, who may use the helper, and the manifest                                                                                                                                                                                           |
+| `npm run e2e:firefox`               | Firefox with a build made only for the test (it opens its own manager and popup, since a script cannot press the toolbar button): creating and unlocking a vault, saving pages with covers and icons, the lock setting, KeePassXC opening the result |
+| `npm run e2e:perf`                  | A 48 MB vault with 10,000 bookmarks. Make it first with `PERF_VAULT=1 npx vitest run tests/unit/perf.test.ts`                                                                                                                                        |
 
 The golden files are made again with `UPDATE_FIXTURES=1 npx vitest run tests/unit/fixtures.test.ts`, only when the format deliberately changes.
 
-The Chrome end to end scripts need Windows, Chrome and KeePassXC in their default folders. Chrome's right click menu cannot be driven by a script, so the right click saving is checked by hand.
+The end to end scripts run on Windows and Linux (they look for Chrome, Firefox and `keepassxc-cli` in the usual places; set `BOOKPASS_CHROME` or `BOOKPASS_FIREFOX` to use another). On Linux use Node 24 or newer, and for a Snap Firefox set `BOOKPASS_FIREFOX=/snap/bin/firefox`. They have not been run on macOS. Chrome's right click menu cannot be driven by a script, so the right click saving is checked by hand.
 
 ## By hand
 
-Tick these off in a browser you use. Firefox, macOS and Linux have only had the spike (helper link, Argon2 and the vault code), so they need the whole list.
+Tick these off in a browser you use. The scripts have run on Windows (Chrome 156, Firefox 158) and on Ubuntu 26.04 in WSL (Chrome 156, Firefox 158 as a Snap). Flatpak browsers, macOS, Edge and Brave have not had the whole list.
 
 1. Install the helper (run it once) and load the extension. The popup should reach the create vault screen.
 2. Create a vault. Close the browser, open it, and unlock.

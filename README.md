@@ -2,7 +2,7 @@
 
 BookPass is a browser extension for Chrome, Edge, Brave and Firefox that keeps your bookmarks in an encrypted KeePass KDBX 4.1 file on your own disk. A small native helper reads and writes the file. The extension makes no network requests, and the file opens in KeePassXC and KeePass too.
 
-The project is at version 0.0.x and not released yet. The features of the plan are built (see `CHANGELOG.md`). Chrome and Edge are tested end to end on Windows. The Firefox build passes `web-ext lint` and its helper link, Argon2 and vault code were proven in the M0 spike, but its screens, and macOS and Linux, have not been tried yet (see `docs/TESTING.md`).
+The project is at version 0.0.x and not released yet. The features of the plan are built (see `CHANGELOG.md`). The end to end checks pass with Chrome and Firefox on Windows and on Ubuntu (Chrome, and Firefox as a Snap). Edge and Brave, Flatpak browsers and macOS have not been tried yet (see `docs/TESTING.md`).
 
 ## What it does
 
@@ -46,6 +46,7 @@ npm run e2e                # Chrome, the real helper and KeePassXC (Windows)
 npm run e2e:more           # key files, import, tags, history, merging, backups, password change
 npm run e2e:a11y           # accessibility, light and dark
 npm run e2e:security       # storage, network, who may use the helper, the manifest
+npm run e2e:firefox        # the same kind of run in Firefox
 ```
 
 ## Documents
