@@ -26,7 +26,6 @@ BookPass is at version 0.1.0, the first release. The helper program is not signe
 ## More documents
 
 - [docs/FORMAT.md](docs/FORMAT.md): how bookmarks are stored in the KeePass file.
-- [docs/PARITY.md](docs/PARITY.md): what is taken from Raindrop.io and what is left out.
 - [docs/DEVELOPING.md](docs/DEVELOPING.md): building and changing BookPass.
 - [docs/PROTOCOL.md](docs/PROTOCOL.md) and [docs/RELEASING.md](docs/RELEASING.md): the helper protocol, releases and the stores.
 - [docs/STORE.md](docs/STORE.md): the store listing text.
