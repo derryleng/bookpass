@@ -8,7 +8,7 @@ export default tseslint.config(
       '.wxt/',
       'node_modules/',
       'helper/',
-      'spikes/**/out/',
+      'tests/output/',
       'spikes/native/extension/vault.js',
       'spikes/native/extension/hash-wasm.js',
     ],

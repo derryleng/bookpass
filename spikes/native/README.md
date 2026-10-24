@@ -12,7 +12,7 @@ node spikes/native/stdio-test.ts          # helper alone, no browser
 node spikes/native/run.ts chrome          # or edge, firefox
 ```
 
-`run.ts` registers the helper for the current user (`HKCU`, no administrator rights), starts the browser with a throwaway profile and the extension in `extension/`, waits for `out/<browser>/report.json`, prints it and removes the registration. If a run produces no report, `node spikes/native/debug.ts` shows what the Chrome service worker is doing.
+`run.ts` registers the helper for the current user (`HKCU`, no administrator rights), starts the browser with a throwaway profile and the extension in `extension/`, waits for `tests/output/spikes/native/<browser>/report.json`, prints it and removes the registration. If a run produces no report, `node spikes/native/debug.ts` shows what the Chrome service worker is doing.
 
 ## Findings
 

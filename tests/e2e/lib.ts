@@ -3,11 +3,14 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import puppeteer, { type Page } from 'puppeteer-core';
 
-export const root = resolve(import.meta.dirname, '..');
+export const root = resolve(import.meta.dirname, '../..');
+/** Everything a test run writes goes here, and it is ignored by git. */
+export const outputDir = join(root, 'tests/output');
+/** Files the tests read. */
+export const fixtures = join(root, 'tests/fixtures');
 export const password = 'correct horse battery staple';
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -17,11 +20,12 @@ const art = (a: string, b: string) =>
 const icon = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" rx="14" fill="#e5484d"/><text x="32" y="44" font-size="34" text-anchor="middle" fill="#fff" font-family="sans-serif">R</text></svg>`;
 
 export async function startSession(name: string, options: { vaultPath?: string } = {}) {
-  const shots = join(root, name);
+  const shots = join(outputDir, name);
   rmSync(shots, { recursive: true, force: true });
   mkdirSync(shots, { recursive: true });
 
-  const work = mkdtempSync(join(tmpdir(), 'bookpass-e2e-'));
+  mkdirSync(join(outputDir, 'work'), { recursive: true });
+  const work = mkdtempSync(join(outputDir, 'work', 'run-'));
   const vaultPath = options.vaultPath ?? join(work, 'vault', 'bookmarks.kdbx');
 
   let failures = 0;
@@ -141,10 +145,11 @@ export async function startSession(name: string, options: { vaultPath?: string }
     } catch {
       /* none running */
     }
+    rmSync(work, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 });
     console.log(
       failures
-        ? `\n${failures} check(s) failed. Screenshots are in ${name}/`
-        : `\nAll checks passed. Screenshots are in ${name}/`,
+        ? `\n${failures} check(s) failed. Screenshots are in tests/output/${name}/`
+        : `\nAll checks passed. Screenshots are in tests/output/${name}/`,
     );
     process.exit(failures ? 1 : 0);
   }

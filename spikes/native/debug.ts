@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import puppeteer from 'puppeteer-core';
 
 const ext = join(import.meta.dirname, 'extension');
-const out = join(import.meta.dirname, 'out/chrome');
+const out = join(import.meta.dirname, '../../tests/output/spikes/native/chrome');
 const key = 'HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.bookpass.spike';
 execFileSync('reg', ['add', key, '/ve', '/t', 'REG_SZ', '/d', join(out, 'host.json'), '/f'], {
   stdio: 'ignore',
@@ -16,7 +16,7 @@ try {
     headless: true,
     pipe: true,
     enableExtensions: [ext],
-    userDataDir: join(import.meta.dirname, 'out/dbg-profile'),
+    userDataDir: join(import.meta.dirname, '../../tests/output/spikes/native/dbg-profile'),
     env: { ...process.env, BOOKPASS_SPIKE_DIR: out },
   });
   const target = await b

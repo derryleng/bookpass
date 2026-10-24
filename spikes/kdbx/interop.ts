@@ -7,7 +7,7 @@ import * as kdbxweb from 'kdbxweb';
 import { argon2id } from 'hash-wasm';
 
 const cli = 'C:/Program Files/KeePassXC/keepassxc-cli.exe';
-const dir = join(import.meta.dirname, 'out');
+const dir = join(import.meta.dirname, '../../tests/output/spikes/kdbx');
 rmSync(dir, { recursive: true, force: true });
 mkdirSync(dir, { recursive: true });
 const file = join(dir, 'interop.kdbx');

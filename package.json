@@ -22,13 +22,14 @@
     "helper:test": "cd helper && go test ./...",
     "helper:register": "node scripts/register-helper.ts",
     "helper:unregister": "node scripts/register-helper.ts --remove",
-    "e2e": "node scripts/e2e.ts",
-    "e2e:more": "node scripts/e2e-more.ts",
-    "e2e:a11y": "node scripts/e2e-a11y.ts",
-    "e2e:security": "node scripts/e2e-security.ts",
-    "e2e:perf": "node scripts/e2e-perf.ts",
+    "e2e": "node tests/e2e/core.ts",
+    "e2e:more": "node tests/e2e/features.ts",
+    "e2e:a11y": "node tests/e2e/a11y.ts",
+    "e2e:security": "node tests/e2e/security.ts",
+    "e2e:perf": "node tests/e2e/perf.ts",
     "check": "npm run typecheck && npm run lint && npm test && npm run helper:test",
-    "zip:store": "node scripts/zip-store.ts"
+    "zip:store": "node scripts/zip-store.ts",
+    "e2e:all": "npm run e2e && npm run e2e:more && npm run e2e:a11y && npm run e2e:security"
   },
   "devDependencies": {
     "@types/chrome": "^0.3.6",

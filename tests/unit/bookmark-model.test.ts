@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { fromBase64 } from './base64';
-import * as model from './bookmark-model';
+import { fromBase64 } from '../../src/base64';
+import * as model from '../../src/bookmark-model';
 import {
   credentialsFromKey,
   credentialsFromPassword,
@@ -11,7 +11,7 @@ import {
   saveDatabase,
   type Kdbx,
   type KdfParams,
-} from './kdbx';
+} from '../../src/kdbx';
 
 // A cheap Argon2 setting keeps the tests fast. The real default is in kdbx.ts.
 const fastKdf: KdfParams = { memoryMiB: 1, iterations: 1, parallelism: 1 };

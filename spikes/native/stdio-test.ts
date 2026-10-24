@@ -3,8 +3,7 @@
 // Run: node spikes/native/stdio-test.ts
 import { spawn } from 'node:child_process';
 import { createHash, randomBytes } from 'node:crypto';
-import { mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, mkdtempSync } from 'node:fs';
 import { join } from 'node:path';
 
 interface Reply {
@@ -15,7 +14,9 @@ interface Reply {
   [key: string]: unknown;
 }
 
-const dir = mkdtempSync(join(tmpdir(), 'bookpass-'));
+const output = join(import.meta.dirname, '../../tests/output/spikes/stdio');
+mkdirSync(output, { recursive: true });
+const dir = mkdtempSync(join(output, 'run-'));
 const helper = spawn('spikes/native/helper/bin/bookpass-helper.exe', [], {
   env: { ...process.env, BOOKPASS_SPIKE_DIR: dir },
   stdio: ['pipe', 'pipe', 'inherit'],

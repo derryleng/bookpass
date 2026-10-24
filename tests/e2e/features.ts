@@ -1,35 +1,19 @@
 // A second end to end check, for the features beyond saving a page: key files, import, tags, drag and drop,
 // changes made outside BookPass, sync conflict copies, history, backups and changing the password.
 //
-//   npm run build && npm run helper:build && node scripts/e2e-more.ts
+//   npm run build && npm run helper:build && node tests/e2e/features.ts
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, existsSync, readdirSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import type { ElementHandle, Page } from 'puppeteer-core';
-import { password, sleep, startSession } from './e2e-lib.ts';
+import { fixtures, password, sleep, startSession } from './lib.ts';
 
-const { browser, vaultPath, work, check, openPage, text, hasText, click, type, shot, finish } =
-  await startSession('e2e-more-out');
+const { browser, vaultPath, check, openPage, text, hasText, click, type, shot, finish } =
+  await startSession('features');
 
 const xc = 'C:/Program Files/KeePassXC/keepassxc-cli.exe';
-const keyFilePath = join(work, 'my.keyx');
-// KeePass key file, version 1: 32 random looking bytes in base64.
-writeFileSync(
-  keyFilePath,
-  `<?xml version="1.0" encoding="UTF-8"?><KeyFile><Meta><Version>1.00</Version></Meta><Key><Data>${Buffer.alloc(32, 7).toString('base64')}</Data></Key></KeyFile>`,
-);
-const importPath = join(work, 'bookmarks.html');
-writeFileSync(
-  importPath,
-  `<!DOCTYPE NETSCAPE-Bookmark-file-1><DL><p>
-   <DT><H3>Recipes</H3><DL><p>
-     <DT><A HREF="https://pasta.test/" ADD_DATE="1700000000" TAGS="food,quick">Pasta in ten minutes</A>
-     <DD>weeknight dinner
-     <DT><H3>Baking</H3><DL><p><DT><A HREF="https://bread.test/">Sourdough</A></DL><p>
-   </DL><p>
-   <DT><A HREF="https://news.test/">Daily news</A>
- </DL><p>`,
-);
+const keyFilePath = join(fixtures, 'my.keyx');
+const importPath = join(fixtures, 'bookmarks.html');
 
 const upload = async (page: Page, selector: string, file: string) => {
   const input = (await page.$(selector)) as ElementHandle<HTMLInputElement>;

@@ -1,10 +1,10 @@
 // End to end check of the built Chrome extension with the real helper, on Windows.
 //
-//   npm run build && npm run helper:build && node scripts/e2e.ts
+//   npm run build && npm run helper:build && node tests/e2e/core.ts
 //
-// It uses a throwaway browser profile and a throwaway vault, and writes screenshots to e2e-out/.
+// It uses a throwaway browser profile and a throwaway vault, and writes screenshots to tests/output/core/.
 import { execFileSync } from 'node:child_process';
-import { password, sleep, startSession } from './e2e-lib.ts';
+import { password, sleep, startSession } from './lib.ts';
 
 const {
   browser,
@@ -21,7 +21,7 @@ const {
   type,
   shot,
   finish,
-} = await startSession('e2e-out');
+} = await startSession('core');
 
 try {
   // 1. First run: create the vault.

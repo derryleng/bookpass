@@ -1,18 +1,18 @@
 // Tests for the operations that work across many bookmarks: history, tags and import.
 import { beforeAll, describe, expect, it } from 'vitest';
-import * as model from './bookmark-model';
-import { fromBase64 } from './base64';
-import { getHistory, restoreVersion } from './history';
-import { importInto, previewImport } from './importing';
-import { parseNetscape } from './formats';
+import * as model from '../../src/bookmark-model';
+import { fromBase64 } from '../../src/base64';
+import { getHistory, restoreVersion } from '../../src/history';
+import { importInto, previewImport } from '../../src/importing';
+import { parseNetscape } from '../../src/formats';
 import {
   credentialsFromPassword,
   newDatabase,
   openDatabase,
   saveDatabase,
   type KdfParams,
-} from './kdbx';
-import { addTags, deleteTag, readTagColors, renameTag, setTagColor } from './tags';
+} from '../../src/kdbx';
+import { addTags, deleteTag, readTagColors, renameTag, setTagColor } from '../../src/tags';
 
 const fastKdf: KdfParams = { memoryMiB: 1, iterations: 1, parallelism: 1 };
 let creds: Awaited<ReturnType<typeof credentialsFromPassword>>;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { defaultView, type Bookmark, type Folder } from './bookmark-model';
+import { defaultView, type Bookmark, type Folder } from '../../src/bookmark-model';
 import {
   fromBrowserTree,
   parseCsv,
@@ -8,7 +8,7 @@ import {
   toCsv,
   toNetscape,
   toRaindropCsv,
-} from './formats';
+} from '../../src/formats';
 
 const chromeExport = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { defaultView, type Bookmark, type Folder, type Snapshot } from './bookmark-model';
+import { defaultView, type Bookmark, type Folder, type Snapshot } from '../../src/bookmark-model';
 import {
   bookmarksFor,
   buildTree,
@@ -11,7 +11,7 @@ import {
   normalizeUrl,
   sortBookmarks,
   tagCounts,
-} from './browse';
+} from '../../src/browse';
 
 const bookmark = (over: Partial<Bookmark>): Bookmark => ({
   id: 'b' + Math.random(),

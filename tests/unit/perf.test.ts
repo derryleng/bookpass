@@ -1,12 +1,16 @@
-// Makes a large vault for the performance check (scripts/e2e-perf.ts). Skipped unless PERF_VAULT names the file:
+// Makes a large vault for the performance check (tests/e2e/perf.ts). Skipped unless PERF_VAULT is set:
 //
-//   PERF_VAULT=E:/temp/big.kdbx npx vitest run src/perf.test.ts
+//   PERF_VAULT=1 npx vitest run tests/unit/perf.test.ts
+//
+// The vault goes to tests/output/big.kdbx, or to the path in PERF_VAULT if that is not just 1.
 //
 // 10,000 bookmarks in 100 folders, each with a 5 KB cover picture, which makes a vault of about 50 MB.
-import { writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, it } from 'vitest';
-import * as model from './bookmark-model';
-import { credentialsFromPassword, newDatabase, saveDatabase } from './kdbx';
+import * as model from '../../src/bookmark-model';
+import { credentialsFromPassword, newDatabase, saveDatabase } from '../../src/kdbx';
 
 describe.skipIf(!process.env.PERF_VAULT)('big vault', () => {
   it('writes it', async () => {
@@ -37,6 +41,11 @@ describe.skipIf(!process.env.PERF_VAULT)('big vault', () => {
         },
       );
     }
-    writeFileSync(process.env.PERF_VAULT!, await saveDatabase(db));
+    const target =
+      process.env.PERF_VAULT === '1'
+        ? fileURLToPath(new URL('../output/big.kdbx', import.meta.url))
+        : process.env.PERF_VAULT!;
+    mkdirSync(dirname(target), { recursive: true });
+    writeFileSync(target, await saveDatabase(db));
   }, 300_000);
 });

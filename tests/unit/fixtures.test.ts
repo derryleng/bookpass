@@ -1,17 +1,17 @@
 // Makes the golden vault files in tests/fixtures. They are committed, so a change in how BookPass reads or
 // writes the format fails a test (see kdbx.test.ts). Run this only when the format deliberately changes:
 //
-//   UPDATE_FIXTURES=1 npx vitest run src/fixtures.test.ts
+//   UPDATE_FIXTURES=1 npx vitest run tests/unit/fixtures.test.ts
 //
 // golden-bookpass.kdbx comes from BookPass. golden-keepassxc.kdbx comes from KeePassXC's own command line tool.
 import { execFileSync } from 'node:child_process';
 import { rmSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'vitest';
-import * as model from './bookmark-model';
-import { credentialsFromPassword, newDatabase, saveDatabase } from './kdbx';
+import * as model from '../../src/bookmark-model';
+import { credentialsFromPassword, newDatabase, saveDatabase } from '../../src/kdbx';
 
-const dir = fileURLToPath(new URL('../tests/fixtures/', import.meta.url));
+const dir = fileURLToPath(new URL('../fixtures/', import.meta.url));
 const password = 'golden';
 
 describe.skipIf(!process.env.UPDATE_FIXTURES)('golden files', () => {

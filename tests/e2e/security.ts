@@ -1,14 +1,14 @@
 // Security checks on the built Chrome extension with the real helper: what is stored where, what leaves the
 // browser, who may talk to the helper, and what the manifest asks for.
 //
-//   npm run build && npm run helper:build && node scripts/e2e-security.ts
+//   npm run build && npm run helper:build && node tests/e2e/security.ts
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { CDPSession, Page } from 'puppeteer-core';
-import { password, root, sleep, startSession } from './e2e-lib.ts';
+import { password, root, sleep, startSession } from './lib.ts';
 
 const { browser, extension, site, work, vaultPath, check, openPage, hasText, click, type, finish } =
-  await startSession('e2e-security-out');
+  await startSession('security');
 
 const SECRET = 'SECRET-TITLE-8f3a';
 const NOTE = 'SECRET-NOTE-51c2';

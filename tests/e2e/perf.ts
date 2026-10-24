@@ -1,17 +1,21 @@
 // How the extension copes with a big vault: 10,000 bookmarks, about 50 MB.
 //
-//   PERF_VAULT=E:/temp/big.kdbx npx vitest run src/perf.test.ts
-//   npm run build && PERF_VAULT=E:/temp/big.kdbx node scripts/e2e-perf.ts
+//   PERF_VAULT=1 npx vitest run tests/unit/perf.test.ts      (makes tests/output/big.kdbx)
+//   npm run build && node tests/e2e/perf.ts
 //
 // Prints timings. The limits below are what a person would still call quick.
 import { existsSync, statSync } from 'node:fs';
-import { sleep, startSession } from './e2e-lib.ts';
+import { join } from 'node:path';
+import { outputDir, sleep, startSession } from './lib.ts';
 
-const vault = process.env.PERF_VAULT;
-if (!vault || !existsSync(vault))
-  throw new Error('Set PERF_VAULT to a vault made by src/perf.test.ts');
+const vault =
+  process.env.PERF_VAULT && process.env.PERF_VAULT !== '1'
+    ? process.env.PERF_VAULT
+    : join(outputDir, 'big.kdbx');
+if (!existsSync(vault))
+  throw new Error('Make the vault first: PERF_VAULT=1 npx vitest run tests/unit/perf.test.ts');
 
-const { check, openPage, hasText, click, type, shot, finish } = await startSession('e2e-perf-out', {
+const { check, openPage, hasText, click, type, shot, finish } = await startSession('perf', {
   vaultPath: vault,
 });
 const seconds = (since: number) => (performance.now() - since) / 1000;

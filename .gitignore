@@ -2,11 +2,17 @@ node_modules/
 .output/
 .wxt/
 *.zip
+
+# Everything a test run writes: screenshots, throwaway vaults and browser profiles, the big vault.
+tests/output/
+tests/**/out/
+tests/**/*.log
+
+# Vault files are never committed, except the golden ones the tests read.
 *.kdbx
-!tests/fixtures/*.kdbx
-spikes/**/out/
+!tests/fixtures/golden-*.kdbx
+
 helper/bin/
 spikes/native/extension/vault.js
 spikes/native/extension/hash-wasm.js
 spikes/native/helper/bin/
-e2e-out/

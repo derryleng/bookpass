@@ -4,3 +4,5 @@ node_modules
 package-lock.json
 spikes/native/extension/vault.js
 spikes/native/extension/hash-wasm.js
+tests/output
+tests/fixtures

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import ids from '../helper/ids.json';
-import { chromeId, firefoxId, hostName } from '../scripts/ids';
+import ids from '../../helper/ids.json';
+import { chromeId, firefoxId, hostName } from '../../scripts/ids';
 
 describe('identities shared with the helper', () => {
   it('lets the helper manifest name the development extension id', () => {

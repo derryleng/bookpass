@@ -5,5 +5,13 @@
     "noUncheckedIndexedAccess": true,
     "jsx": "react-jsx"
   },
-  "include": [".wxt/wxt.d.ts", "src", "spikes", "scripts", "wxt.config.ts", "vitest.config.ts"]
+  "include": [
+    ".wxt/wxt.d.ts",
+    "src",
+    "tests",
+    "spikes",
+    "scripts",
+    "wxt.config.ts",
+    "vitest.config.ts"
+  ]
 }

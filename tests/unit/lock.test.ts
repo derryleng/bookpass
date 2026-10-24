@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { idleDetectionSeconds, keepsKeyOnDisk, shouldLock, type LockState } from './lock';
-import { defaultSettings, normalizeSettings, type Settings } from './settings';
+import { idleDetectionSeconds, keepsKeyOnDisk, shouldLock, type LockState } from '../../src/lock';
+import { defaultSettings, normalizeSettings, type Settings } from '../../src/settings';
 
 const minute = 60_000;
 const state = (over: Partial<LockState> = {}): LockState => ({

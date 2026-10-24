@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import * as model from './bookmark-model';
+import * as model from '../../src/bookmark-model';
 import {
   changePassword,
   createKeyFile,
@@ -12,11 +12,11 @@ import {
   openDatabase,
   saveDatabase,
   type KdfParams,
-} from './kdbx';
+} from '../../src/kdbx';
 
 const fastKdf: KdfParams = { memoryMiB: 1, iterations: 1, parallelism: 1 };
 const fixture = (name: string) =>
-  new Uint8Array(readFileSync(new URL(`../tests/fixtures/${name}`, import.meta.url)));
+  new Uint8Array(readFileSync(new URL(`../fixtures/${name}`, import.meta.url)));
 
 describe('golden files', () => {
   it('opens the file BookPass made, with every field', async () => {

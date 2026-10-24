@@ -1,16 +1,16 @@
 // An accessibility pass over every screen, in the light and the dark theme, with axe-core.
 //
-//   npm run build && npm run helper:build && node scripts/e2e-a11y.ts
+//   npm run build && npm run helper:build && node tests/e2e/a11y.ts
 //
 // It prints each violation with the element that caused it. It fails if any serious or critical one is left.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page } from 'puppeteer-core';
-import { password, root, sleep, startSession } from './e2e-lib.ts';
+import { password, root, sleep, startSession } from './lib.ts';
 
 const axeSource = readFileSync(join(root, 'node_modules/axe-core/axe.min.js'), 'utf8');
 const { extension, site, browser, check, openPage, hasText, click, type, finish } =
-  await startSession('e2e-a11y-out');
+  await startSession('a11y');
 
 interface Violation {
   id: string;
