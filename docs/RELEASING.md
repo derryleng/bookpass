@@ -46,7 +46,7 @@ Nothing here blocks the code. The workflows skip the signing and store steps unt
 - **Firefox add-ons (AMO)**: a free account. Upload the Firefox zip and the sources zip. Reviewers build it with `npm ci && npm run build:firefox` (Node 24 or newer). The add-on id `bookpass@derryleng.github.io` is fixed.
 - **Edge Add-ons**: a free Partner Center account. It accepts the Chrome zip.
 - A **privacy policy** at a public address (`docs/PRIVACY.md` is the text), screenshots and the descriptions in `docs/STORE.md`.
-- The public GitHub repository address, which is also what `helperDownloadUrl` in `src/constants.ts` points at (currently `github.com/derryleng/bookpass`, a guess).
+- The public GitHub repository address, which is also what `helperDownloadUrl` in `src/constants.ts` points at (`github.com/derryleng/bookpass`). It links to the releases page, because `/releases/latest` skips pre-releases and every `0.x` release is one. Change it to `/releases/latest` at 1.0.
 
 ### Decisions only the maintainer can make
 

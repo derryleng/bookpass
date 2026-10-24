@@ -1,10 +1,10 @@
 {
   "name": "bookpass",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "description": "Encrypted bookmark manager that stores bookmarks in a KeePass KDBX 4.1 file",
   "type": "module",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0-or-later",
   "scripts": {
     "dev": "wxt",
     "dev:firefox": "wxt -b firefox",

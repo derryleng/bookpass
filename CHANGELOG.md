@@ -1,12 +1,16 @@
 # Changelog
 
-All notable changes are listed here. The project follows [semantic versioning](https://semver.org). Nothing has been released yet, so everything is under Unreleased.
+All notable changes are listed here. The project follows [semantic versioning](https://semver.org).
 
 ## Unreleased
 
+## 0.1.0 - 2026-10-24
+
+The first release. The helper program is not signed yet.
+
 ### Added
 
-- GNU General Public License version 3 as the license, with a LICENSE file. The README is now written for people who use BookPass, and the developer notes moved to docs/DEVELOPING.md.
+- GNU General Public License version 3 or later as the license. LICENSE and THIRD_PARTY_LICENSES.md are included in the extension packages and attached to the release. The README is now written for people who use BookPass, and the developer notes moved to docs/DEVELOPING.md.
 
 - A browser extension for Chrome, Edge and Firefox (Manifest V3) that keeps bookmarks in a KeePass KDBX 4.1 file with Argon2id, readable by KeePassXC and KeePass.
 - A Go native helper that reads and writes the vault atomically with rotating backups, and installs itself for the current user on Windows, macOS and Linux.

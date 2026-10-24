@@ -1,7 +1,7 @@
 // Numbers and addresses that more than one part of BookPass needs.
 
-/** Where people get the helper. Release builds attach it here. */
-export const helperDownloadUrl = 'https://github.com/derryleng/bookpass/releases/latest';
+/** Where people get the helper. Release builds attach it here. Before 1.0 every release is a pre-release, which /releases/latest skips. */
+export const helperDownloadUrl = 'https://github.com/derryleng/bookpass/releases';
 
 const MiB = 1024 * 1024;
 
