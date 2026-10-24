@@ -6,10 +6,8 @@
  *  - idle: locks after N minutes without using BookPass.
  *  - system-idle: locks after N minutes without using the computer, or when the screen locks.
  *  - every-time: locks as soon as the popup or manager is closed.
- *  - never: keeps the unlock key on this device so BookPass opens without asking, even after a restart.
  */
-export type LockMode =
-  "browser-close" | "idle" | "system-idle" | "every-time" | "never";
+export type LockMode = "browser-close" | "idle" | "system-idle" | "every-time";
 
 export type Layout = "list" | "grid" | "headlines" | "masonry";
 export type Theme = "auto" | "light" | "dark";
@@ -60,11 +58,6 @@ export const lockModes: { value: LockMode; label: string; help: string }[] = [
     value: "every-time",
     label: "Every time you close it",
     help: "Locks as soon as the popup or the manager tab closes. Most private, most typing.",
-  },
-  {
-    value: "never",
-    label: "Never (stay unlocked on this device)",
-    help: "Remembers the unlock key in this browser profile, so BookPass opens without asking. Anyone who can read your browser profile can open your bookmarks.",
   },
 ];
 

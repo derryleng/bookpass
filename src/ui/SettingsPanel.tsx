@@ -134,17 +134,6 @@ export function SettingsPanel({
             </label>
           );
         })}
-        {settings.lockMode === "never" && (
-          <div className="callout warn">
-            <I n="triangle-exclamation" />
-            <span>
-              The unlock key is stored in your browser profile on this computer.
-              Anyone who can read that profile, or malware running as you, can
-              open your bookmarks without the password. Pick another option if
-              that worries you.
-            </span>
-          </div>
-        )}
         <div>
           <button className="btn" onClick={() => void send("lock", undefined)}>
             <I n="lock" /> Lock now

@@ -27,4 +27,3 @@ The workflow skips signing and store steps until these exist.
 - Firefox add-ons: a free account. Upload the Firefox and sources zips. The add-on id `bookpass@derryleng.github.io` is fixed.
 - A privacy policy at a public address (the README Privacy section is the text), screenshots and the text in [STORE.md](STORE.md).
 - `helperDownloadUrl` in `src/constants.ts` links to the releases page, because `/releases/latest` skips pre-releases and every `0.x` release is one. Change it to `/releases/latest` at 1.0.
-- Whether to keep the "never lock" setting in store builds. Reviewers may ask about it.

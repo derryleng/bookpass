@@ -21,7 +21,6 @@ export function shouldLock(settings: Settings, state: LockState): boolean {
     case "every-time":
       return state.openPages === 0;
     case "browser-close":
-    case "never":
       return false;
   }
 }
@@ -29,9 +28,4 @@ export function shouldLock(settings: Settings, state: LockState): boolean {
 /** Seconds the idle API should wait before calling the computer idle. */
 export function idleDetectionSeconds(settings: Settings): number {
   return Math.max(15, settings.systemIdleMinutes * 60);
-}
-
-/** Whether the unlock key may be written to disk. Only for the explicit "never" choice. */
-export function keepsKeyOnDisk(settings: Settings): boolean {
-  return settings.lockMode === "never";
 }

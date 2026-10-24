@@ -204,7 +204,7 @@ try {
   );
   await sleep(500);
 
-  // 7b. The unlock key stays in memory unless "never" is chosen, and a restarted background carries on.
+  // 7b. The unlock key stays in memory only, and a restarted background carries on.
   const keyIn = (area: "session" | "local") =>
     manager.evaluate(
       async (area) => !!(await chrome.storage[area].get("unlockKey")).unlockKey,
@@ -222,7 +222,7 @@ try {
   };
   await pickMode("When the browser closes");
   check(
-    "the key is held in memory only by default",
+    "the key is held in memory only",
     (await keyIn("session")) && !(await keyIn("local")),
   );
   const [worker] = await extension.workers();
@@ -233,19 +233,14 @@ try {
     "a restarted background reopens the vault without asking",
     await hasText(manager, "All bookmarks", 15000),
   );
+  // Version 0.1.0 could keep the key on disk. A copy left from it is deleted when the background starts.
+  await manager.evaluate(() => chrome.storage.local.set({ unlockKey: "old" }));
+  await (await extension.workers())[0]?.close();
+  await sleep(800);
+  await manager.reload();
+  await hasText(manager, "All bookmarks", 15000);
+  check("a leftover key on disk is deleted", !(await keyIn("local")));
   await click(manager, "button", "Settings");
-  await pickMode("Never");
-  check(
-    '"never" also keeps the key on disk, with a warning',
-    (await keyIn("local")) &&
-      (await text(manager)).includes("Anyone who can read"),
-  );
-  await shot(manager, "07b-settings-never");
-  await pickMode("When the browser closes");
-  check(
-    'leaving "never" removes the key from disk',
-    !(await keyIn("local")) && (await keyIn("session")),
-  );
   await pickMode("Every time");
 
   // 8. "Every time" mode: closing every page locks the vault.

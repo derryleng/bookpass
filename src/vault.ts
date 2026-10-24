@@ -5,7 +5,7 @@ import { fromBase64, toBase64 } from "./base64";
 import * as model from "./bookmark-model";
 import * as helper from "./helper-client";
 import { restoreVersion } from "./history";
-import { clearKey, loadKey, saveKey, setDiskCopy } from "./key-store";
+import { clearKey, loadKey, removeDiskCopy, saveKey } from "./key-store";
 import {
   changePassword,
   createKeyFile,
@@ -19,7 +19,6 @@ import {
   saveDatabase,
   type Kdbx,
 } from "./kdbx";
-import { keepsKeyOnDisk } from "./lock";
 import {
   AppError,
   type CaptureData,
@@ -82,16 +81,13 @@ export class Vault {
     const stored = (await browser.storage.local.get("settings")).settings as
       Partial<Settings> | undefined;
     this.settings = normalizeSettings(stored);
+    await removeDiskCopy();
     return this.settings;
   }
 
   async setSettings(patch: Partial<Settings>): Promise<Settings> {
     this.settings = normalizeSettings({ ...this.settings, ...patch });
     await browser.storage.local.set({ settings: this.settings });
-    // Moving into or out of "never lock" adds or removes the on disk copy of the key.
-    const key = await loadKey();
-    if (key) await setDiskCopy(keepsKeyOnDisk(this.settings) ? key : undefined);
-    else if (!keepsKeyOnDisk(this.settings)) await setDiskCopy(undefined);
     this.emit("status");
     return this.settings;
   }
@@ -206,7 +202,7 @@ export class Vault {
     this.fileHash = "";
     this.adopt(db, creds);
     await this.saveNow(); // the first write creates the file; a conflict here means someone else made it meanwhile
-    await saveKey(keyOf(creds), keepsKeyOnDisk(this.settings));
+    await saveKey(keyOf(creds));
     this.emit("status");
     return this.status();
   }
@@ -223,7 +219,7 @@ export class Vault {
     this.fileHash = file.sha256;
     this.lockReason = undefined;
     this.adopt(db, creds);
-    await saveKey(keyOf(creds), keepsKeyOnDisk(this.settings));
+    await saveKey(keyOf(creds));
     if (upgraded) this.markDirty();
     this.emit("status");
     return this.status();
@@ -557,7 +553,7 @@ export class Vault {
       }
       this.db = restored;
       this.creds = creds;
-      await saveKey(keyOf(creds), keepsKeyOnDisk(this.settings));
+      await saveKey(keyOf(creds));
       this.edits++;
       this.versionConflicts = [];
       this.rev++;
@@ -576,7 +572,7 @@ export class Vault {
         throw new AppError("The current password is wrong.", "wrong-password");
       }
       this.creds = await changePassword(db, next);
-      await saveKey(keyOf(this.creds), keepsKeyOnDisk(this.settings));
+      await saveKey(keyOf(this.creds));
       this.edits++;
       await this.write();
     });

@@ -158,23 +158,9 @@ try {
       area,
     );
   check(
-    "the unlock key is in memory only by default",
+    "the unlock key is in memory only",
     (await keyIn("session")) && !(await keyIn("local")),
   );
-  const pick = async (label: string) => {
-    await manager.evaluate(
-      (label) =>
-        [...document.querySelectorAll<HTMLElement>(".radio-card")]
-          .find((e) => e.innerText.includes(label))
-          ?.click(),
-      label,
-    );
-    await sleep(700);
-  };
-  await pick("Never");
-  check('"never" keeps the key on disk too', await keyIn("local"));
-  await pick("When the browser closes");
-  check('leaving "never" removes it again', !(await keyIn("local")));
   await shot(manager, "04-settings");
 
   // The vault the browser wrote opens in KeePassXC.

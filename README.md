@@ -33,13 +33,13 @@ The file goes in `.bookpass/bookmarks.kdbx` in your home folder by default. "Use
 
 ## Privacy
 
-Bookmarks exist only in the vault file in the place you choose. The helper only sees encrypted data. Settings are kept in the browser's extension storage. The unlock key (a hash of the master password) is kept in memory while unlocked and is written to disk only with the "never lock" setting.
+Bookmarks exist only in the vault file in the place you choose. The helper only sees encrypted data. Settings are kept in the browser's extension storage. The unlock key (a hash of the master password) is kept in memory while unlocked and is never written to disk.
 
 The extension reads a page only when you save it. The only network requests are the picture fetches you start with a button (for one bookmark, a folder, a selection or everything). Those ask for permission to reach all sites, and removes permissions when done. They never go to a favicon service or any other third party, and nothing is fetched automatically, not even after an import.
 
 ## Security
 
-The vault is KDBX 4.1 with Argon2id (256 MiB, 3 iterations), so a copy of the file from a disk, backup or sync service is protected by the master password and the optional key file. BookPass does not protect against malware running as you on an unlocked computer, against a weak password, or, with "never lock", against anyone who can read your browser profile. A lost password cannot be recovered.
+The vault is KDBX 4.1 with Argon2id (256 MiB, 3 iterations), so a copy of the file from a disk, backup or sync service is protected by the master password and the optional key file. BookPass does not protect against malware running as you on an unlocked computer or against a weak password. A lost password cannot be recovered.
 
 The helper reads and writes one configured file, never opens network connections, and only the BookPass extension may start it. The extension holds no site permissions at rest, has no content scripts and has no remote code.
 

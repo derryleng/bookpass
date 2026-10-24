@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   idleDetectionSeconds,
-  keepsKeyOnDisk,
   shouldLock,
   type LockState,
 } from "../../src/lock";
@@ -56,34 +55,17 @@ describe("shouldLock", () => {
     expect(shouldLock(s, state({ openPages: 1 }))).toBe(false);
     expect(shouldLock(s, state({ openPages: 0 }))).toBe(true);
   });
-
-  it("never locks by itself when set to never", () => {
-    expect(
-      shouldLock(
-        settings({ lockMode: "never" }),
-        state({ systemState: "locked", openPages: 0 }),
-      ),
-    ).toBe(false);
-  });
-});
-
-describe("keepsKeyOnDisk", () => {
-  it("is true only for never", () => {
-    expect(keepsKeyOnDisk(settings({ lockMode: "never" }))).toBe(true);
-    for (const lockMode of [
-      "browser-close",
-      "idle",
-      "system-idle",
-      "every-time",
-    ] as const) {
-      expect(keepsKeyOnDisk(settings({ lockMode }))).toBe(false);
-    }
-  });
 });
 
 describe("settings", () => {
   it("detects idleness no sooner than the browser allows", () => {
     expect(idleDetectionSeconds(settings({ systemIdleMinutes: 10 }))).toBe(600);
+  });
+
+  it("falls back to locking at browser close for the removed never setting", () => {
+    expect(normalizeSettings({ lockMode: "never" as never }).lockMode).toBe(
+      "browser-close",
+    );
   });
 
   it("repairs bad stored values", () => {
