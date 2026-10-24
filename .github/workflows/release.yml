@@ -111,6 +111,8 @@ jobs:
           path: dist
           pattern: helper-signed-*
           merge-multiple: true
+      - name: The license and notices go with the release
+        run: cp LICENSE THIRD_PARTY_LICENSES.md dist/
       - name: Notes from the changelog
         run: |
           version="${GITHUB_REF_NAME#v}"

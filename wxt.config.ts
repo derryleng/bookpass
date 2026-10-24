@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { defineConfig } from 'wxt';
 import { chromeDevKey, firefoxId } from './scripts/ids';
 
@@ -7,6 +8,15 @@ export default defineConfig({
   srcDir: 'src',
   // The end to end build goes to its own folder so it never replaces the real one.
   outDir: process.env.WXT_E2E ? 'tests/output/build' : '.output',
+  // The license and the notices for the libraries and icons ship inside every build, as the GPL asks.
+  hooks: {
+    'build:publicAssets': (_wxt, files) => {
+      for (const name of ['LICENSE', 'THIRD_PARTY_LICENSES.md'])
+        files.push({ absoluteSrc: resolve(import.meta.dirname, name), relativeDest: name });
+    },
+  },
+  // Whatever a test run left in tests/output is not source.
+  zip: { excludeSources: ['tests/output/**'] },
   vite: () => ({ define: { __E2E__: JSON.stringify(!!process.env.WXT_E2E) } }),
   manifestVersion: 3,
   modules: ['@wxt-dev/module-react'],

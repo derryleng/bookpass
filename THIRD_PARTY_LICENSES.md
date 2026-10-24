@@ -1,6 +1,6 @@
 # Third party licenses
 
-BookPass itself is licensed under the [GNU General Public License version 3](LICENSE). This page lists what it uses from others. The MIT licensed libraries and the CC BY 4.0 icons can be combined with GPL 3 software as long as their notices are kept.
+BookPass itself is licensed under the [GNU General Public License version 3 or later](LICENSE). This page lists what it uses from others. The MIT licensed libraries and the CC BY 4.0 icons can be combined with GPL 3 software as long as their notices are kept.
 
 ## Icons
 

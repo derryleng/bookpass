@@ -28,7 +28,7 @@ How it works
 
 BookPass needs a small helper program to read and write the vault file, because browsers cannot write to a folder of your choice. You install it once (run it and it sets itself up for your user, no administrator rights). The helper only ever sees the encrypted file. BookPass collects nothing and contacts a bookmarked site only when you ask it to fetch that site’s pictures.
 
-Open source under the GNU General Public License version 3. Icons by Font Awesome (CC BY 4.0).
+Open source under the GNU General Public License version 3 or later. Icons by Font Awesome (CC BY 4.0).
 
 ## Single purpose
 

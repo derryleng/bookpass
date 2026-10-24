@@ -21,7 +21,7 @@ BookPass collects nothing and has no server. It contacts a bookmarked site only 
 
 ## Status
 
-BookPass is at version 0.0.x and has not been released yet. It has been tried with Chrome and Firefox on Windows and Ubuntu. Edge, Brave, Flatpak browsers and macOS have not been tried yet. See [CHANGELOG.md](CHANGELOG.md) for what exists so far and [docs/TESTING.md](docs/TESTING.md) for what has been tested.
+BookPass is at version 0.1.0, the first release. The helper program is not signed yet, so Windows and macOS warn about it the first time. It has been tried with Chrome and Firefox on Windows and Ubuntu. Edge, Brave, Flatpak browsers and macOS have not been tried yet. See [CHANGELOG.md](CHANGELOG.md) for what exists so far and [docs/TESTING.md](docs/TESTING.md) for what has been tested.
 
 ## More documents
 
@@ -33,4 +33,4 @@ BookPass is at version 0.0.x and has not been released yet. It has been tried wi
 
 ## License
 
-BookPass is free software under the [GNU General Public License version 3](LICENSE). Icons and libraries it uses are credited in [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
+BookPass is free software under the [GNU General Public License version 3 or later](LICENSE). Icons and libraries it uses are credited in [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
