@@ -5,10 +5,19 @@ import { useImage } from './api';
 import { I } from './Icon';
 
 /** The site's saved icon, or its first letter when none was captured. */
-export function Favicon({ iconId, url }: { iconId: string | null; url: string }) {
+export function Favicon({
+  iconId,
+  url,
+  big,
+}: {
+  iconId: string | null;
+  url: string;
+  big?: boolean;
+}) {
   const src = useImage('icon', iconId);
-  if (src) return <img className="favicon" src={src} alt="" />;
-  return <span className="favicon-letter">{(domainOf(url) || '?').charAt(0)}</span>;
+  const size = big ? ' big' : '';
+  if (src) return <img className={`favicon${size}`} src={src} alt="" />;
+  return <span className={`favicon-letter${size}`}>{(domainOf(url) || '?').charAt(0)}</span>;
 }
 
 /** A folder picker that shows nesting by indenting. null means the top level (Unsorted). */

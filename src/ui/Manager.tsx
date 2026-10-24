@@ -289,7 +289,7 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
       <main className="main">
         <Banners status={status} />
         {page === 'settings' ? (
-          <SettingsPanel status={status} onChanged={refreshStatus} />
+          <SettingsPanel status={status} snapshot={snapshot} onChanged={refreshStatus} />
         ) : (
           <>
             <div className="content-head">
@@ -479,6 +479,7 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
           snapshot={snapshot}
           bookmark={dialog.bookmark}
           initial={dialog.initial}
+          settings={status.settings}
           folderId={selection.kind === 'folder' ? selection.id : null}
           onClose={() => setDialog(undefined)}
         />

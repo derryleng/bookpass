@@ -49,7 +49,9 @@ export interface SnapshotReply extends Snapshot {
 /** Images captured from a page, as base64 so they can cross the message boundary. */
 export interface CaptureData {
   cover?: string;
-  favicon?: { site: string; png: string };
+  favicon?: { site: string; png: string; replace?: boolean };
+  /** Take these pictures away first. */
+  clear?: ('cover' | 'icon')[];
 }
 
 /** The same as FolderPatch, with the folder picture as base64. */
@@ -84,6 +86,8 @@ export interface Requests {
   addBookmark: [{ input: BookmarkInput; capture?: CaptureData }, string];
   updateBookmark: [{ id: string; patch: Partial<BookmarkInput>; capture?: CaptureData }, void];
   moveBookmarks: [{ ids: string[]; folderId: string | null }, void];
+  /** Pictures for many bookmarks at once, without counting as edits. */
+  setPictures: [{ items: { id: string; capture: CaptureData }[] }, void];
   setOrder: [{ orders: { id: string; order: number }[] }, void];
   trashBookmarks: [{ ids: string[] }, void];
   restoreBookmarks: [{ ids: string[] }, void];

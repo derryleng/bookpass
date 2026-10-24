@@ -20,6 +20,8 @@ export interface Settings {
   defaultLayout: Layout;
   theme: Theme;
   captureCovers: boolean;
+  /** Also read a page's preview image when it sits on another server than the page. Off keeps requests to the page's own server. */
+  coversFromOtherServers: boolean;
   /** Width in pixels of the stored cover picture. */
   coverWidth: number;
 }
@@ -31,6 +33,7 @@ export const defaultSettings: Settings = {
   defaultLayout: 'list',
   theme: 'auto',
   captureCovers: true,
+  coversFromOtherServers: false,
   coverWidth: 256,
 };
 

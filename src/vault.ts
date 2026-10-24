@@ -295,8 +295,13 @@ export class Vault {
     return {
       cover: data?.cover ? fromBase64(data.cover) : undefined,
       favicon: data?.favicon
-        ? { site: data.favicon.site, png: fromBase64(data.favicon.png) }
+        ? {
+            site: data.favicon.site,
+            png: fromBase64(data.favicon.png),
+            replace: data.favicon.replace,
+          }
         : undefined,
+      clear: data?.clear,
     };
   }
 

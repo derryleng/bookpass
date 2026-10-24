@@ -24,7 +24,9 @@ export default defineConfig({
       'nativeMessaging',
     ],
     // Asked for only when you use the feature: saving several tabs, and importing your browser's bookmarks.
-    optional_permissions: ['tabs', 'bookmarks'],
+    optional_permissions: ['tabs', 'bookmarks', ...(browser === 'firefox' ? ['*://*/*'] : [])],
+    // Reaching the sites a bookmark points to, to fetch their pictures. Asked for when you press the button.
+    ...(browser === 'firefox' ? {} : { optional_host_permissions: ['*://*/*'] }),
     ...(process.env.WXT_E2E ? { host_permissions: ['<all_urls>'] } : {}),
     commands: {
       _execute_action: {

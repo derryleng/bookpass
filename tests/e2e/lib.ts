@@ -142,7 +142,9 @@ async function createSession(
           executablePath: chromePath,
           headless: true,
           pipe: true,
-          enableExtensions: [join(root, '.output/chrome-mv3')],
+          enableExtensions: [
+            process.env.BOOKPASS_EXTENSION_DIR ?? join(root, '.output/chrome-mv3'),
+          ],
           userDataDir: join(work, 'profile'),
           defaultViewport: { width: 1280, height: 800 },
           env,

@@ -67,6 +67,11 @@ export default defineBackground(() => {
       vault.edit((db) => model.updateBookmark(db, id, patch, Vault.capture(capture))),
     moveBookmarks: ({ ids, folderId }) =>
       vault.edit((db) => model.moveBookmarks(db, ids, folderId)),
+    setPictures: ({ items }) =>
+      vault.edit(async (db) => {
+        for (const { id, capture } of items)
+          await model.setPictures(db, id, Vault.capture(capture));
+      }),
     setOrder: ({ orders }) => vault.edit((db) => model.setOrders(db, orders)),
     trashBookmarks: ({ ids }) => vault.edit((db) => model.trashBookmarks(db, ids)),
     restoreBookmarks: ({ ids }) => vault.edit((db) => model.restoreBookmarks(db, ids)),

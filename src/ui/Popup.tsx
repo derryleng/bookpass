@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { browser } from 'wxt/browser';
 import type { BookmarkType } from '../bookmark-model';
 import { buildTree, domainOf, normalizeUrl } from '../browse';
-import { inspectTab, isSavable, shrinkCover, type PageInfo } from '../capture';
+import { inspectTab, isSavable, type PageInfo } from '../capture';
+import { shrinkCover } from '../images';
 import { stopCoversVaultBytes } from '../constants';
 import type { ParsedImport } from '../formats';
 import type { CaptureData } from '../messages';
@@ -40,6 +41,7 @@ function Popup({ status, snapshot }: PageContext) {
 
   // Past a certain size the vault stops taking new cover pictures.
   const wantCovers = status.settings.captureCovers && status.vaultBytes < stopCoversVaultBytes;
+  const otherServers = status.settings.coversFromOtherServers;
 
   // Look at the page the popup was opened on.
   useEffect(() => {
@@ -50,11 +52,11 @@ function Popup({ status, snapshot }: PageContext) {
         ? await browser.tabs.get(Number(named))
         : (await browser.tabs.query({ active: true, currentWindow: true }))[0];
       if (!tab) return setError('There is no page to save.');
-      const info = await inspectTab(tab, wantCovers);
+      const info = await inspectTab(tab, wantCovers, otherServers);
       setPage(info);
       setTitle(info.title);
     })().catch((e) => setError(errorText(e)));
-  }, [wantCovers]);
+  }, [wantCovers, otherServers]);
 
   const existing =
     page && snapshot.bookmarks.find((b) => normalizeUrl(b.url) === normalizeUrl(page.url));
@@ -209,12 +211,19 @@ function Popup({ status, snapshot }: PageContext) {
                     autoFocus
                   />
                 </label>
-                <span
-                  className="hint"
-                  style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                  title={page.url}
-                >
-                  {domainOf(page.url)}
+                <span className="row hint" title={page.url}>
+                  {page.favicon ? (
+                    <img className="favicon" src={page.favicon} alt="Site icon" />
+                  ) : (
+                    <span className="favicon-letter" title="No site icon could be read">
+                      {(domainOf(page.url) || '?').charAt(0)}
+                    </span>
+                  )}
+                  <span
+                    style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                  >
+                    {domainOf(page.url)}
+                  </span>
                 </span>
               </div>
             </div>

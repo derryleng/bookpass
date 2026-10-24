@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import type { BackupInfo } from '../helper-client';
-import type { Status } from '../messages';
+import type { SnapshotReply, Status } from '../messages';
 import {
   coverWidths,
   idleChoices,
@@ -11,6 +11,7 @@ import {
   type Theme,
 } from '../settings';
 import { send } from './api';
+import { FetchMissingDialog } from './FetchMissing';
 import { KeyFileField, VaultLocation } from './Gates';
 import { I } from './Icon';
 import { errorText } from './parts';
@@ -47,8 +48,18 @@ function MinutesSelect({
   );
 }
 
-export function SettingsPanel({ status, onChanged }: { status: Status; onChanged: () => void }) {
+export function SettingsPanel({
+  status,
+  snapshot,
+  onChanged,
+}: {
+  status: Status;
+  /** The bookmarks, for the tools that work on them. */
+  snapshot?: SnapshotReply;
+  onChanged: () => void;
+}) {
   const { settings } = status;
+  const [fetching, setFetching] = useState(false);
   const [error, setError] = useState<string>();
 
   async function change(patch: Partial<Settings>) {
@@ -198,7 +209,14 @@ export function SettingsPanel({ status, onChanged }: { status: Status; onChanged
       </section>
 
       <section className="panel stack">
-        <h2>Saving pages</h2>
+        <div>
+          <h2>Pictures</h2>
+          <p className="hint" style={{ margin: 0 }}>
+            The site icon and cover picture shown for each bookmark. Both are stored inside the
+            vault. BookPass never asks a service about your bookmarks: pictures come from the page
+            you are on, from the bookmarked site itself, or from files you choose.
+          </p>
+        </div>
         <label className="toggle-row">
           <input
             type="checkbox"
@@ -207,12 +225,30 @@ export function SettingsPanel({ status, onChanged }: { status: Status; onChanged
           />
           <div>
             <div className="title" style={{ fontWeight: 600 }}>
-              Save a cover picture and site icon
+              Save a cover picture and site icon when I save a page
             </div>
             <div className="hint">
-              When you save a page, BookPass looks at that one page for its icon and preview image,
-              or takes a small screenshot of the tab. Both are stored inside the vault. Nothing is
-              fetched in the background.
+              BookPass looks at that one page for its icon and preview image, or takes a small
+              screenshot of the tab. The screenshot never leaves this computer. Nothing is fetched
+              in the background.
+            </div>
+          </div>
+        </label>
+        <label className="toggle-row">
+          <input
+            type="checkbox"
+            checked={settings.coversFromOtherServers}
+            onChange={(e) => void change({ coversFromOtherServers: e.target.checked })}
+          />
+          <div>
+            <div className="title" style={{ fontWeight: 600 }}>
+              Also read preview images that sit on another server
+            </div>
+            <div className="hint">
+              Many sites keep their preview image on a separate image server. Reading it makes a
+              request there that the page you are on did not make, so it is off by default and
+              BookPass uses a screenshot instead. This applies to saving a page and to fetching
+              pictures below.
             </div>
           </div>
         </label>
@@ -234,6 +270,26 @@ export function SettingsPanel({ status, onChanged }: { status: Status; onChanged
             KB.
           </span>
         </label>
+        <div className="field">
+          <span>Bookmarks without pictures</span>
+          <div className="row">
+            <button className="btn" disabled={!snapshot} onClick={() => setFetching(true)}>
+              <I n="globe" /> Fetch missing pictures…
+            </button>
+          </div>
+          <span className="hint" style={{ fontWeight: 400 }}>
+            For bookmarks that were typed in, imported or saved from a link. You can also fetch,
+            choose or remove the pictures of a single bookmark when you edit it.
+          </span>
+        </div>
+        {fetching && snapshot && (
+          <FetchMissingDialog
+            snapshot={snapshot}
+            settings={settings}
+            vaultBytes={status.vaultBytes}
+            onClose={() => setFetching(false)}
+          />
+        )}
       </section>
 
       <PasswordPanel />
@@ -242,8 +298,9 @@ export function SettingsPanel({ status, onChanged }: { status: Status; onChanged
       <section className="panel stack">
         <h2>About</h2>
         <p style={{ margin: 0 }}>
-          BookPass keeps bookmarks in an encrypted KeePass file on your own disk. It makes no
-          network requests and sends nothing anywhere.
+          BookPass keeps bookmarks in an encrypted KeePass file on your own disk. It sends nothing
+          anywhere. It only contacts a bookmarked site when you ask it to fetch that site’s
+          pictures.
         </p>
         <p className="hint" style={{ margin: 0 }}>
           Icons by{' '}

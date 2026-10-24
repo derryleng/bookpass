@@ -5,9 +5,9 @@ import { Shell } from './Shell';
 export function SettingsApp() {
   return (
     <Shell>
-      {({ status, refreshStatus }) => (
+      {({ status, snapshot, refreshStatus }) => (
         <div style={{ padding: '28px' }}>
-          <SettingsPanel status={status} onChanged={refreshStatus} />
+          <SettingsPanel status={status} snapshot={snapshot} onChanged={refreshStatus} />
         </div>
       )}
     </Shell>

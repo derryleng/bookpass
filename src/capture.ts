@@ -4,9 +4,7 @@
 // A small function is injected into that tab to read the page. It can fetch the page's own images, but images from
 // other sites usually refuse (CORS), so the fallback for the cover is a screenshot of the visible tab.
 import { browser } from 'wxt/browser';
-import { toBase64 } from './base64';
 import type { BookmarkType } from './bookmark-model';
-import { maxCoverBytes } from './constants';
 
 export interface PageInfo {
   title: string;
@@ -33,7 +31,7 @@ interface PageRead {
  * Runs inside the web page, so it must not use anything from this file: the browser copies only its source.
  * Keep it self-contained.
  */
-async function readPage(extraIcon: string | null): Promise<PageRead> {
+async function readPage(extraIcon: string | null, otherServers: boolean): Promise<PageRead> {
   const meta = (selector: string) =>
     document.querySelector<HTMLMetaElement>(selector)?.content.trim() ?? '';
   const absolute = (href: string) => {
@@ -52,7 +50,12 @@ async function readPage(extraIcon: string | null): Promise<PageRead> {
     quality?: number,
   ): Promise<string | undefined> {
     try {
-      const response = await fetch(src, { credentials: 'omit' });
+      // No cookies, no referrer, and the browser's own copy if it has one, so the site hears as little as possible.
+      const response = await fetch(src, {
+        credentials: 'omit',
+        referrerPolicy: 'no-referrer',
+        cache: 'force-cache',
+      });
       if (!response.ok) return undefined;
       const blob = await response.blob();
       if (blob.size > 6_000_000) return undefined;
@@ -98,7 +101,13 @@ async function readPage(extraIcon: string | null): Promise<PageRead> {
   }
 
   const ogImage = absolute(meta('meta[property="og:image"]') || meta('meta[name="twitter:image"]'));
-  const cover = ogImage ? await pick(ogImage, 512, 'image/jpeg', 0.85) : undefined;
+  // A preview image on another server was never requested by the page you are looking at, so it is read only if
+  // the settings allow that. The screenshot is the fallback and stays on this computer.
+  const sameServer = ogImage !== '' && new URL(ogImage).origin === location.origin;
+  const cover =
+    ogImage && (sameServer || otherServers)
+      ? await pick(ogImage, 512, 'image/jpeg', 0.85)
+      : undefined;
 
   return {
     title: meta('meta[property="og:title"]') || document.title,
@@ -141,47 +150,6 @@ async function screenshot(windowId: number | undefined): Promise<string | null> 
   }
 }
 
-/** An image as pixels. Works in a page and in the background, which has no document. */
-async function decode(dataUrl: string): Promise<ImageBitmap> {
-  return createImageBitmap(await (await fetch(dataUrl)).blob());
-}
-
-async function encode(image: ImageBitmap, width: number, quality: number): Promise<Blob> {
-  const scale = Math.min(1, width / image.width);
-  const w = Math.max(1, Math.round(image.width * scale));
-  const h = Math.max(1, Math.round(image.height * scale));
-  const canvas = new OffscreenCanvas(w, h);
-  canvas.getContext('2d')!.drawImage(image, 0, 0, w, h);
-  return canvas.convertToBlob({ type: 'image/webp', quality });
-}
-
-/**
- * Shrinks a picture to a cover: no wider than `width`, as WebP, squeezed until it is no bigger than `maxBytes`
- * (smaller pictures first, then lower quality). A vault holds one per bookmark, so they must stay small.
- * Returns base64. The browser may fall back to PNG if it cannot make WebP, which is fine.
- */
-export async function shrinkCover(
-  dataUrl: string,
-  width = 256,
-  maxBytes = maxCoverBytes,
-): Promise<string> {
-  const image = await decode(dataUrl);
-  let best: Blob | undefined;
-  for (const [w, quality] of [
-    [width, 0.72],
-    [width, 0.55],
-    [width, 0.4],
-    [Math.round(width * 0.75), 0.4],
-    [Math.round(width * 0.5), 0.35],
-  ] as const) {
-    const blob = await encode(image, w, quality);
-    if (!best || blob.size < best.size) best = blob;
-    if (blob.size <= maxBytes) break;
-  }
-  image.close();
-  return toBase64(new Uint8Array(await best!.arrayBuffer()));
-}
-
 export const isSavable = (url: string | undefined): url is string =>
   !!url && /^https?:\/\//i.test(url);
 
@@ -189,6 +157,7 @@ export const isSavable = (url: string | undefined): url is string =>
 export async function inspectTab(
   tab: { id?: number; url?: string; title?: string; favIconUrl?: string; windowId?: number },
   wantCovers: boolean,
+  otherServers = false,
 ): Promise<PageInfo> {
   const info: PageInfo = {
     title: tab.title ?? '',
@@ -202,7 +171,10 @@ export async function inspectTab(
     const [result] = await browser.scripting.executeScript({
       target: { tabId: tab.id },
       func: readPage,
-      args: [tab.favIconUrl && /^https?:|^data:/.test(tab.favIconUrl) ? tab.favIconUrl : null],
+      args: [
+        tab.favIconUrl && /^https?:|^data:/.test(tab.favIconUrl) ? tab.favIconUrl : null,
+        otherServers,
+      ],
     });
     const page = result?.result as PageRead | undefined;
     if (page) {

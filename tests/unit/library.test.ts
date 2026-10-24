@@ -192,3 +192,81 @@ describe('folder pictures', () => {
     expect(fromBase64('AQID')).toEqual(picture.png);
   });
 });
+
+describe('pictures of a bookmark', () => {
+  const png = (n: number) => new Uint8Array([0x89, 0x50, 0x4e, 0x47, n]);
+  const iconOf = (db: ReturnType<typeof fresh>, id: string) =>
+    model.readSnapshot(db).bookmarks.find((b) => b.id === id)!.iconId;
+
+  it('swaps a site icon for every bookmark of the site, under a new id', async () => {
+    const db = fresh();
+    const site = 'https://example.com';
+    const a = await model.addBookmark(
+      db,
+      { folderId: null, title: 'A', url: `${site}/a` },
+      { favicon: { site, png: png(1) } },
+    );
+    const b = await model.addBookmark(
+      db,
+      { folderId: null, title: 'B', url: `${site}/b` },
+      { favicon: { site, png: png(1) } },
+    );
+    const before = iconOf(db, a)!;
+
+    await model.updateBookmark(db, a, {}, { favicon: { site, png: png(2), replace: true } });
+    const after = iconOf(db, a)!;
+    expect(after).not.toBe(before);
+    expect(iconOf(db, b)).toBe(after);
+    expect(db.meta.customIcons.size).toBe(1);
+    expect(model.getIcon(db, after)?.base64).toBe(model.getIcon(db, after)?.base64);
+    expect(fromBase64(model.getIcon(db, after)!.base64)).toEqual(png(2));
+  });
+
+  it('gives one bookmark an icon of its own without touching the others', async () => {
+    const db = fresh();
+    const site = 'https://example.com';
+    const a = await model.addBookmark(
+      db,
+      { folderId: null, title: 'A', url: `${site}/a` },
+      { favicon: { site, png: png(1) } },
+    );
+    const b = await model.addBookmark(
+      db,
+      { folderId: null, title: 'B', url: `${site}/b` },
+      { favicon: { site, png: png(1) } },
+    );
+    await model.updateBookmark(
+      db,
+      a,
+      {},
+      { favicon: { site: model.customIconName(a), png: png(9), replace: true } },
+    );
+    expect(iconOf(db, a)).not.toBe(iconOf(db, b));
+    expect(fromBase64(model.getIcon(db, iconOf(db, a)!)!.base64)).toEqual(png(9));
+    expect(fromBase64(model.getIcon(db, iconOf(db, b)!)!.base64)).toEqual(png(1));
+  });
+
+  it('takes a cover and an icon away, and forgets pictures nobody uses', async () => {
+    const db = fresh();
+    const id = await model.addBookmark(
+      db,
+      { folderId: null, title: 'A', url: 'https://example.com/' },
+      { cover: png(5), favicon: { site: 'https://example.com', png: png(1) } },
+    );
+    expect(model.readSnapshot(db).bookmarks[0]).toMatchObject({ hasCover: true });
+    await model.updateBookmark(db, id, {}, { clear: ['cover', 'icon'] });
+    expect(model.readSnapshot(db).bookmarks[0]).toMatchObject({ hasCover: false, iconId: null });
+    expect(db.meta.customIcons.size).toBe(0);
+  });
+
+  it('clears first and then adds, so a picture can be replaced in one step', async () => {
+    const db = fresh();
+    const id = await model.addBookmark(
+      db,
+      { folderId: null, title: 'A', url: 'https://example.com/' },
+      { cover: png(5) },
+    );
+    await model.updateBookmark(db, id, {}, { clear: ['cover'], cover: png(6) });
+    expect(fromBase64(model.getCover(db, id)!.base64)).toEqual(png(6));
+  });
+});

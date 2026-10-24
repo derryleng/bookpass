@@ -3,7 +3,8 @@
 import { browser } from 'wxt/browser';
 import { fromBase64 } from './base64';
 import * as model from './bookmark-model';
-import { inspectTab, isSavable, shrinkCover } from './capture';
+import { inspectTab, isSavable } from './capture';
+import { shrinkCover } from './images';
 import { stopCoversVaultBytes } from './constants';
 import { loadKey } from './key-store';
 import type { Vault } from './vault';
@@ -57,6 +58,7 @@ export function startContextMenu(vault: Vault) {
         const page = await inspectTab(
           tab,
           vault.settings.captureCovers && (await vault.sizeBytes()) < stopCoversVaultBytes,
+          vault.settings.coversFromOtherServers,
         );
         input = {
           ...input,

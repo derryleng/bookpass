@@ -279,9 +279,31 @@ export async function setCover(db: Kdbx, entry: KdbxEntry, bytes: Uint8Array) {
   entry.binaries.set(coverName, await db.createBinary(bytes.slice().buffer));
 }
 
-/** Stores a favicon once per site and points the entry at it. */
-export function setFavicon(db: Kdbx, entry: KdbxEntry, site: string, png: Uint8Array) {
+/**
+ * Stores a favicon once per site and points the entry at it. With `replace`, a picture stored for the same name is
+ * swapped for the new one, for every bookmark that used it (a new id is used, so pages do not show a stale copy).
+ */
+export function setFavicon(
+  db: Kdbx,
+  entry: KdbxEntry,
+  site: string,
+  png: Uint8Array,
+  replace = false,
+) {
   let id = [...db.meta.customIcons].find(([, icon]) => icon.name === site)?.[0];
+  if (id && replace) {
+    const fresh = KdbxUuid.random().id;
+    db.meta.customIcons.set(fresh, {
+      data: png.slice().buffer,
+      name: site,
+      lastModified: new Date(),
+    });
+    for (const other of db.getDefaultGroup().allEntries()) {
+      if (other.customIcon?.id === id) other.customIcon = new KdbxUuid(fresh);
+    }
+    db.meta.customIcons.delete(id);
+    id = fresh;
+  }
   if (!id) {
     const uuid = KdbxUuid.random();
     id = uuid.id;
@@ -292,7 +314,33 @@ export function setFavicon(db: Kdbx, entry: KdbxEntry, site: string, png: Uint8A
 
 export interface Capture {
   cover?: Uint8Array;
-  favicon?: { site: string; png: Uint8Array };
+  /** `site` names the picture. Several bookmarks share the one named for their site. */
+  favicon?: { site: string; png: Uint8Array; replace?: boolean };
+  /** Take these pictures away from the bookmark. Anything new in this capture is added afterwards. */
+  clear?: ('cover' | 'icon')[];
+}
+
+/** The name of an icon the person chose for one bookmark. */
+export const customIconName = (id: string) => `custom:${id}`;
+
+function applyCapture(db: Kdbx, entry: KdbxEntry, capture: Capture) {
+  if (capture.clear?.includes('cover')) entry.binaries.delete(coverName);
+  if (capture.clear?.includes('icon')) entry.customIcon = undefined;
+  if (capture.clear?.length) db.cleanup({ customIcons: true, binaries: true });
+}
+
+/** Sets or takes away the pictures of a bookmark without counting it as an edit (no history, no new edit time). */
+export async function setPictures(db: Kdbx, id: string, capture: Capture) {
+  await storeCapture(db, findEntry(db, id), capture);
+}
+
+/** Takes away what the capture clears, then adds what it brings. */
+async function storeCapture(db: Kdbx, entry: KdbxEntry, capture: Capture) {
+  applyCapture(db, entry, capture);
+  if (capture.cover) await setCover(db, entry, capture.cover);
+  if (capture.favicon) {
+    setFavicon(db, entry, capture.favicon.site, capture.favicon.png, capture.favicon.replace);
+  }
 }
 
 export async function addBookmark(
@@ -303,8 +351,7 @@ export async function addBookmark(
   const entry = db.createEntry(findGroup(db, input.folderId));
   applyBookmark(entry, { ...input, order: input.order ?? Date.now() });
   if (input.created) entry.times.creationTime = new Date(input.created);
-  if (capture.cover) await setCover(db, entry, capture.cover);
-  if (capture.favicon) setFavicon(db, entry, capture.favicon.site, capture.favicon.png);
+  await storeCapture(db, entry, capture);
   return entry.uuid.id;
 }
 
@@ -320,8 +367,7 @@ export async function updateBookmark(
   if (!onlyOrder) entry.pushHistory(); // keeps the old version so an edit can be recovered
   applyBookmark(entry, patch);
   if (patch.folderId !== undefined) db.move(entry, findGroup(db, patch.folderId));
-  if (capture.cover) await setCover(db, entry, capture.cover);
-  if (capture.favicon) setFavicon(db, entry, capture.favicon.site, capture.favicon.png);
+  await storeCapture(db, entry, capture);
   if (!onlyOrder) entry.times.update();
 }
 

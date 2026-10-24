@@ -183,14 +183,16 @@ try {
   ) as {
     permissions: string[];
     optional_permissions: string[];
+    optional_host_permissions?: string[];
     host_permissions?: string[];
     content_security_policy: { extension_pages: string };
     content_scripts?: unknown;
   };
   check(
-    'no site access is requested',
+    'no site access is held, and the only one that can be asked for is all sites',
     !manifest.host_permissions &&
       !manifest.content_scripts &&
+      (manifest.optional_host_permissions ?? []).join() === '*://*/*' &&
       !manifest.permissions.some((p) => p.includes('://') || p === '<all_urls>'),
   );
   check(

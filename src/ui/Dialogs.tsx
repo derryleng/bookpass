@@ -9,7 +9,9 @@ import { send } from './api';
 import { Dialog } from './Dialog';
 import { I } from './Icon';
 import { toBase64 } from '../base64';
+import type { Settings } from '../settings';
 import { HistoryList } from './HistoryList';
+import { PicturesField, pendingToCapture, type PicturePending } from './PicturesField';
 import { IconPicker } from './IconPicker';
 import { renderIconPng, rememberIcon, useIconsFor } from './icon-library';
 import { errorText, FolderSelect, TagInput } from './parts';
@@ -22,6 +24,7 @@ interface BookmarkDialogProps {
   folderId?: string | null;
   /** An address and title to start a new bookmark with. */
   initial?: { url: string; title: string };
+  settings: Settings;
   onClose: () => void;
 }
 
@@ -30,6 +33,7 @@ export function BookmarkDialog({
   bookmark,
   folderId = null,
   initial,
+  settings,
   onClose,
 }: BookmarkDialogProps) {
   const tree = buildTree(snapshot.folders, snapshot.bookmarks);
@@ -40,6 +44,7 @@ export function BookmarkDialog({
   const [note, setNote] = useState(bookmark?.note ?? '');
   const [type, setType] = useState<BookmarkType>(bookmark?.type ?? 'link');
   const [favorite, setFavorite] = useState(bookmark?.favorite ?? false);
+  const [pictures, setPictures] = useState<PicturePending>({});
   const [error, setError] = useState<string>();
   const allTags = [...new Set(snapshot.bookmarks.flatMap((b) => b.tags))].sort();
 
@@ -55,8 +60,9 @@ export function BookmarkDialog({
       tags,
     };
     try {
-      if (bookmark) await send('updateBookmark', { id: bookmark.id, patch: input });
-      else await send('addBookmark', { input });
+      const capture = pendingToCapture(pictures);
+      if (bookmark) await send('updateBookmark', { id: bookmark.id, patch: input, capture });
+      else await send('addBookmark', { input, capture });
       onClose();
     } catch (err) {
       setError(errorText(err));
@@ -74,7 +80,26 @@ export function BookmarkDialog({
   }
 
   return (
-    <Dialog title={bookmark ? 'Edit bookmark' : 'Add bookmark'} onClose={onClose}>
+    <Dialog
+      title={bookmark ? 'Edit bookmark' : 'Add bookmark'}
+      onClose={onClose}
+      footer={
+        <>
+          {bookmark && (
+            <button type="button" className="btn danger" onClick={remove}>
+              <I n="trash" /> Move to trash
+            </button>
+          )}
+          <span className="grow" />
+          <button type="button" className="btn" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="btn primary" form="bookmark-form">
+            Save
+          </button>
+        </>
+      }
+    >
       <form id="bookmark-form" className="stack" onSubmit={save}>
         <label className="field">
           <span>Address</span>
@@ -125,6 +150,13 @@ export function BookmarkDialog({
           <span>Note</span>
           <textarea className="textarea" value={note} onChange={(e) => setNote(e.target.value)} />
         </label>
+        <PicturesField
+          bookmark={bookmark}
+          url={url}
+          settings={settings}
+          pending={pictures}
+          onPending={setPictures}
+        />
         <label className="row">
           <input
             type="checkbox"
@@ -141,20 +173,6 @@ export function BookmarkDialog({
           <HistoryList id={bookmark.id} onRestored={onClose} />
         </details>
       )}
-      <div className="modal-foot" style={{ padding: '4px 0 0' }}>
-        {bookmark && (
-          <button type="button" className="btn danger" onClick={remove}>
-            <I n="trash" /> Move to trash
-          </button>
-        )}
-        <span className="grow" />
-        <button type="button" className="btn" onClick={onClose}>
-          Cancel
-        </button>
-        <button className="btn primary" form="bookmark-form">
-          Save
-        </button>
-      </div>
     </Dialog>
   );
 }
@@ -224,7 +242,26 @@ export function FolderDialog({
   }
 
   return (
-    <Dialog title={folder ? 'Edit folder' : 'New folder'} onClose={onClose}>
+    <Dialog
+      title={folder ? 'Edit folder' : 'New folder'}
+      onClose={onClose}
+      footer={
+        <>
+          {folder && (
+            <button type="button" className="btn danger" onClick={remove}>
+              <I n="trash" /> Move to trash
+            </button>
+          )}
+          <span className="grow" />
+          <button type="button" className="btn" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="btn primary" form="folder-form">
+            Save
+          </button>
+        </>
+      }
+    >
       <form id="folder-form" className="stack" onSubmit={save}>
         <label className="field">
           <span>Name</span>
@@ -249,20 +286,6 @@ export function FolderDialog({
         <IconPicker icon={icon} color={color} onIcon={setIcon} onColor={setColor} />
         {error && <div className="callout error">{error}</div>}
       </form>
-      <div className="modal-foot" style={{ padding: '4px 0 0' }}>
-        {folder && (
-          <button type="button" className="btn danger" onClick={remove}>
-            <I n="trash" /> Move to trash
-          </button>
-        )}
-        <span className="grow" />
-        <button type="button" className="btn" onClick={onClose}>
-          Cancel
-        </button>
-        <button className="btn primary" form="folder-form">
-          Save
-        </button>
-      </div>
     </Dialog>
   );
 }

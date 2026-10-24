@@ -50,7 +50,7 @@ export function escapeHtml(text: string): string {
     .replace(/"/g, '&quot;');
 }
 
-function attributes(source: string): Record<string, string> {
+export function parseAttributes(source: string): Record<string, string> {
   const out: Record<string, string> = {};
   for (const m of source.matchAll(/([a-z_-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi)) {
     out[m[1]!.toLowerCase()] = decodeEntities(m[2] ?? m[3] ?? m[4] ?? '');
@@ -105,7 +105,7 @@ export function parseNetscape(html: string): ParsedImport {
       const from = tag.lastIndex;
       const close = html.slice(from).search(/<\/a>/i);
       const label = close >= 0 ? html.slice(from, from + close) : '';
-      const attrs = attributes(rest ?? '');
+      const attrs = parseAttributes(rest ?? '');
       if (close >= 0) tag.lastIndex = from + close;
       const url = (attrs.href ?? '').trim();
       if (!url || /^(place|javascript|about):/i.test(url)) {
