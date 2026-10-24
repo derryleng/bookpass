@@ -53,7 +53,7 @@ No host permission is held. The optional all sites permission is requested only 
 - Collects personal data: no.
 - Sells or shares data: no.
 - Uses remote code: no.
-- Privacy policy: `docs/PRIVACY.md`, published at a public address.
+- Privacy policy: the Privacy section of the README.
 
 ## Firefox reviewer notes
 

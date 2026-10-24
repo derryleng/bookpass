@@ -1,35 +1,36 @@
 # BookPass
 
-Your bookmarks in an encrypted file on your own computer. BookPass is a browser extension for Chrome, Brave and Firefox that stores bookmarks in a KeePass file, so there is no account, no cloud service and no tracking, and KeePassXC and KeePass can open the same file.
+A browser extension for Chrome, Brave and Firefox that stores bookmarks in an encrypted KeePass (KDBX 4.1) file on your own computer. KeePassXC and KeePass can open the same file. There is no account, no server and no sync service of its own.
 
-## What you get
+Features: save the current page or all tabs, folders with icons and colors, tags, favorites, notes, search, four layouts, trash, earlier versions of each bookmark, optional key file, configurable locking, import from browser bookmarks, HTML or CSV, and export to HTML, CSV or JSON. To use the vault on several computers, put the file in a folder that Syncthing, OneDrive or Dropbox keeps in step. Changes made on another computer, by a sync tool or in KeePassXC are merged.
 
-- **One encrypted file.** Protected by a master password and, if you want, a key file. A lost password cannot be recovered by anyone.
-- **Quick saving.** Save the page you are on from the toolbar button, the right click menu, `Alt+Shift+B`, or save all your open tabs. BookPass keeps the page's icon and a cover picture.
-- **Organised your way.** Folders with icons and colors, tags, favorites, notes, search, four layouts, sorting, sections, drag and drop, and earlier versions of every bookmark. The trash keeps what you delete.
-- **You decide when it locks.** When the browser closes, after a time, when the computer is idle, every time, or never.
-- **Works across computers.** Put the file in a folder that Syncthing, OneDrive or Dropbox keeps in step. Changes from another computer, a sync tool or KeePassXC are merged.
-- **Bring your bookmarks along.** Import from your browser, Netscape HTML or Raindrop CSV, and export to HTML, CSV or JSON.
+## Install
 
-## Getting started
+Browsers cannot write to a file you choose, so a small helper program (written in Go) does it. Install the extension, then download the helper from the [releases page](https://github.com/derryleng/bookpass/releases) and run it once. It copies itself to a per-user folder and registers with the browsers it finds, with no administrator rights. The extension's first screen walks through the rest. See [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md).
 
-[docs/GETTING-STARTED.md](docs/GETTING-STARTED.md) walks through installing the extension and the small helper program that writes the file, creating a vault, saving a first bookmark, and using a second computer.
+## Privacy
 
-## Your privacy
+BookPass has no server, no analytics and no telemetry. Bookmarks exist only in the vault file in the place you choose. The helper only sees encrypted data. Settings are kept in the browser's extension storage. The unlock key (a hash of the master password) is kept in memory while unlocked and is written to disk only with the "never lock" setting.
 
-BookPass collects nothing and has no server. It contacts a bookmarked site only when you ask it to fetch that site's pictures. Read [docs/PRIVACY.md](docs/PRIVACY.md) for what is kept and read, and [docs/SECURITY.md](docs/SECURITY.md) for how the vault is protected.
+The extension reads a page only when you save it. The only network requests are the picture fetches you start with a button (for one bookmark, a folder, a selection or everything). Those ask for permission to reach all sites, hand it back when done, go to the bookmarked sites over https with no cookies, no referrer and no cache, and list the sites first for a bulk fetch. They never go to a favicon service or any other third party, and nothing is fetched automatically, not even after an import.
+
+## Security
+
+The vault is KDBX 4.1 with Argon2id (256 MiB, 3 iterations), so a copy of the file from a disk, backup or sync service is protected by the master password and the optional key file. BookPass does not protect against malware running as you on an unlocked computer, against a weak password, or, with "never lock", against anyone who can read your browser profile. A lost password cannot be recovered.
+
+The background script owns the vault, the key and all cryptography. The helper reads and writes one configured file, never opens network connections, and only the BookPass extension may start it. The extension holds no site permissions at rest, has no content scripts and has no remote code. The permissions it asks for are in `wxt.config.ts`. No outside security review has been done and the code has not been fuzzed. Report problems as an issue on GitHub.
 
 ## Status
 
-BookPass is at version 0.1.0, the first release. The helper program is not signed yet, so Windows and macOS warn about it the first time. It has been tried with Chrome and Firefox on Windows and Ubuntu, and with Brave on macOS. Flatpak browsers and Firefox or Chrome on macOS have not been tried yet. See [docs/TESTING.md](docs/TESTING.md) for what has been tested.
+Version 0.1.0. The helper is not signed, so Windows and macOS warn the first time. It has been tried with Chrome and Firefox on Windows and Ubuntu, and with Brave on macOS. Flatpak browsers and Firefox or Chrome on macOS have not been tried.
 
-## More documents
+## Documents
 
+- [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md): installing and first use.
 - [docs/FORMAT.md](docs/FORMAT.md): how bookmarks are stored in the KeePass file.
-- [docs/DEVELOPING.md](docs/DEVELOPING.md): building and changing BookPass.
-- [docs/PROTOCOL.md](docs/PROTOCOL.md) and [docs/RELEASING.md](docs/RELEASING.md): the helper protocol, releases and the stores.
-- [docs/STORE.md](docs/STORE.md): the store listing text.
+- [docs/PROTOCOL.md](docs/PROTOCOL.md): the helper protocol.
+- [docs/DEVELOPING.md](docs/DEVELOPING.md), [docs/TESTING.md](docs/TESTING.md), [docs/RELEASING.md](docs/RELEASING.md), [docs/STORE.md](docs/STORE.md): working on BookPass.
 
 ## License
 
-BookPass is free software under the [GNU General Public License version 3 or later](LICENSE). Icons and libraries it uses are credited in [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
+[GNU General Public License version 3 or later](LICENSE). Libraries and icons are credited in [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).

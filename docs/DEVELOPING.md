@@ -7,7 +7,7 @@
 | `src/entrypoints/` | Extension entry points required by WXT: background, popup, manager, options |
 | `src/`             | Flat modules, one file per module. `src/ui/` holds the React screens        |
 | `helper/`          | The native messaging helper, written in Go. It installs itself              |
-| `docs/`            | The vault format, the helper protocol, security, releasing and more         |
+| `docs/`            | The vault format, the helper protocol, releasing and more                    |
 | `scripts/`         | Developer tools: helper registration, store zips                            |
 | `tests/`           | Unit tests, end to end checks, fixtures and run output (see TESTING.md)     |
 
