@@ -31,8 +31,8 @@ Load `.output/chrome-mv3` as an unpacked extension in Chrome or Brave. The devel
 
 ## Conventions
 
-- Keep it simple (KISS) and do not repeat yourself (DRY).
-- Semantic versioning. Work happens directly on `main`. There is no `dev` branch and no pull request flow. The only workflow is the tag-triggered `Release` one (see [RELEASING.md](RELEASING.md)), so run `npm run check` before pushing.
+- Keep it simple (KISS) and do not repeat yourself (DRY). Use semantic versioning.
+- Work happens directly on `main`. Run `npm run check` before pushing. The only workflow is `Release`, which runs on a `v*` tag (see [RELEASING.md](RELEASING.md)).
 - Markdown follows GitHub format.
 - Commit messages start with a type and a short summary (`feat`, `fix`, `docs`, `test`, `chore`, `refactor`, `revert`), then `-` bullets with the details.
 - BookPass is licensed under the GNU General Public License version 3 or later (see `LICENSE`). Libraries and icons it uses are listed in [../THIRD_PARTY_LICENSES.md](../THIRD_PARTY_LICENSES.md).
