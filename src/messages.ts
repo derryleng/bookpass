@@ -59,6 +59,15 @@ export type FolderPatchMessage = Omit<FolderPatch, 'iconImage'> & {
   iconImage?: { name: string; png: string };
 };
 
+export interface VaultPathCheck {
+  /** The path as the helper understood it, with ~ and slashes sorted out. */
+  path: string;
+  /** The outermost folder that would be created, empty if none. */
+  creates: string;
+  /** Why the path cannot be used, empty if it can. */
+  problem: string;
+}
+
 /** A master password and, optionally, a key file as base64. */
 export interface Secret {
   password: string;
@@ -69,6 +78,12 @@ export interface Requests {
   status: [void, Status];
   setVaultPath: [{ vaultPath: string }, Status];
   setBackupCount: [{ count: number }, Status];
+  /** Shows the system's folder dialog. `path` is empty if it was closed, `unavailable` if there is no dialog. */
+  pickVaultFolder: [void, { path: string; unavailable: boolean }];
+  /** Whether a vault could be moved to this path, without changing anything. */
+  checkVaultPath: [{ vaultPath: string }, VaultPathCheck];
+  /** Moves the vault file, and the backups kept beside it, to a new path. */
+  moveVault: [{ vaultPath: string }, Status];
   createVault: [Secret, Status];
   unlock: [Secret, Status];
   newKeyFile: [void, string];
@@ -143,7 +158,13 @@ export class AppError extends Error {
   constructor(
     message: string,
     readonly code?:
-      'locked' | 'wrong-password' | 'no-vault' | 'vault-exists' | 'helper' | 'conflict',
+      | 'locked'
+      | 'wrong-password'
+      | 'no-vault'
+      | 'vault-exists'
+      | 'helper'
+      | 'conflict'
+      | 'unavailable',
   ) {
     super(message);
   }

@@ -28,6 +28,7 @@ import {
   type Secret,
   type SnapshotReply,
   type Status,
+  type VaultPathCheck,
   type VersionConflict,
 } from './messages';
 import { defaultSettings, normalizeSettings, type Settings } from './settings';
@@ -149,6 +150,25 @@ export class Vault {
   async setVaultPath(vaultPath: string): Promise<Status> {
     await this.lock();
     await helper.setConfig({ vaultPath });
+    return this.status();
+  }
+
+  async pickVaultFolder(): Promise<{ path: string; unavailable: boolean }> {
+    try {
+      return { path: await helper.pickFolder(), unavailable: false };
+    } catch (e) {
+      if (e instanceof AppError && e.code === 'unavailable') return { path: '', unavailable: true };
+      throw e;
+    }
+  }
+
+  checkVaultPath(vaultPath: string): Promise<VaultPathCheck> {
+    return helper.checkPath(vaultPath);
+  }
+
+  /** The vault is the same bytes in a new place, so it can stay unlocked. */
+  async moveVault(vaultPath: string): Promise<Status> {
+    await helper.moveVault(vaultPath);
     return this.status();
   }
 

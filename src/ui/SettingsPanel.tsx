@@ -14,6 +14,7 @@ import { send } from './api';
 import { FetchMissingDialog } from './FetchMissing';
 import { KeyFileField, VaultLocation } from './Gates';
 import { I } from './Icon';
+import { MoveVaultDialog } from './MoveVault';
 import { errorText } from './parts';
 
 function minutesLabel(minutes: number): string {
@@ -60,6 +61,7 @@ export function SettingsPanel({
 }) {
   const { settings } = status;
   const [fetching, setFetching] = useState(false);
+  const [moving, setMoving] = useState(false);
   const [error, setError] = useState<string>();
 
   async function change(patch: Partial<Settings>) {
@@ -150,7 +152,15 @@ export function SettingsPanel({
             All your bookmarks live in this one encrypted KeePass file. Changing it locks the vault.
           </p>
         </div>
-        <VaultLocation status={status} onChanged={onChanged} showLabel={false} />
+        <VaultLocation
+          status={status}
+          onChanged={onChanged}
+          showLabel={false}
+          onMove={() => setMoving(true)}
+        />
+        {moving && (
+          <MoveVaultDialog status={status} onChanged={onChanged} onClose={() => setMoving(false)} />
+        )}
         <label className="field" style={{ maxWidth: 300 }}>
           <span>Backups to keep</span>
           <select

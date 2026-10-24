@@ -33,9 +33,10 @@ const (
 
 // Error codes the extension can act on.
 const (
-	codeConflict = "conflict" // the file changed since it was last read
-	codeInvalid  = "invalid"  // the request is wrong
-	codeIO       = "io"       // the disk said no
+	codeConflict    = "conflict"    // the file changed since it was last read
+	codeInvalid     = "invalid"     // the request is wrong
+	codeIO          = "io"          // the disk said no
+	codeUnavailable = "unavailable" // this computer cannot do that, for example show a file dialog
 )
 
 type request struct {
@@ -72,6 +73,9 @@ type response struct {
 	EOF         bool         `json:"eof,omitempty"`
 	Names       []string     `json:"names,omitempty"`
 	Backups     []backupInfo `json:"backups,omitempty"`
+	Path        string       `json:"path,omitempty"`    // a folder the person picked, or a cleaned path
+	Creates     string       `json:"creates,omitempty"` // the outermost folder a move would create
+	Problem     string       `json:"problem,omitempty"` // why a path cannot be used
 }
 
 func readMessage(in *bufio.Reader) (*request, error) {

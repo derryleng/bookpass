@@ -27,10 +27,11 @@
     "e2e:a11y": "node tests/e2e/a11y.ts",
     "e2e:security": "node tests/e2e/security.ts",
     "e2e:pictures": "node tests/e2e/pictures.ts",
+    "e2e:move": "node tests/e2e/move.ts",
     "e2e:perf": "node tests/e2e/perf.ts",
     "check": "npm run typecheck && npm run lint && npm test && npm run helper:test",
     "zip:store": "node scripts/zip-store.ts",
-    "e2e:all": "npm run e2e && npm run e2e:more && npm run e2e:a11y && npm run e2e:pictures && npm run e2e:security",
+    "e2e:all": "npm run e2e && npm run e2e:more && npm run e2e:a11y && npm run e2e:pictures && npm run e2e:move && npm run e2e:security",
     "e2e:firefox": "node tests/e2e/firefox.ts"
   },
   "devDependencies": {

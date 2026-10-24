@@ -95,6 +95,12 @@ func (s *server) handle(req *request) *response {
 		ok.VaultPath, ok.DefaultPath, ok.BackupCount = s.cfg.VaultPath, s.defaultPath, &s.cfg.BackupCount
 	case "setConfig":
 		return s.setConfig(req)
+	case "pickFolder":
+		return s.pickFolder(req)
+	case "checkPath":
+		return s.checkPath(req)
+	case "moveVault":
+		return s.moveVault(req)
 	case "exists":
 		return s.exists(req)
 	case "stat":

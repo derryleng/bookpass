@@ -142,6 +142,8 @@ async function createSession(
     ...process.env,
     BOOKPASS_CONFIG_DIR: join(work, 'config'),
     BOOKPASS_DEFAULT_VAULT: vaultPath,
+    // What the folder dialog answers: a test writes a path, "unavailable", or nothing into this file.
+    BOOKPASS_TEST_PICK: join(work, 'pick-answer.txt'),
   };
   const browser =
     kind === 'chrome'

@@ -1,7 +1,7 @@
 // Talks to the native helper over browser native messaging. See docs/PROTOCOL.md.
 import { browser } from 'wxt/browser';
 import { fromBase64, sha256Hex, toBase64 } from './base64';
-import { AppError } from './messages';
+import { AppError, type VaultPathCheck } from './messages';
 
 const HOST = 'com.bookpass.helper';
 /** Must match protocolVersion in helper/main.go. */
@@ -9,6 +9,8 @@ export const PROTOCOL_VERSION = 1;
 /** Base64 of this is about 683 KB, which fits the 1 MiB browsers allow from the helper. */
 const CHUNK = 512 * 1024;
 const TIMEOUT_MS = 30_000;
+/** A folder dialog stays open for as long as the person takes. */
+const DIALOG_TIMEOUT_MS = 10 * 60_000;
 
 export interface HelperConfig {
   vaultPath: string;
@@ -69,13 +71,17 @@ function connect(): Port {
   return p;
 }
 
-function call(op: string, fields: Record<string, unknown> = {}): Promise<Reply> {
+function call(
+  op: string,
+  fields: Record<string, unknown> = {},
+  timeoutMs = TIMEOUT_MS,
+): Promise<Reply> {
   const id = nextId++;
   return new Promise<Reply>((resolve, reject) => {
     const timer = setTimeout(() => {
       waiting.delete(id);
       reject(new AppError('The helper did not answer in time.', 'helper'));
-    }, TIMEOUT_MS);
+    }, timeoutMs);
     waiting.set(id, {
       resolve: (r) => (clearTimeout(timer), resolve(r)),
       reject: (e) => (clearTimeout(timer), reject(e)),
@@ -92,7 +98,11 @@ function call(op: string, fields: Record<string, unknown> = {}): Promise<Reply> 
     if (reply.ok) return reply;
     throw new AppError(
       reply.error ?? 'The helper reported an error',
-      reply.code === 'conflict' ? 'conflict' : 'helper',
+      reply.code === 'conflict'
+        ? 'conflict'
+        : reply.code === 'unavailable'
+          ? 'unavailable'
+          : 'helper',
     );
   });
 }
@@ -117,6 +127,24 @@ export async function setConfig(change: {
   backupCount?: number;
 }): Promise<void> {
   await call('setConfig', change);
+}
+
+/** Shows the system's folder dialog. Resolves to an empty string if it was closed, and throws 'unavailable' if there is none. */
+export async function pickFolder(): Promise<string> {
+  return ((await call('pickFolder', {}, DIALOG_TIMEOUT_MS)).path as string | undefined) ?? '';
+}
+
+export async function checkPath(vaultPath: string): Promise<VaultPathCheck> {
+  const r = await call('checkPath', { vaultPath });
+  return {
+    path: (r.path as string | undefined) ?? '',
+    creates: (r.creates as string | undefined) ?? '',
+    problem: (r.problem as string | undefined) ?? '',
+  };
+}
+
+export async function moveVault(vaultPath: string): Promise<void> {
+  await call('moveVault', { vaultPath });
 }
 
 /** Cheap to ask, as the helper does not hash the file for this. */

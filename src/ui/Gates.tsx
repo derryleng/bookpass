@@ -20,10 +20,13 @@ export function VaultLocation({
   status,
   onChanged,
   showLabel = true,
+  onMove,
 }: {
   status: Status;
   onChanged: (s: Status) => void;
   showLabel?: boolean;
+  /** Offers to move the vault file, once there is one. */
+  onMove?: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [path, setPath] = useState(status.vaultPath);
@@ -45,14 +48,16 @@ export function VaultLocation({
       <div className="stack" style={{ gap: 4 }}>
         {showLabel && <span className="label">Vault file</span>}
         <span className="path">{status.vaultPath}</span>
-        <button
-          type="button"
-          className="btn small"
-          style={{ alignSelf: 'flex-start' }}
-          onClick={() => setEditing(true)}
-        >
-          Use a different file
-        </button>
+        <div className="row">
+          {onMove && (
+            <button type="button" className="btn small" onClick={onMove}>
+              <I n="folder-open" /> Move vault…
+            </button>
+          )}
+          <button type="button" className="btn small" onClick={() => setEditing(true)}>
+            Use a different file
+          </button>
+        </div>
       </div>
     );
   }
