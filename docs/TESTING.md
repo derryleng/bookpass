@@ -36,7 +36,7 @@ The end to end scripts run on Windows, Linux and macOS (they look for Chrome, Fi
 
 ## By hand
 
-The scripts have run on Windows (Chrome 156, Firefox 158), on Ubuntu 26.04 in WSL (Chrome 156, Firefox 158 as a Snap) and on macOS 27 on Apple Silicon (Brave Origin 150, KeePassXC from Homebrew; every Chrome script passes, the Firefox one has not been run there). On the Mac a browser click sometimes hangs at the start of a run, and running the script again passes. Things a script cannot do, and anything on Edge, Chrome on macOS and Flatpak browsers, need a person. Use a spare vault file, and see `GETTING-STARTED.md` for what each screen should look like. For each step the result to expect is after the dash.
+The scripts have run on Windows (Chrome 156, Firefox 158), on Ubuntu 26.04 in WSL (Chrome 156, Firefox 158 as a Snap) and on macOS 27 on Apple Silicon (Brave Origin 150, KeePassXC from Homebrew; every Chrome script passes, the Firefox one has not been run there). On the Mac a browser click sometimes hangs at the start of a run, and running the script again passes. Things a script cannot do, and anything on Chrome on macOS and Flatpak browsers, need a person. Edge is not tested: it takes the same build as Chrome and the helper registers for it, but nothing here has been run in it. Use a spare vault file, and see `GETTING-STARTED.md` for what each screen should look like. For each step the result to expect is after the dash.
 
 ### First run
 
