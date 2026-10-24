@@ -231,13 +231,15 @@ func (in installer) uninstall(self string) error {
 		_ = os.Remove(in.manifestFile(b, dir, i.HostName))
 	}
 	exe := filepath.Join(dir, exeName(in.goos))
-	if samePath(self, exe) {
-		// A running program cannot delete itself on every system, so leave it and say so.
+	if samePath(self, exe) && in.goos == "windows" {
+		// Windows will not delete a program that is running, so leave it and say so.
 		fmt.Fprintf(in.out, "Removed the browser registrations. You can delete %s by hand.\n", dir)
 		return nil
 	}
-	if err := os.Remove(exe); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return err
+	for _, name := range []string{exe, exe + ".old", exe + ".new"} {
+		if err := os.Remove(name); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return err
+		}
 	}
 	_ = os.Remove(dir) // only succeeds when empty
 	fmt.Fprintln(in.out, "Removed the helper and its browser registrations. Your vault was not touched.")
@@ -274,10 +276,16 @@ func copyProgram(src, dst string) error {
 	if err := out.Close(); err != nil {
 		return err
 	}
-	// An older helper that a browser is running cannot be overwritten on Windows, but it can be renamed away.
-	if _, err := os.Stat(dst); err == nil {
+	// Renaming over the old program works everywhere except Windows while a browser is running it. There the old
+	// one is renamed out of the way first, and removed the next time round.
+	if err := os.Rename(tmp, dst); err == nil {
 		_ = os.Remove(dst + ".old")
-		_ = os.Rename(dst, dst+".old")
+		return nil
+	}
+	_ = os.Remove(dst + ".old")
+	if err := os.Rename(dst, dst+".old"); err != nil {
+		os.Remove(tmp)
+		return err
 	}
 	return os.Rename(tmp, dst)
 }

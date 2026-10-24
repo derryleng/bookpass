@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -152,5 +153,37 @@ func TestIdsAreComplete(t *testing.T) {
 	i, err := loadIDs()
 	if err != nil || i.HostName == "" || i.FirefoxID == "" || len(i.ChromeIDs) == 0 {
 		t.Fatalf("ids.json incomplete: %+v %v", i, err)
+	}
+}
+
+func TestUninstallFromTheInstalledProgramWorksWhereTheSystemAllows(t *testing.T) {
+	home := t.TempDir()
+	root := filepath.Join(home, ".config", "google-chrome")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	in := installer{goos: "linux", home: home, out: &bytes.Buffer{}}
+	if err := in.install(fakeProgram(t)); err != nil {
+		t.Fatal(err)
+	}
+	exe := filepath.Join(home, ".local", "share", "bookpass", "bookpass-helper")
+	// Installing again over the installed program leaves nothing behind.
+	if err := in.install(exe); err != nil {
+		t.Fatal(err)
+	}
+	if err := in.install(fakeProgram(t)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(exe + ".old"); err == nil {
+		t.Fatal("an old copy was left behind")
+	}
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows cannot delete the program that is running")
+	}
+	if err := in.uninstall(exe); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Dir(exe)); err == nil {
+		t.Fatal("the install folder survived")
 	}
 }
