@@ -22,6 +22,13 @@ export const chromePath =
     : process.platform === 'darwin'
       ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
       : '/usr/bin/google-chrome');
+export const firefoxPath =
+  process.env.BOOKPASS_FIREFOX ??
+  (process.platform === 'win32'
+    ? 'C:\\Program Files\\Mozilla Firefox\\firefox.exe'
+    : process.platform === 'darwin'
+      ? '/Applications/Firefox.app/Contents/MacOS/firefox'
+      : '/usr/bin/firefox');
 export const keepassxcCli =
   process.platform === 'win32' ? 'C:/Program Files/KeePassXC/keepassxc-cli.exe' : 'keepassxc-cli';
 
@@ -43,7 +50,22 @@ const art = (a: string, b: string) =>
   `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="1200" height="630" fill="url(#g)"/><circle cx="600" cy="315" r="170" fill="rgba(255,255,255,.35)"/></svg>`;
 const icon = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" rx="14" fill="#e5484d"/><text x="32" y="44" font-size="34" text-anchor="middle" fill="#fff" font-family="sans-serif">R</text></svg>`;
 
+/** A Chrome session: the built extension in a throwaway Chrome profile, with the real helper. */
 export async function startSession(name: string, options: { vaultPath?: string } = {}) {
+  const session = await createSession(name, 'chrome', options);
+  return { ...session, extension: session.extension! };
+}
+
+/** A Firefox session, using the end to end build (see tests/e2e/firefox.ts for why it is separate). */
+export function startFirefoxSession(name: string) {
+  return createSession(name, 'firefox', {});
+}
+
+async function createSession(
+  name: string,
+  kind: 'chrome' | 'firefox',
+  options: { vaultPath?: string },
+) {
   const shots = join(outputDir, name);
   rmSync(shots, { recursive: true, force: true });
   mkdirSync(shots, { recursive: true });
@@ -109,31 +131,78 @@ export async function startSession(name: string, options: { vaultPath?: string }
     );
   }
 
-  const browser = await puppeteer.launch({
-    executablePath: chromePath,
-    headless: true,
-    pipe: true,
-    enableExtensions: [join(root, '.output/chrome-mv3')],
-    userDataDir: join(work, 'profile'),
-    defaultViewport: { width: 1280, height: 800 },
-    env: {
-      ...process.env,
-      BOOKPASS_CONFIG_DIR: join(work, 'config'),
-      BOOKPASS_DEFAULT_VAULT: vaultPath,
-    },
-  });
+  const env = {
+    ...process.env,
+    BOOKPASS_CONFIG_DIR: join(work, 'config'),
+    BOOKPASS_DEFAULT_VAULT: vaultPath,
+  };
+  const browser =
+    kind === 'chrome'
+      ? await puppeteer.launch({
+          executablePath: chromePath,
+          headless: true,
+          pipe: true,
+          enableExtensions: [join(root, '.output/chrome-mv3')],
+          userDataDir: join(work, 'profile'),
+          defaultViewport: { width: 1280, height: 800 },
+          env,
+        })
+      : await puppeteer.launch({
+          browser: 'firefox',
+          executablePath: firefoxPath,
+          headless: true,
+          protocol: 'webDriverBiDi',
+          // Without this Firefox will not let a script look inside an extension page.
+          args: ['-remote-allow-system-access'],
+          userDataDir: join(work, 'profile'),
+          defaultViewport: { width: 1280, height: 800 },
+          env,
+        });
+
+  // Firefox reports an extension page as about:blank, so its real address has to be asked of the page itself.
+  const realUrl = (page: Page) => page.evaluate(() => location.href).catch(() => '');
+  async function findPage(test: (url: string) => boolean): Promise<Page | undefined> {
+    for (const page of await browser.pages()) if (test(await realUrl(page))) return page;
+  }
 
   let extension: Awaited<ReturnType<typeof browser.extensions>> extends Map<string, infer E>
     ? E | undefined
     : never;
-  for (let i = 0; i < 20 && !extension; i++) {
-    extension = [...(await browser.extensions()).values()].find((e) => e.name === 'BookPass');
-    if (!extension) await sleep(300);
+  let base = '';
+  if (kind === 'chrome') {
+    for (let i = 0; i < 20 && !extension; i++) {
+      extension = [...(await browser.extensions()).values()].find((e) => e.name === 'BookPass');
+      if (!extension) await sleep(300);
+    }
+    if (!extension) throw new Error('The BookPass extension did not load');
+    base = `chrome-extension://${extension.id}`;
+  } else {
+    // Firefox cannot be sent to an extension page, so the end to end build opens its manager when it is installed.
+    await browser.installExtension(join(outputDir, 'build/firefox-mv3'));
+    for (let i = 0; i < 40 && !base; i++) {
+      const found = await findPage((url) => url.includes('/manager.html'));
+      if (found) {
+        const href = await realUrl(found); // new URL() has no origin for this kind of address
+        base = href.slice(0, href.indexOf('/', 'moz-extension://'.length));
+      } else await sleep(300);
+    }
+    if (!base) throw new Error('The BookPass add-on did not open its manager');
   }
-  if (!extension) throw new Error('The BookPass extension did not load');
-  const base = `chrome-extension://${extension.id}`;
 
   async function openPage(path: string, width = 1280, height = 800): Promise<Page> {
+    if (kind === 'firefox') {
+      // Navigating to an extension page is refused, so reuse the one the add-on opened, or ask it to open one.
+      const open = await findPage((url) => url === `${base}/${path}`);
+      if (open) return open;
+      const opener = (await findPage((url) => url.startsWith(base)))!;
+      await opener.evaluate((url) => chrome.tabs.create({ url }), `${base}/${path}`);
+      for (let i = 0; i < 30; i++) {
+        const found = await findPage((url) => url === `${base}/${path}`);
+        if (found) return found;
+        await sleep(200);
+      }
+      throw new Error(`Firefox did not open ${path}`);
+    }
     const page = await browser.newPage();
     await page.setViewport({ width, height });
     page.on('pageerror', (e) => console.log('  page error:', (e as Error).message));
@@ -182,7 +251,11 @@ export async function startSession(name: string, options: { vaultPath?: string }
     await page.click(selector);
     await page.keyboard.type(value);
   }
-  const shot = (page: Page, file: string) => page.screenshot({ path: join(shots, `${file}.png`) });
+  // Firefox will not take a screenshot of an extension page, so there are none from there.
+  const shot = async (page: Page, file: string) => {
+    if (kind === 'firefox') return;
+    await page.screenshot({ path: join(shots, `${file}.png`) });
+  };
 
   /** Closes everything and exits with a summary. */
   async function finish(): Promise<never> {

@@ -21,6 +21,13 @@ import { Vault } from '../vault';
 type Handlers = { [K in RequestType]: (payload: Requests[K][0]) => Promise<Requests[K][1]> };
 
 export default defineBackground(() => {
+  // The Firefox end to end build opens the manager itself, since a script cannot navigate to an extension page.
+  if (__E2E__) {
+    browser.runtime.onInstalled.addListener(
+      () => void browser.tabs.create({ url: browser.runtime.getURL('/manager.html') }),
+    );
+  }
+
   const vault = new Vault();
   const ready = vault.loadSettings();
   const locks = startLockManager(vault);

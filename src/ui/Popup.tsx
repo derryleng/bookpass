@@ -44,7 +44,11 @@ function Popup({ status, snapshot }: PageContext) {
   // Look at the page the popup was opened on.
   useEffect(() => {
     void (async () => {
-      const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+      // The end to end build can name the tab to save, since its popup is opened in a tab of its own.
+      const named = __E2E__ ? new URLSearchParams(location.search).get('tab') : null;
+      const tab = named
+        ? await browser.tabs.get(Number(named))
+        : (await browser.tabs.query({ active: true, currentWindow: true }))[0];
       if (!tab) return setError('There is no page to save.');
       const info = await inspectTab(tab, wantCovers);
       setPage(info);

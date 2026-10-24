@@ -5,6 +5,9 @@ import { chromeDevKey, firefoxId } from './scripts/ids';
 // service worker for Chrome and an event page for Firefox.
 export default defineConfig({
   srcDir: 'src',
+  // The end to end build goes to its own folder so it never replaces the real one.
+  outDir: process.env.WXT_E2E ? 'tests/output/build' : '.output',
+  vite: () => ({ define: { __E2E__: JSON.stringify(!!process.env.WXT_E2E) } }),
   manifestVersion: 3,
   modules: ['@wxt-dev/module-react'],
   manifest: ({ browser }) => ({
@@ -22,6 +25,7 @@ export default defineConfig({
     ],
     // Asked for only when you use the feature: saving several tabs, and importing your browser's bookmarks.
     optional_permissions: ['tabs', 'bookmarks'],
+    ...(process.env.WXT_E2E ? { host_permissions: ['<all_urls>'] } : {}),
     commands: {
       _execute_action: {
         suggested_key: { default: 'Alt+Shift+B' },
