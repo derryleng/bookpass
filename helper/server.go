@@ -233,12 +233,27 @@ func (s *server) writeBegin(req *request) *response {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fail(req.ID, codeIO, err.Error())
 	}
+	removeStaleTemps(dir)
 	tmp, err := os.CreateTemp(dir, ".bookpass-*.tmp")
 	if err != nil {
 		return fail(req.ID, codeIO, err.Error())
 	}
 	s.up = &upload{tmp: tmp, hash: sha256.New()}
 	return &response{ID: req.ID, OK: true}
+}
+
+// removeStaleTemps deletes temporary files that an earlier helper left when it was killed in the middle of a save.
+func removeStaleTemps(dir string) {
+	entries, _ := os.ReadDir(dir)
+	for _, e := range entries {
+		name := e.Name()
+		if !strings.HasPrefix(name, ".bookpass-") || !strings.HasSuffix(name, ".tmp") {
+			continue
+		}
+		if info, err := e.Info(); err == nil && time.Since(info.ModTime()) > time.Hour {
+			os.Remove(filepath.Join(dir, name))
+		}
+	}
 }
 
 func (s *server) writeChunk(req *request) *response {

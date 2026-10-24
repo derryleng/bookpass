@@ -134,6 +134,7 @@ func main() {
 	for {
 		req, err := readMessage(in)
 		if err != nil {
+			srv.discardUpload() // a save cut off by the browser closing must not leave its temporary file behind
 			if !errors.Is(err, io.EOF) {
 				fmt.Fprintln(os.Stderr, "read:", err)
 				os.Exit(1)
@@ -142,9 +143,11 @@ func main() {
 		}
 		if err := writeMessage(out, srv.handle(req)); err != nil {
 			fmt.Fprintln(os.Stderr, "write:", err)
+			srv.discardUpload()
 			os.Exit(1)
 		}
 		if err := out.Flush(); err != nil {
+			srv.discardUpload()
 			os.Exit(1)
 		}
 	}
