@@ -117,8 +117,8 @@ export function ImportDialog({
       ) : (
         <>
           <p className="hint" style={{ margin: 0 }}>
-            Bookmark files from Chrome, Edge, Firefox, Raindrop (HTML or CSV) and most other
-            services work. The whole file is read here, on your computer.
+            Bookmark files from Chrome, Firefox, Raindrop (HTML or CSV) and most other services
+            work. The whole file is read here, on your computer.
           </p>
           <div className="row">
             <label className="btn">

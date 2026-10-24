@@ -1,6 +1,6 @@
 // Runs the native messaging spike in one browser on Windows.
 //
-//   node spikes/native/run.ts chrome|edge|firefox
+//   node spikes/native/run.ts chrome|firefox
 //
 // Registers the helper for the current user only (HKCU, no administrator
 // rights), starts the browser with a throwaway profile and the spike extension,
@@ -11,7 +11,7 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSyn
 import { join, resolve } from 'node:path';
 import puppeteer from 'puppeteer-core';
 
-const browser = process.argv[2] as 'chrome' | 'edge' | 'firefox';
+const browser = process.argv[2] as 'chrome' | 'firefox';
 const timeoutMs = 180_000;
 const root = resolve(import.meta.dirname, '../..');
 const ext = join(root, 'spikes/native/extension');
@@ -50,7 +50,6 @@ writeFileSync(
 
 const regKey = {
   chrome: `HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\${hostName}`,
-  edge: `HKCU\\Software\\Microsoft\\Edge\\NativeMessagingHosts\\${hostName}`,
   firefox: `HKCU\\Software\\Mozilla\\NativeMessagingHosts\\${hostName}`,
 }[browser];
 execFileSync('reg', ['add', regKey, '/ve', '/t', 'REG_SZ', '/d', manifestPath, '/f'], {
@@ -81,10 +80,7 @@ try {
     close = async () =>
       void execFileSync('taskkill', ['/T', '/F', '/PID', String(child.pid)], { stdio: 'ignore' });
   } else {
-    const executablePath =
-      browser === 'chrome'
-        ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
-        : 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
+    const executablePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
     const b = await puppeteer.launch({
       executablePath,
       headless: true,

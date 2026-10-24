@@ -1,6 +1,6 @@
 # Store listings
 
-Text for the Chrome Web Store, Firefox add-ons and Edge Add-ons. Screenshots come from the end to end runs (in `tests/output/`) at 1280 by 800.
+Text for the Chrome Web Store and Firefox add-ons. Screenshots come from the end to end runs (in `tests/output/`) at 1280 by 800.
 
 ## Name
 

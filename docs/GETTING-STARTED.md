@@ -4,14 +4,14 @@ This is what a new person goes through, from nothing installed to the first save
 
 ## 1. Install the extension
 
-From the browser store (once it is published), or for now by loading the build as an unpacked extension (Chrome, Edge, Brave) or as a temporary add-on (Firefox). Click the BookPass button in the toolbar.
+From the browser store (once it is published), or for now by loading the build as an unpacked extension (Chrome, Brave) or as a temporary add-on (Firefox). Click the BookPass button in the toolbar.
 
 ## 2. Install the helper
 
 Browsers cannot write to a file you choose, so a small helper program does it. The first screen says so and gives three steps:
 
 1. Download the helper for your system (a link to the GitHub release page).
-2. Run it once. On Windows, double click it and a console window says which browsers it registered with. On macOS and Linux, run `./bookpass-helper` in a terminal (on macOS, run `xattr -d com.apple.quarantine bookpass-helper` first, because the program is not signed yet). It copies itself to a folder for your user only and registers with Chrome, Edge, Brave, Vivaldi, Chromium and Firefox, whichever are installed. It needs no administrator rights and does not touch any vault.
+2. Run it once. On Windows, double click it and a console window says which browsers it registered with. On macOS and Linux, run `./bookpass-helper` in a terminal (on macOS, run `xattr -d com.apple.quarantine bookpass-helper` first, because the program is not signed yet). It copies itself to a folder for your user only and registers with Chrome, Brave, Vivaldi, Chromium and Firefox, whichever are installed. It needs no administrator rights and does not touch any vault.
 3. Go back to the extension and press Check again.
 
 If the helper is missing or not allowed, the screen shows the browser's own reason in a yellow box. During development, `npm run helper:register` does step 2.

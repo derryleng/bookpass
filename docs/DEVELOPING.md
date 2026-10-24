@@ -24,7 +24,7 @@ npm run build              # .output/chrome-mv3
 npm run build:firefox      # .output/firefox-mv3
 ```
 
-Load `.output/chrome-mv3` as an unpacked extension in Chrome, Edge or Brave. The development build has a fixed extension id (see `scripts/ids.ts`), which is what the helper allows. For Firefox run `npm run dev:firefox`. `npm run helper:unregister` undoes the registration. Run `npm run helper:register` again after rebuilding the helper.
+Load `.output/chrome-mv3` as an unpacked extension in Chrome or Brave. The development build has a fixed extension id (see `scripts/ids.ts`), which is what the helper allows. For Firefox run `npm run dev:firefox`. `npm run helper:unregister` undoes the registration. Run `npm run helper:register` again after rebuilding the helper.
 
 ## Checks
 

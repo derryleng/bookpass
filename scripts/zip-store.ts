@@ -1,4 +1,4 @@
-// Builds the zips to upload to the stores: Chrome (also used for Edge) and Firefox with its sources.
+// Builds the zips to upload to the stores: Chrome and Firefox with its sources.
 //
 //   npm run zip:store
 //

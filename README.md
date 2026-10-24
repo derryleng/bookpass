@@ -1,6 +1,6 @@
 # BookPass
 
-Your bookmarks in an encrypted file on your own computer. BookPass is a browser extension for Chrome, Edge, Brave and Firefox that stores bookmarks in a KeePass file, so there is no account, no cloud service and no tracking, and KeePassXC and KeePass can open the same file.
+Your bookmarks in an encrypted file on your own computer. BookPass is a browser extension for Chrome, Brave and Firefox that stores bookmarks in a KeePass file, so there is no account, no cloud service and no tracking, and KeePassXC and KeePass can open the same file.
 
 ## What you get
 
@@ -21,7 +21,7 @@ BookPass collects nothing and has no server. It contacts a bookmarked site only 
 
 ## Status
 
-BookPass is at version 0.1.0, the first release. The helper program is not signed yet, so Windows and macOS warn about it the first time. It has been tried with Chrome and Firefox on Windows and Ubuntu, and with Brave on macOS. Edge is not tested by this project. It takes the Chrome build and should work. Flatpak browsers and Firefox or Chrome on macOS have not been tried yet. See [CHANGELOG.md](CHANGELOG.md) for what exists so far and [docs/TESTING.md](docs/TESTING.md) for what has been tested.
+BookPass is at version 0.1.0, the first release. The helper program is not signed yet, so Windows and macOS warn about it the first time. It has been tried with Chrome and Firefox on Windows and Ubuntu, and with Brave on macOS. Flatpak browsers and Firefox or Chrome on macOS have not been tried yet. See [CHANGELOG.md](CHANGELOG.md) for what exists so far and [docs/TESTING.md](docs/TESTING.md) for what has been tested.
 
 ## More documents
 

@@ -52,7 +52,6 @@ func browsers(goos, home string, host string) []browserTarget {
 		reg := func(vendor string) string { return `Software\` + vendor + `\NativeMessagingHosts\` + host }
 		return []browserTarget{
 			{Name: "Chrome", RegKey: reg(`Google\Chrome`)},
-			{Name: "Edge", RegKey: reg(`Microsoft\Edge`)},
 			{Name: "Brave", RegKey: reg(`BraveSoftware\Brave-Browser`)},
 			{Name: "Brave Origin", RegKey: reg(`BraveSoftware\Brave-Origin`)},
 			{Name: "Vivaldi", RegKey: reg(`Vivaldi`)},
@@ -67,7 +66,6 @@ func browsers(goos, home string, host string) []browserTarget {
 		}
 		return []browserTarget{
 			mac("Chrome", false, "Google", "Chrome"),
-			mac("Edge", false, "Microsoft Edge"),
 			mac("Brave", false, "BraveSoftware", "Brave-Browser"),
 			mac("Vivaldi", false, "Vivaldi"),
 			mac("Chromium", false, "Chromium"),
@@ -81,7 +79,6 @@ func browsers(goos, home string, host string) []browserTarget {
 		return []browserTarget{
 			linux("Chrome", false, filepath.Join(cfg, "google-chrome"), filepath.Join(cfg, "google-chrome", "NativeMessagingHosts")),
 			linux("Chromium", false, filepath.Join(cfg, "chromium"), filepath.Join(cfg, "chromium", "NativeMessagingHosts")),
-			linux("Edge", false, filepath.Join(cfg, "microsoft-edge"), filepath.Join(cfg, "microsoft-edge", "NativeMessagingHosts")),
 			linux("Brave", false, filepath.Join(cfg, "BraveSoftware", "Brave-Browser"), filepath.Join(cfg, "BraveSoftware", "Brave-Browser", "NativeMessagingHosts")),
 			linux("Vivaldi", false, filepath.Join(cfg, "vivaldi"), filepath.Join(cfg, "vivaldi", "NativeMessagingHosts")),
 			linux("Firefox", true, filepath.Join(home, ".mozilla"), filepath.Join(home, ".mozilla", "native-messaging-hosts")),

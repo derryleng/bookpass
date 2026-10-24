@@ -6,7 +6,7 @@ The extension talks to the helper (`helper/`) with browser native messaging. The
 
 Each message is a 4 byte length in native byte order followed by that many bytes of UTF-8 JSON.
 
-- The browser accepts at most 1 MiB from the helper, counting the JSON. Chrome and Edge drop the connection when it is exceeded and Firefox reports an error. The helper therefore answers an oversize reply with a small error instead, and reads are limited to 512 KiB (about 683 KB of base64).
+- The browser accepts at most 1 MiB from the helper, counting the JSON. Chrome drops the connection when it is exceeded and Firefox reports an error. The helper therefore answers an oversize reply with a small error instead, and reads are limited to 512 KiB (about 683 KB of base64).
 - The helper accepts up to 64 MiB per message from the browser, though the extension sends 512 KiB chunks.
 
 ## Requests and replies
@@ -48,7 +48,7 @@ Writing a vault is `writeBegin`, `writeChunk` for each 512 KiB piece, then `writ
 - The helper reads and writes exactly one file, the `vaultPath` from its config file, which must be absolute and end in `.kdbx`. The path changes only through `setConfig`.
 - Backups go in a `backups` folder next to the vault, named `<vault>-<UTC time>.kdbx`, and the oldest beyond `backupCount` (default 5) are removed.
 - Files are created for the current user only (folder 0700, files 0600 on macOS and Linux).
-- The native messaging manifest names the extension that may start the helper: `allowed_origins` for Chrome and Edge, `allowed_extensions` for Firefox. Web pages and other extensions cannot reach it.
+- The native messaging manifest names the extension that may start the helper: `allowed_origins` for Chrome and the other Chromium browsers, `allowed_extensions` for Firefox. Web pages and other extensions cannot reach it.
 
 ## Versioning
 
