@@ -32,11 +32,11 @@ Everything a test reads or writes is under `tests/`, except the Go tests, which 
 
 The golden files are made again with `UPDATE_FIXTURES=1 npx vitest run tests/unit/fixtures.test.ts`, only when the format deliberately changes.
 
-The end to end scripts run on Windows and Linux (they look for Chrome, Firefox and `keepassxc-cli` in the usual places; set `BOOKPASS_CHROME` or `BOOKPASS_FIREFOX` to use another). On Linux use Node 24 or newer, and for a Snap Firefox set `BOOKPASS_FIREFOX=/snap/bin/firefox`. They have not been run on macOS. Chrome refuses remote debugging in its default profile folder, so on Linux the tests give a throwaway profile its own copy of the helper manifest. The manifest the helper installer writes for the default profile is covered by the helper tests but was never loaded by a real Chrome. Chrome's right click menu cannot be driven by a script, so the right click saving is checked by hand.
+The end to end scripts run on Windows, Linux and macOS (they look for Chrome, Firefox and `keepassxc-cli` in the usual places; set `BOOKPASS_CHROME` or `BOOKPASS_FIREFOX` to use another). On Linux use Node 24 or newer, and for a Snap Firefox set `BOOKPASS_FIREFOX=/snap/bin/firefox`. On macOS use `BOOKPASS_CHROME` for a Chromium based browser, and run the helper build first (`cd helper && go build -o bin/bookpass-helper .`). Chrome refuses remote debugging in its default profile folder, so on Linux the tests give a throwaway profile its own copy of the helper manifest. The manifest the helper installer writes for the default profile is covered by the helper tests but was never loaded by a real Chrome. Chrome's right click menu cannot be driven by a script, so the right click saving is checked by hand.
 
 ## By hand
 
-The scripts have run on Windows (Chrome 156, Firefox 158) and on Ubuntu 26.04 in WSL (Chrome 156, Firefox 158 as a Snap). Things a script cannot do, and anything on macOS, Edge, Brave and Flatpak browsers, need a person. Use a spare vault file, and see `GETTING-STARTED.md` for what each screen should look like. For each step the result to expect is after the dash.
+The scripts have run on Windows (Chrome 156, Firefox 158), on Ubuntu 26.04 in WSL (Chrome 156, Firefox 158 as a Snap) and on macOS 27 on Apple Silicon (Brave Origin 150, KeePassXC from Homebrew; every Chrome script passes, the Firefox one has not been run there). On the Mac a browser click sometimes hangs at the start of a run, and running the script again passes. Things a script cannot do, and anything on Edge, Chrome on macOS and Flatpak browsers, need a person. Use a spare vault file, and see `GETTING-STARTED.md` for what each screen should look like. For each step the result to expect is after the dash.
 
 ### First run
 
