@@ -6,12 +6,12 @@ import { execFileSync } from 'node:child_process';
 import { copyFileSync, existsSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import type { ElementHandle, Page } from 'puppeteer-core';
-import { fixtures, password, sleep, startSession } from './lib.ts';
+import { fixtures, keepassxcCli, password, sleep, startSession } from './lib.ts';
 
 const { browser, vaultPath, check, openPage, text, hasText, click, type, shot, finish } =
   await startSession('features');
 
-const xc = 'C:/Program Files/KeePassXC/keepassxc-cli.exe';
+const xc = keepassxcCli;
 const keyFilePath = join(fixtures, 'my.keyx');
 const importPath = join(fixtures, 'bookmarks.html');
 

@@ -12,6 +12,28 @@ export const outputDir = join(root, 'tests/output');
 /** Files the tests read. */
 export const fixtures = join(root, 'tests/fixtures');
 export const password = 'correct horse battery staple';
+/** Where the browsers and tools are. Set BOOKPASS_CHROME to use another Chrome or Chromium. */
+export const chromePath =
+  process.env.BOOKPASS_CHROME ??
+  (process.platform === 'win32'
+    ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
+    : process.platform === 'darwin'
+      ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+      : '/usr/bin/google-chrome');
+export const keepassxcCli =
+  process.platform === 'win32' ? 'C:/Program Files/KeePassXC/keepassxc-cli.exe' : 'keepassxc-cli';
+
+/** Stops any helper a browser left running, so a run starts and ends clean. */
+export function killHelpers() {
+  try {
+    if (process.platform === 'win32')
+      execFileSync('taskkill', ['/F', '/IM', 'bookpass-helper.exe'], { stdio: 'ignore' });
+    else execFileSync('pkill', ['-f', 'bookpass-helper'], { stdio: 'ignore' });
+  } catch {
+    /* none running */
+  }
+}
+
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // A small site to save pages from: one page with a declared cover and icon, one without.
@@ -62,7 +84,7 @@ export async function startSession(name: string, options: { vaultPath?: string }
   execFileSync('node', [join(root, 'scripts/register-helper.ts')], { stdio: 'ignore' });
 
   const browser = await puppeteer.launch({
-    executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    executablePath: chromePath,
     headless: true,
     pipe: true,
     enableExtensions: [join(root, '.output/chrome-mv3')],
@@ -140,11 +162,7 @@ export async function startSession(name: string, options: { vaultPath?: string }
   async function finish(): Promise<never> {
     await browser.close().catch(() => {});
     server.close();
-    try {
-      execFileSync('taskkill', ['/F', '/IM', 'bookpass-helper.exe'], { stdio: 'ignore' });
-    } catch {
-      /* none running */
-    }
+    killHelpers();
     rmSync(work, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 });
     console.log(
       failures

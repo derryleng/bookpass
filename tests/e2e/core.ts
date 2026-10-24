@@ -4,7 +4,7 @@
 //
 // It uses a throwaway browser profile and a throwaway vault, and writes screenshots to tests/output/core/.
 import { execFileSync } from 'node:child_process';
-import { password, sleep, startSession } from './lib.ts';
+import { keepassxcCli, password, sleep, startSession } from './lib.ts';
 
 const {
   browser,
@@ -237,11 +237,10 @@ try {
 
 // 9. The file on disk opens in KeePassXC.
 try {
-  const listing = execFileSync(
-    'C:/Program Files/KeePassXC/keepassxc-cli.exe',
-    ['ls', '-q', '-R', vaultPath],
-    { input: password + '\n', encoding: 'utf8' },
-  );
+  const listing = execFileSync(keepassxcCli, ['ls', '-q', '-R', vaultPath], {
+    input: password + '\n',
+    encoding: 'utf8',
+  });
   check(
     'KeePassXC opens the vault and lists the bookmarks',
     listing.includes('A fine article about Rust') && listing.includes('Reading/'),
