@@ -4,7 +4,7 @@
   "private": true,
   "description": "Encrypted bookmark manager that stores bookmarks in a KeePass KDBX 4.1 file",
   "type": "module",
-  "license": "MIT",
+  "license": "GPL-3.0-only",
   "scripts": {
     "dev": "wxt",
     "dev:firefox": "wxt -b firefox",
