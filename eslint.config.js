@@ -9,8 +9,6 @@ export default tseslint.config(
       'node_modules/',
       'helper/',
       'tests/output/',
-      'spikes/native/extension/vault.js',
-      'spikes/native/extension/hash-wasm.js',
     ],
   },
   ...tseslint.configs.recommended,

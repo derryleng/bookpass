@@ -11,7 +11,7 @@ Everything a test reads or writes is under `tests/`, except the Go tests, which 
 | `tests/fixtures/` | Inputs, committed: the golden vault files, a key file and a bookmarks file to import                                   |
 | `tests/output/`   | Everything a run writes: screenshots, throwaway vaults and browser profiles, the big performance vault. Ignored by git |
 
-`.gitignore` ignores `tests/output/`, any `out` folder and `.log` file under `tests/`, and every `.kdbx` except the `golden-*.kdbx` files in `tests/fixtures/`. The spikes in `spikes/` write to `tests/output/spikes/`.
+`.gitignore` ignores `tests/output/`, any `out` folder and `.log` file under `tests/`, and every `.kdbx` except the `golden-*.kdbx` files in `tests/fixtures/`.
 
 ## Automatic
 

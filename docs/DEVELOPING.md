@@ -10,7 +10,6 @@
 | `docs/`            | The vault format, the helper protocol, security, releasing and more         |
 | `scripts/`         | Developer tools: helper registration, store zips                            |
 | `tests/`           | Unit tests, end to end checks, fixtures and run output (see TESTING.md)     |
-| `spikes/`          | The M0 experiments, each with a README of its findings                      |
 
 ## Build and load
 

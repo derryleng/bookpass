@@ -9,7 +9,6 @@
     ".wxt/wxt.d.ts",
     "src",
     "tests",
-    "spikes",
     "scripts",
     "wxt.config.ts",
     "vitest.config.ts"
