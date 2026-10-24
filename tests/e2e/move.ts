@@ -168,10 +168,14 @@ try {
   );
   await click(manager, "button", "Add bookmark");
   await manager.waitForSelector("dialog[open] input[type=url]");
-  await manager.type("dialog[open] input[type=url]", "https://three.test/");
+  await manager.type("dialog[open] input[type=url]", "three.test");
   await manager.type("dialog[open] input:not([type])", "Third");
   await click(manager, "dialog button", "Save");
   await sleep(2500);
+  check(
+    "an address typed without https:// is completed",
+    !!(await manager.$('a[href="https://www.three.test"]')),
+  );
   try {
     const out = execFileSync(keepassxcCli, ["ls", "-q", "-R", target], {
       input: password + "\n",

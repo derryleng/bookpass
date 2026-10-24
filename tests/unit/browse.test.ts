@@ -9,6 +9,7 @@ import {
   bookmarksFor,
   buildTree,
   descendantIds,
+  completeUrl,
   domainOf,
   folderOptions,
   groupBookmarks,
@@ -58,6 +59,25 @@ describe("urls", () => {
   it("finds the site name", () => {
     expect(domainOf("https://www.example.com/a/b?c=d")).toBe("example.com");
     expect(domainOf("not a url")).toBe("");
+  });
+
+  it("completes a typed address", () => {
+    expect(completeUrl(" youtube.com ")).toBe("https://www.youtube.com");
+    expect(completeUrl("youtube.com/watch?v=1")).toBe(
+      "https://www.youtube.com/watch?v=1",
+    );
+    expect(completeUrl("docs.example.com/a")).toBe(
+      "https://docs.example.com/a",
+    );
+    expect(completeUrl("bbc.co.uk")).toBe("https://bbc.co.uk");
+    expect(completeUrl("192.168.1.1:8080")).toBe("https://192.168.1.1:8080");
+  });
+
+  it("leaves addresses with a scheme, and text that is not an address, as typed", () => {
+    expect(completeUrl("http://example.com")).toBe("http://example.com");
+    expect(completeUrl("mailto:a@example.com")).toBe("mailto:a@example.com");
+    expect(completeUrl("two words.com")).toBe("two words.com");
+    expect(completeUrl("hello")).toBe("hello");
   });
 
   it("treats fragments and trailing slashes as the same page", () => {

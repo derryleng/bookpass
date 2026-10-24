@@ -24,6 +24,20 @@ export function domainOf(url: string): string {
   }
 }
 
+/**
+ * Turns what was typed into an address: "youtube.com/watch" becomes "https://www.youtube.com/watch".
+ * An address that already has a scheme, or does not look like a site name, is returned as typed.
+ * shortcut: www. is added only to a bare two part name like example.com, so bbc.co.uk stays as typed.
+ */
+export function completeUrl(typed: string): string {
+  const text = typed.trim();
+  if (/\s/.test(text) || /^[a-z][a-z0-9+.-]*:(?!\d)/i.test(text)) return text;
+  const host = text.split(/[/?#:]/)[0] ?? "";
+  if (!host.includes(".")) return text;
+  const bareName = /^[^.]+\.[^.]+$/.test(host) && !/^\d+\.\d+$/.test(host);
+  return `https://${bareName ? "www." : ""}${text}`;
+}
+
 /** Two URLs that differ only in the fragment or a trailing slash count as the same page. */
 export function normalizeUrl(url: string): string {
   try {

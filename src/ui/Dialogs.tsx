@@ -3,7 +3,7 @@ export { TagDialog } from "./TagDialog";
 import { useState, type FormEvent } from "react";
 import type { Bookmark, BookmarkType, Folder } from "../bookmark-model";
 import { bookmarkTypes } from "../bookmark-model";
-import { buildTree, descendantIds } from "../browse";
+import { buildTree, completeUrl, descendantIds } from "../browse";
 import type { SnapshotReply } from "../messages";
 import { send } from "./api";
 import { Dialog } from "./Dialog";
@@ -58,10 +58,12 @@ export function BookmarkDialog({
 
   async function save(e: FormEvent) {
     e.preventDefault();
+    const address = completeUrl(url);
+    if (!URL.canParse(address)) return setError("That is not a web address.");
     const input = {
       folderId: folder,
-      title: title.trim() || url,
-      url: url.trim(),
+      title: title.trim() || address,
+      url: address,
       note,
       type,
       favorite,
@@ -113,7 +115,7 @@ export function BookmarkDialog({
         </>
       }
     >
-      <form id="bookmark-form" className="stack" onSubmit={save}>
+      <form id="bookmark-form" className="stack" onSubmit={save} noValidate>
         <label className="field">
           <span>Address</span>
           <input
@@ -121,7 +123,7 @@ export function BookmarkDialog({
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://"
+            placeholder="example.com"
             required
             autoFocus={!bookmark}
           />
@@ -169,7 +171,7 @@ export function BookmarkDialog({
         </label>
         <PicturesField
           bookmark={bookmark}
-          url={url}
+          url={completeUrl(url)}
           settings={settings}
           pending={pictures}
           onPending={setPictures}
