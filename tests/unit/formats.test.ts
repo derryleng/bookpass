@@ -1,0 +1,192 @@
+import { describe, expect, it } from 'vitest';
+import { defaultView, type Bookmark, type Folder } from '../../src/bookmark-model';
+import {
+  fromBrowserTree,
+  parseCsv,
+  parseNetscape,
+  parseRaindropCsv,
+  toCsv,
+  toNetscape,
+  toRaindropCsv,
+} from '../../src/formats';
+
+const chromeExport = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<TITLE>Bookmarks</TITLE>
+<H1>Bookmarks</H1>
+<DL><p>
+    <DT><H3 ADD_DATE="1700000000" PERSONAL_TOOLBAR_FOLDER="true">Bookmarks bar</H3>
+    <DL><p>
+        <DT><A HREF="https://example.com/a?x=1&amp;y=2" ADD_DATE="1700000100" TAGS="one,two">Tom &amp; Jerry</A>
+        <DD>A note about it
+        <DT><H3>News</H3>
+        <DL><p>
+            <DT><A HREF="https://news.test/" ADD_DATE="1700000200">News</A>
+        </DL><p>
+        <DT><H3>Empty</H3>
+        <DL><p>
+        </DL><p>
+    </DL><p>
+    <DT><A HREF="https://top.test/">Top level</A>
+    <DT><A HREF="javascript:alert(1)">Bookmarklet</A>
+</DL><p>`;
+
+describe('Netscape bookmark files', () => {
+  const parsed = parseNetscape(chromeExport);
+
+  it('reads titles, addresses, tags, dates and notes', () => {
+    const first = parsed.bookmarks[0]!;
+    expect(first).toMatchObject({
+      title: 'Tom & Jerry',
+      url: 'https://example.com/a?x=1&y=2',
+      tags: ['one', 'two'],
+      note: 'A note about it',
+      created: 1700000100 * 1000,
+      folderPath: ['Bookmarks bar'],
+    });
+  });
+
+  it('keeps the folder nesting and top level bookmarks', () => {
+    expect(parsed.bookmarks.map((b) => b.folderPath.join('/'))).toEqual([
+      'Bookmarks bar',
+      'Bookmarks bar/News',
+      '',
+    ]);
+  });
+
+  it('skips bookmarklets and creates folders that are empty', () => {
+    expect(parsed.bookmarks.some((b) => b.url.startsWith('javascript'))).toBe(false);
+    expect(parsed.emptyFolders).toEqual([['Bookmarks bar', 'Empty']]);
+  });
+
+  it('survives an empty or broken file', () => {
+    expect(parseNetscape('').bookmarks).toEqual([]);
+    expect(() => parseNetscape('<DL><DT><A HREF="https://x.test/">Never closed')).not.toThrow();
+  });
+});
+
+describe('CSV', () => {
+  it('reads quotes, commas and line breaks inside fields', () => {
+    const rows = parseCsv('a,"b, c","say ""hi""","line\nbreak"\r\n1,2,3,4\r\n');
+    expect(rows).toEqual([
+      ['a', 'b, c', 'say "hi"', 'line\nbreak'],
+      ['1', '2', '3', '4'],
+    ]);
+  });
+
+  it('writes what it reads', () => {
+    const rows = [['a', 'b,c', 'say "hi"', 'x\ny']];
+    expect(parseCsv(toCsv(rows))).toEqual(rows);
+  });
+
+  it('reads a Raindrop export', () => {
+    const csv =
+      'id,title,note,excerpt,url,folder,tags,created,cover,highlights,favorite\r\n' +
+      '1,"Rust, the book","my note","about rust",https://doc.rust-lang.org/,Dev/Languages,"rust, books",2024-05-01T10:00:00.000Z,,,true\r\n' +
+      '2,,,,https://plain.test/,Unsorted,,,,,false\r\n';
+    const { bookmarks } = parseRaindropCsv(csv);
+    expect(bookmarks).toHaveLength(2);
+    expect(bookmarks[0]).toMatchObject({
+      title: 'Rust, the book',
+      note: 'my note',
+      excerpt: 'about rust',
+      folderPath: ['Dev', 'Languages'],
+      tags: ['rust', 'books'],
+      favorite: true,
+      created: Date.parse('2024-05-01T10:00:00.000Z'),
+    });
+    expect(bookmarks[1]).toMatchObject({ title: 'https://plain.test/', favorite: false });
+  });
+
+  it('refuses a CSV that is not bookmarks', () => {
+    expect(() => parseRaindropCsv('name,age\r\nann,3\r\n')).toThrow(/url column/);
+  });
+});
+
+describe('browser bookmark trees', () => {
+  it('flattens the tree, skipping the invisible root and non web addresses', () => {
+    const { bookmarks, emptyFolders } = fromBrowserTree([
+      {
+        title: '',
+        children: [
+          {
+            title: 'Bookmarks bar',
+            children: [
+              { title: 'Site', url: 'https://site.test/', dateAdded: 5 },
+              { title: 'Settings', url: 'chrome://settings' },
+              { title: 'Nothing here', children: [] },
+            ],
+          },
+        ],
+      },
+    ]);
+    expect(bookmarks).toHaveLength(1);
+    expect(bookmarks[0]).toMatchObject({ folderPath: ['Bookmarks bar'], created: 5 });
+    expect(emptyFolders).toEqual([['Bookmarks bar', 'Nothing here']]);
+  });
+});
+
+describe('export', () => {
+  const folder = (id: string, parentId: string | null, name: string): Folder => ({
+    id,
+    parentId,
+    name,
+    note: '',
+    icon: 'fa-solid:folder',
+    color: '',
+    order: 0,
+    view: defaultView,
+    expanded: false,
+  });
+  const bookmark = (over: Partial<Bookmark>): Bookmark => ({
+    id: 'x',
+    folderId: null,
+    title: 'T',
+    url: 'https://t.test/',
+    note: '',
+    excerpt: '',
+    type: 'link',
+    favorite: false,
+    tags: [],
+    order: 0,
+    created: 1700000000000,
+    modified: 1700000000000,
+    hasCover: false,
+    iconId: null,
+    ...over,
+  });
+  const folders = [folder('a', null, 'A & B'), folder('c', 'a', 'Child')];
+  const bookmarks = [
+    bookmark({
+      folderId: 'c',
+      title: 'Tom & "Jerry"',
+      url: 'https://x.test/?a=1&b=2',
+      tags: ['t1', 't2'],
+      note: 'n',
+    }),
+    bookmark({ title: 'Loose' }),
+  ];
+
+  it('writes Netscape HTML that reads back the same', () => {
+    const back = parseNetscape(toNetscape(folders, bookmarks));
+    expect(back.bookmarks).toHaveLength(2);
+    const nested = back.bookmarks.find((b) => b.folderPath.length)!;
+    expect(nested).toMatchObject({
+      title: 'Tom & "Jerry"',
+      url: 'https://x.test/?a=1&b=2',
+      tags: ['t1', 't2'],
+      note: 'n',
+      folderPath: ['A & B', 'Child'],
+      created: 1700000000000,
+    });
+  });
+
+  it('writes a Raindrop style CSV that reads back the same', () => {
+    const back = parseRaindropCsv(toRaindropCsv(folders, bookmarks)).bookmarks;
+    expect(back.find((b) => b.title === 'Loose')?.folderPath).toEqual(['Unsorted']);
+    expect(back.find((b) => b.tags.length)).toMatchObject({
+      folderPath: ['A & B', 'Child'],
+      tags: ['t1', 't2'],
+    });
+  });
+});

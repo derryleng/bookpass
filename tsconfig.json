@@ -1,0 +1,17 @@
+{
+  "extends": "./.wxt/tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "jsx": "react-jsx"
+  },
+  "include": [
+    ".wxt/wxt.d.ts",
+    "src",
+    "tests",
+    "spikes",
+    "scripts",
+    "wxt.config.ts",
+    "vitest.config.ts"
+  ]
+}
