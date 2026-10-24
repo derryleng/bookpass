@@ -62,9 +62,9 @@ describe("urls", () => {
   });
 
   it("completes a typed address", () => {
-    expect(completeUrl(" youtube.com ")).toBe("https://www.youtube.com");
+    expect(completeUrl(" youtube.com ")).toBe("https://youtube.com");
     expect(completeUrl("youtube.com/watch?v=1")).toBe(
-      "https://www.youtube.com/watch?v=1",
+      "https://youtube.com/watch?v=1",
     );
     expect(completeUrl("docs.example.com/a")).toBe(
       "https://docs.example.com/a",

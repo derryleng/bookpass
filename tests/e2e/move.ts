@@ -174,7 +174,7 @@ try {
   await sleep(2500);
   check(
     "an address typed without https:// is completed",
-    !!(await manager.$('a[href="https://www.three.test"]')),
+    !!(await manager.$('a[href="https://three.test"]')),
   );
   try {
     const out = execFileSync(keepassxcCli, ["ls", "-q", "-R", target], {
