@@ -29,7 +29,7 @@ Everything a test reads or writes is under `tests/`, except the Go tests, which 
 
 The golden files are made again with `UPDATE_FIXTURES=1 npx vitest run tests/unit/fixtures.test.ts`, only when the format deliberately changes.
 
-The end to end scripts run on Windows and Linux (they look for Chrome, Firefox and `keepassxc-cli` in the usual places; set `BOOKPASS_CHROME` or `BOOKPASS_FIREFOX` to use another). On Linux use Node 24 or newer, and for a Snap Firefox set `BOOKPASS_FIREFOX=/snap/bin/firefox`. They have not been run on macOS. Chrome's right click menu cannot be driven by a script, so the right click saving is checked by hand.
+The end to end scripts run on Windows and Linux (they look for Chrome, Firefox and `keepassxc-cli` in the usual places; set `BOOKPASS_CHROME` or `BOOKPASS_FIREFOX` to use another). On Linux use Node 24 or newer, and for a Snap Firefox set `BOOKPASS_FIREFOX=/snap/bin/firefox`. They have not been run on macOS. Chrome refuses remote debugging in its default profile folder, so on Linux the tests give a throwaway profile its own copy of the helper manifest. The manifest the helper installer writes for the default profile is covered by the helper tests but was never loaded by a real Chrome. Chrome's right click menu cannot be driven by a script, so the right click saving is checked by hand.
 
 ## By hand
 
