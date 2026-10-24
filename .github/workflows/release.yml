@@ -29,6 +29,9 @@ jobs:
         with:
           name: extension
           path: .output/*.zip
+          # .output is a hidden folder, which upload-artifact skips unless told otherwise.
+          include-hidden-files: true
+          if-no-files-found: error
 
   helper:
     runs-on: ubuntu-latest
