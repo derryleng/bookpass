@@ -109,7 +109,10 @@ async function createSession(
 
   // Windows finds the helper through the registry. On Linux and macOS Chrome looks in NativeMessagingHosts inside
   // the profile folder it was given, so a throwaway profile needs its own copy of the manifest.
-  if (process.platform !== 'win32') {
+  // BOOKPASS_DEFAULT_PROFILE=1 skips that and uses the default Chrome profile folder instead, which is where the
+  // installer puts its manifest, to prove the installer itself works.
+  const defaultProfile = process.env.BOOKPASS_DEFAULT_PROFILE === '1' && kind === 'chrome';
+  if (process.platform !== 'win32' && !defaultProfile) {
     const installed =
       process.platform === 'darwin'
         ? join(homedir(), 'Library/Application Support/BookPass/bookpass-helper')
@@ -143,7 +146,9 @@ async function createSession(
           headless: true,
           pipe: true,
           enableExtensions: [join(root, '.output/chrome-mv3')],
-          userDataDir: join(work, 'profile'),
+          userDataDir: defaultProfile
+            ? join(homedir(), '.config/google-chrome')
+            : join(work, 'profile'),
           defaultViewport: { width: 1280, height: 800 },
           env,
         })
