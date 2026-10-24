@@ -2,15 +2,15 @@
 
 ## How a release is made
 
-1. Work is on `dev` and feature branches cut from `dev`. When a milestone is ready, open a pull request from `dev` to `main`.
+1. Work happens directly on `main`. When a milestone is ready, run `npm run check` and the end to end scripts in [TESTING.md](TESTING.md).
 2. Decide the version (semantic versioning, `0.x` before 1.0). Set `version` in `package.json` and move the entries under Unreleased in `CHANGELOG.md` to a new heading for that version. The Chrome manifest takes its version from `package.json`. Pre-releases cannot use a suffix in the manifest, so a label such as `-beta.1` would go in `version_name`.
-3. After the pull request is merged, tag `main` (`git tag v0.5.0 && git push origin v0.5.0`). The `Release` workflow checks that the tag matches `package.json`, builds the store zips and the helper for Windows, macOS and Linux, and creates a **draft** GitHub Release with the changelog entry as its notes.
+3. Push `main`, then tag it (`git tag v0.5.0 && git push origin v0.5.0`). The `Release` workflow checks that the tag matches `package.json`, builds the store zips and the helper for Windows, macOS and Linux, and creates a **draft** GitHub Release with the changelog entry as its notes.
 4. Look over the draft, then publish it.
 5. Upload the zips to the stores (below).
 
 The extension and the helper are versioned apart. The `protocol` number in the helper's `hello` reply decides whether they work together. Raise it for a change that breaks older helpers or older extensions, and say so in the changelog.
 
-Pushing, merging to `main`, tagging and publishing all wait for the maintainer.
+Tagging and publishing wait for the maintainer.
 
 ## Building the store zips
 
@@ -32,7 +32,7 @@ The helper installs itself: running `bookpass-helper` (a double click on Windows
 
 ## What the maintainer has to provide
 
-Nothing here blocks the code. The workflows skip the signing and store steps until these exist.
+Nothing here blocks the code. The Release workflow skips the signing and store steps until these exist.
 
 ### For 1.0
 
