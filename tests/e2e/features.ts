@@ -36,15 +36,6 @@ const upload = async (page: Page, selector: string, file: string) => {
   await input.uploadFile(file);
   await sleep(700); // the page reads the file asynchronously
 };
-const checked = (page: Page, label: string) =>
-  page.evaluate(
-    (label) =>
-      [...document.querySelectorAll("label")]
-        .find((l) => l.innerText.includes(label))
-        ?.querySelector("input")
-        ?.click(),
-    label,
-  );
 /** Opens a place in the sidebar. The row also shows a count, so it is found by its start. */
 const nav = (page: Page, label: string) =>
   page.evaluate(
@@ -67,7 +58,6 @@ try {
   await hasText(manager, "Create your vault");
   await type(manager, "input[type=password]", password);
   await (await manager.$$("input[type=password]"))[1]!.type(password);
-  await checked(manager, "Also require a key file");
   await manager.waitForSelector("input[type=file]");
   await upload(manager, "input[type=file]", keyFilePath);
   await shot(manager, "01-create-with-key-file");
@@ -84,7 +74,6 @@ try {
   await click(manager, "button", "Unlock");
   await mustHave(manager, "wrong key file", "the password alone is not enough");
   await type(manager, "input[type=password]", password);
-  await checked(manager, "My vault also needs a key file");
   await manager.waitForSelector("input[type=file]");
   await upload(manager, "input[type=file]", keyFilePath);
   await click(manager, "button", "Unlock");
@@ -323,7 +312,6 @@ try {
   await click(manager, "button", "Lock");
   await hasText(manager, "Unlock BookPass");
   await type(manager, "input[type=password]", password);
-  await checked(manager, "My vault also needs a key file");
   await manager.waitForSelector("input[type=file]");
   await upload(manager, "input[type=file]", keyFilePath);
   await click(manager, "button", "Unlock");

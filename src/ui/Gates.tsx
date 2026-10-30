@@ -76,11 +76,6 @@ export function VaultLocation({
           autoFocus
         />
       </label>
-      <p className="hint" style={{ margin: 0 }}>
-        Point this at an existing vault to open it, or at a new name to create
-        one. A folder synced by Syncthing, OneDrive or Dropbox works for using
-        the vault on several computers.
-      </p>
       {error && (
         <div className="callout error" role="alert">
           {error}
@@ -240,134 +235,41 @@ export function HelperMissing({
   );
 }
 
-export function Setup({
+/** The create and unlock screens in one card, switched by tabs. */
+export function Gate({
   status,
   onStatus,
 }: {
   status: Status;
   onStatus: (s: Status) => void;
 }) {
+  const [creating, setCreating] = useState(!status.vaultExists);
+  const [path, setPath] = useState(status.vaultPath);
   const [password, setPassword] = useState("");
   const [again, setAgain] = useState("");
-  const [useKeyFile, setUseKeyFile] = useState(false);
   const [keyFile, setKeyFile] = useState<{ name: string; base64: string }>();
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
 
-  async function create(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
-    if (password !== again) return setError("The two passwords do not match.");
-    if (useKeyFile && !keyFile)
-      return setError("Choose or make a key file, or untick that option.");
-    setBusy(true);
-    try {
-      onStatus(
-        await send("createVault", {
-          password,
-          keyFile: useKeyFile ? keyFile?.base64 : undefined,
-        }),
-      );
-    } catch (err) {
-      setError(errorText(err));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <main className="gate">
-      <form className="gate-card stack" onSubmit={create}>
-        <Logo />
-        <div>
-          <h1>Create your vault</h1>
-          <p className="muted" style={{ margin: 0 }}>
-            Your bookmarks are stored in one encrypted file that KeePassXC and
-            KeePass can open too.
-          </p>
-        </div>
-        <VaultLocation status={status} onChanged={onStatus} />
-        <label className="field">
-          <span>Master password</span>
-          <input
-            className="input"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoFocus
-            required
-          />
-        </label>
-        <label className="field">
-          <span>Repeat the password</span>
-          <input
-            className="input"
-            type="password"
-            value={again}
-            onChange={(e) => setAgain(e.target.value)}
-            required
-          />
-        </label>
-        <label className="row">
-          <input
-            type="checkbox"
-            checked={useKeyFile}
-            onChange={(e) => setUseKeyFile(e.target.checked)}
-          />
-          <span>Also require a key file</span>
-        </label>
-        {useKeyFile && (
-          <KeyFileField value={keyFile} onChange={setKeyFile} allowCreate />
-        )}
-        <div className="callout warn">
-          <I n="triangle-exclamation" />
-          <span>
-            If you forget this password
-            {useKeyFile ? " or lose the key file" : ""} your bookmarks cannot be
-            recovered. Nobody can reset it, not even us. The helper keeps your
-            last {status.backupCount} versions next to the vault file as a
-            safety net.
-          </span>
-        </div>
-        {error && (
-          <div className="callout error" role="alert">
-            {error}
-          </div>
-        )}
-        <button className="btn primary" disabled={busy}>
-          {busy ? <I n="spinner" spin /> : <I n="lock" />} Create vault
-        </button>
-      </form>
-    </main>
-  );
-}
-
-export function Unlock({
-  status,
-  onStatus,
-}: {
-  status: Status;
-  onStatus: (s: Status) => void;
-}) {
-  const [password, setPassword] = useState("");
-  const [keyFile, setKeyFile] = useState<{ name: string; base64: string }>();
-  const [useKeyFile, setUseKeyFile] = useState(false);
-  const [error, setError] = useState<string>();
-  const [busy, setBusy] = useState(false);
-
-  async function unlock(e: FormEvent) {
-    e.preventDefault();
+    if (creating && password !== again)
+      return setError("The two passwords do not match.");
     setBusy(true);
     setError(undefined);
     try {
+      if (path !== status.vaultPath)
+        onStatus(await send("setVaultPath", { vaultPath: path }));
       onStatus(
-        await send("unlock", {
+        await send(creating ? "createVault" : "unlock", {
           password,
-          keyFile: useKeyFile ? keyFile?.base64 : undefined,
+          keyFile: keyFile?.base64,
         }),
       );
     } catch (err) {
       setError(errorText(err));
       setPassword("");
+      setAgain("");
     } finally {
       setBusy(false);
     }
@@ -375,20 +277,38 @@ export function Unlock({
 
   return (
     <main className="gate">
-      <form className="gate-card stack" onSubmit={unlock}>
-        <Logo />
-        <div>
-          <h1>Unlock BookPass</h1>
-          <p className="muted" style={{ margin: 0 }}>
-            Enter your master password to open your bookmarks.
-          </p>
+      <form className="gate-card stack" onSubmit={submit}>
+        <div className="row">
+          <Logo />
+          <h1 style={{ margin: 0 }}>
+            {creating ? "Create your vault" : "Unlock BookPass"}
+          </h1>
         </div>
-        {status.lockReason && (
-          <div className="callout warn" role="status">
-            <I n="triangle-exclamation" />
-            <span>{status.lockReason}</span>
-          </div>
-        )}
+        <div className="segmented" role="group" aria-label="Vault">
+          {[
+            { creating: true, label: "Create new" },
+            { creating: false, label: "Use existing vault" },
+          ].map((tab) => (
+            <button
+              type="button"
+              key={tab.label}
+              className={`btn ${creating === tab.creating ? "active" : ""}`}
+              aria-pressed={creating === tab.creating}
+              onClick={() => (setCreating(tab.creating), setError(undefined))}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <label className="field">
+          <span>Vault file (full path, ending in .kdbx)</span>
+          <input
+            className="input path"
+            value={path}
+            onChange={(e) => setPath(e.target.value)}
+            required
+          />
+        </label>
         <label className="field">
           <span>Master password</span>
           <input
@@ -400,25 +320,45 @@ export function Unlock({
             required
           />
         </label>
-        <label className="row">
-          <input
-            type="checkbox"
-            checked={useKeyFile}
-            onChange={(e) => setUseKeyFile(e.target.checked)}
+        {creating && (
+          <label className="field">
+            <span>Repeat the password</span>
+            <input
+              className="input"
+              type="password"
+              value={again}
+              onChange={(e) => setAgain(e.target.value)}
+              required
+            />
+          </label>
+        )}
+        <div className="field">
+          <span>Key file (optional)</span>
+          <KeyFileField
+            value={keyFile}
+            onChange={setKeyFile}
+            allowCreate={creating}
           />
-          <span>My vault also needs a key file</span>
-        </label>
-        {useKeyFile && <KeyFileField value={keyFile} onChange={setKeyFile} />}
+        </div>
+        {!creating && status.lockReason && !error && (
+          <div className="callout warn" role="status">
+            <I n="triangle-exclamation" />
+            <span>{status.lockReason}</span>
+          </div>
+        )}
         {error && (
           <div className="callout error" role="alert">
             {error}
           </div>
         )}
         <button className="btn primary" disabled={busy}>
-          {busy ? <I n="spinner" spin /> : <I n="lock-open" />}{" "}
-          {busy ? "Opening…" : "Unlock"}
+          {busy ? (
+            <I n="spinner" spin />
+          ) : (
+            <I n={creating ? "lock" : "lock-open"} />
+          )}{" "}
+          {creating ? "Create vault" : busy ? "Opening…" : "Unlock"}
         </button>
-        <VaultLocation status={status} onChanged={onStatus} />
       </form>
     </main>
   );

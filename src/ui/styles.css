@@ -293,6 +293,34 @@ h3 {
   margin-bottom: 4px;
 }
 
+.gate-card .segmented {
+  display: flex;
+}
+
+.gate-card .segmented .btn {
+  flex: 1;
+}
+
+/* The popup is as tall as its content. A fixed 100% would keep it at the tallest size it has had. */
+html:has(.popup),
+html:has(.popup) body,
+html:has(.popup) #root {
+  height: auto;
+}
+
+/* In the popup the card is the whole window */
+.popup .gate {
+  padding: 0;
+  display: block;
+}
+
+.popup .gate-card {
+  max-width: none;
+  padding: 16px;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 .logo {
   display: inline-grid;
   place-items: center;

@@ -3,7 +3,7 @@
 import { useEffect, type ReactNode } from "react";
 import type { SnapshotReply, Status } from "../messages";
 import { forgetImages, usePagePort, useSnapshot, useStatus } from "./api";
-import { HelperMissing, Setup, Unlock } from "./Gates";
+import { Gate, HelperMissing } from "./Gates";
 import { I } from "./Icon";
 import "./styles.css";
 
@@ -59,9 +59,8 @@ export function Shell({
   if (!status) return <Loading />;
   if (status.helper !== "ok")
     return <HelperMissing status={status} onRetry={refresh} />;
-  if (!status.vaultExists)
-    return <Setup status={status} onStatus={setStatus} />;
-  if (status.locked) return <Unlock status={status} onStatus={setStatus} />;
+  if (!status.vaultExists || status.locked)
+    return <Gate status={status} onStatus={setStatus} />;
   if (!snapshot) return <Loading text="Opening your vault…" />;
   return <>{children({ status, snapshot, refreshStatus: refresh })}</>;
 }
