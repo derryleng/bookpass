@@ -37,6 +37,8 @@ export interface Status {
   locked: boolean;
   /** Why the vault locked itself, if something other than the timer did it. */
   lockReason?: string;
+  /** Why the unlock key could not be kept in the system keychain, when the setting asks for it. */
+  keychainProblem?: string;
   saveState: SaveState;
   saveError?: string;
   /** Copies of the vault that a sync tool left next to it, waiting to be merged. */

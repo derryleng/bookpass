@@ -7,7 +7,8 @@ export const hostName = ids.hostName;
 
 // Public half of a development key. It pins the Chrome extension id so the helper can name it in
 // allowed_origins before the extension is published. The store assigns the real id, which then has to
-// be added to chromeIds in helper/ids.json.
+// be added to chromeIds in helper/ids.json. The development id is in helper/ids.dev.json, which only helper builds
+// made with `-tags dev` contain, so release helpers never accept it.
 export const chromeDevKey =
   "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5q+qF4vPv3uX7O5kL4La+fb3XROFKe6GF+ekfWM3skPJ4jmfJJ5Q3kdXSQilXS+ORslhc+UrCFCZlsAZORfedoDk+IJp2rGZ7DsUfXhxT1QvY98alcw02fZcy9r5mYXKRuczq84vvPo52IFc9Zk7OPFfO9gwQW7yhJGCv4s/UVFew3Pf0w51Ney7QVYHknyiAwu4P/JrdoKAn6GYwXv0wJbzBjSiNbQxFGsDtKZa6x01HUH/y1Tf4/iv2BQYiJJVffVQfmF4hR2yuSlIPQ4lBQnWx8LWvtKgbZKtNnQS5Ij0yfU6zgKlxBUeGTHqjDsiNOCwTXKfs00a1nZWJOMMfQIDAQAB";
 

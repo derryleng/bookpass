@@ -4,9 +4,10 @@
 // length in native byte order followed by that many bytes of JSON. Stdout is
 // the protocol channel, so all diagnostics go to stderr.
 //
-// The helper reads and writes exactly one file, the vault path from its own
-// config file. It only ever sees encrypted bytes and never runs commands or
-// opens network connections. See docs/PROTOCOL.md for the message list.
+// The helper reads and writes exactly one vault file, the path from its own
+// config file. It only ever sees encrypted bytes, and never opens network
+// connections. The only programs it starts are the system's own folder dialog
+// and keychain tools. See docs/PROTOCOL.md for the message list.
 package main
 
 import (
@@ -52,6 +53,7 @@ type request struct {
 	Source      string `json:"source,omitempty"` // which file to read: empty for the vault, "conflict" or "backup"
 	Name        string `json:"name,omitempty"`   // the file name when Source is not the vault
 	BackupCount *int   `json:"backupCount,omitempty"`
+	Key         string `json:"key,omitempty"` // the unlock key, for keySet
 }
 
 type response struct {
@@ -76,6 +78,7 @@ type response struct {
 	Path        string       `json:"path,omitempty"`    // a folder the person picked, or a cleaned path
 	Creates     string       `json:"creates,omitempty"` // the outermost folder a move would create
 	Problem     string       `json:"problem,omitempty"` // why a path cannot be used
+	Key         string       `json:"key,omitempty"`     // the unlock key from keyGet, empty if none is stored
 }
 
 func readMessage(in *bufio.Reader) (*request, error) {

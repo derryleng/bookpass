@@ -21,6 +21,9 @@ import (
 //go:embed ids.json
 var idsJSON []byte
 
+// devChromeIDs are extra Chrome extension ids for development builds, set in ids_dev.go. Release builds leave it empty.
+var devChromeIDs []string
+
 // ids are the identities that may start the helper. They are shared with the extension build through ids.json.
 type ids struct {
 	HostName  string   `json:"hostName"`
@@ -31,6 +34,7 @@ type ids struct {
 func loadIDs() (ids, error) {
 	var i ids
 	err := json.Unmarshal(idsJSON, &i)
+	i.ChromeIDs = append(i.ChromeIDs, devChromeIDs...)
 	return i, err
 }
 
@@ -188,6 +192,10 @@ func (in installer) install(self string) error {
 			if _, err := os.Stat(b.Root); err != nil {
 				continue // that browser is not installed for this user
 			}
+		}
+		if !b.Firefox && len(i.ChromeIDs) == 0 {
+			fmt.Fprintf(in.out, "Skipped %s: this build knows no Chrome extension id, so nothing may start it there.\n", b.Name)
+			continue
 		}
 		data, err := in.manifest(b, exe, i)
 		if err != nil {

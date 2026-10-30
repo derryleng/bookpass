@@ -5,6 +5,7 @@ import { startContextMenu } from "../context-menu";
 import { getHistory, restoreVersion } from "../history";
 import { importInto, previewImport } from "../importing";
 import { startLockManager } from "../lock-manager";
+import { isOwnPage } from "../own-page";
 import {
   AppError,
   pagePortName,
@@ -34,9 +35,13 @@ export default defineBackground(() => {
   }
 
   const vault = new Vault();
-  const ready = vault.loadSettings();
+  // Settings first, then the unlock key from the keychain if the settings keep it there, before anything is answered.
+  const ready = vault.loadSettings().then(() => vault.restoreFromKeychain());
   const locks = startLockManager(vault);
-  void ready.then(() => locks.applyIdleSettings());
+  void Promise.all([ready, locks.loaded]).then(() => {
+    locks.applyIdleSettings();
+    return locks.check();
+  });
 
   // Tell every open page when something changed, so they can refresh.
   const broadcast = (event: BroadcastEvent["event"]) => {
@@ -146,7 +151,12 @@ export default defineBackground(() => {
     }
   }
 
-  browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  const fromOwnPage = (sender: { id?: string; url?: string } | undefined) =>
+    !!sender &&
+    isOwnPage(sender, browser.runtime.id, browser.runtime.getURL("/"));
+
+  browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (!fromOwnPage(sender)) return false; // not ours to answer
     if (typeof message !== "object" || message === null || !("type" in message))
       return false; // a broadcast, not a request
     void handle(message as RequestEnvelope).then(sendResponse);
@@ -154,6 +164,7 @@ export default defineBackground(() => {
   });
 
   browser.runtime.onConnect.addListener((port) => {
-    if (port.name === pagePortName) locks.addPage(port);
+    if (port.name === pagePortName && fromOwnPage(port.sender))
+      locks.addPage(port);
   });
 });

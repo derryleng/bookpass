@@ -161,6 +161,20 @@ export async function moveVault(vaultPath: string): Promise<void> {
   await call("moveVault", { vaultPath });
 }
 
+/** Puts the unlock key in the system keychain. Fails with code 'unavailable' on a computer that has none. */
+export async function setKey(key: string): Promise<void> {
+  await call("keySet", { key });
+}
+
+/** The unlock key from the system keychain, or an empty string if there is none. */
+export async function getKey(): Promise<string> {
+  return ((await call("keyGet")).key as string | undefined) ?? "";
+}
+
+export async function clearKey(): Promise<void> {
+  await call("keyClear");
+}
+
 /** Cheap to ask, as the helper does not hash the file for this. */
 export async function vaultInfo(): Promise<{ exists: boolean; size: number }> {
   const r = await call("exists");

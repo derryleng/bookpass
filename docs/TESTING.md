@@ -27,7 +27,7 @@ Everything a test reads or writes is under `tests/`, except the Go tests, which 
 
 Rebuild the golden vaults with `UPDATE_FIXTURES=1 npx vitest run tests/unit/fixtures.test.ts`, only when the format deliberately changes.
 
-The scripts run on Windows, Linux and macOS and look for Chrome, Firefox and `keepassxc-cli` in the usual places. Set `BOOKPASS_CHROME` or `BOOKPASS_FIREFOX` to use another (for a Snap Firefox, `/snap/bin/firefox`). On macOS build the helper first (`cd helper && go build -o bin/bookpass-helper .`). Firefox needs Node 24 or newer.
+The scripts run on Windows, Linux and macOS and look for Chrome, Firefox and `keepassxc-cli` in the usual places. Set `BOOKPASS_CHROME` or `BOOKPASS_FIREFOX` to use another (for a Snap Firefox, `/snap/bin/firefox`). On macOS build the helper first (`cd helper && go build -tags dev -o bin/bookpass-helper .`). Firefox needs Node 24 or newer.
 
 ## By hand
 

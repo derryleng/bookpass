@@ -5,7 +5,13 @@ import { fromBase64, toBase64 } from "./base64";
 import * as model from "./bookmark-model";
 import * as helper from "./helper-client";
 import { restoreVersion } from "./history";
-import { clearKey, loadKey, removeDiskCopy, saveKey } from "./key-store";
+import {
+  ACTIVITY_KEY,
+  clearKey,
+  loadKey,
+  removeDiskCopy,
+  saveKey,
+} from "./key-store";
 import {
   changePassword,
   createKeyFile,
@@ -30,12 +36,24 @@ import {
   type VaultPathCheck,
   type VersionConflict,
 } from "./messages";
-import { defaultSettings, normalizeSettings, type Settings } from "./settings";
+import {
+  defaultSettings,
+  keepsKeyInKeychain,
+  normalizeSettings,
+  type Settings,
+} from "./settings";
 import { readTagColors } from "./tags";
 
 /** Saves are batched: edits within this time of each other become one write of the file. */
 const SAVE_DELAY_MS = 1500;
 const MAX_MERGE_ATTEMPTS = 3;
+
+/** Plain words for why the keychain could not be used. */
+function keychainMessage(error: unknown): string {
+  return error instanceof AppError && error.code === "unavailable"
+    ? "This computer has no system keychain the helper can use. On Linux, install libsecret-tools and run a keyring such as GNOME Keyring or KWallet."
+    : `The system keychain could not be used: ${error instanceof Error ? error.message : String(error)}`;
+}
 
 type Listener = (event: "changed" | "status") => void;
 type Creds = ReturnType<typeof credentialsFromKey>;
@@ -57,6 +75,7 @@ export class Vault {
   private queue: Promise<unknown> = Promise.resolve();
   private opening?: Promise<Kdbx>;
   private lockReason?: string;
+  private keychainProblem?: string;
   private versionConflicts: VersionConflict[] = [];
   private listeners: Listener[] = [];
   settings: Settings = defaultSettings;
@@ -86,10 +105,55 @@ export class Vault {
   }
 
   async setSettings(patch: Partial<Settings>): Promise<Settings> {
+    const usedKeychain = this.settings.useKeychain;
     this.settings = normalizeSettings({ ...this.settings, ...patch });
     await browser.storage.local.set({ settings: this.settings });
+    if (usedKeychain || this.settings.useKeychain) await this.syncKeychain();
+    if (!keepsKeyInKeychain(this.settings))
+      await browser.storage.local.remove(ACTIVITY_KEY); // only kept while the keychain holds the key
     this.emit("status");
     return this.settings;
+  }
+
+  // The system keychain
+
+  /** Makes the keychain match the settings: holds the unlock key if it should, and nothing otherwise. */
+  private async syncKeychain() {
+    if (!this.settings.useKeychain) this.keychainProblem = undefined;
+    try {
+      const key = keepsKeyInKeychain(this.settings)
+        ? await loadKey()
+        : undefined;
+      if (key) await helper.setKey(key);
+      else await helper.clearKey();
+      this.keychainProblem = undefined;
+    } catch (e) {
+      if (this.settings.useKeychain) this.keychainProblem = keychainMessage(e);
+    }
+  }
+
+  /**
+   * After the browser restarts the unlock key is gone from memory. If the keychain still has it, and the settings
+   * let the vault stay unlocked over a restart, it comes back. The lock rules then run as usual, so a vault that sat
+   * unused for longer than the idle time locks straight away. Otherwise any copy in the keychain is removed.
+   */
+  async restoreFromKeychain(): Promise<void> {
+    if (!this.settings.useKeychain || (await loadKey())) return;
+    try {
+      const key = keepsKeyInKeychain(this.settings)
+        ? await helper.getKey()
+        : "";
+      if (key) await saveKey(key);
+      else await helper.clearKey();
+    } catch (e) {
+      this.keychainProblem = keychainMessage(e);
+    }
+  }
+
+  /** Remembers the key for as long as the vault is unlocked. */
+  private async rememberKey(creds: Creds) {
+    await saveKey(keyOf(creds));
+    if (this.settings.useKeychain) await this.syncKeychain();
   }
 
   // Status
@@ -107,6 +171,7 @@ export class Vault {
       vaultBytes: 0,
       locked: true,
       lockReason: this.lockReason,
+      keychainProblem: this.keychainProblem,
       conflictCopies: [],
       versionConflicts: this.versionConflicts,
     };
@@ -202,7 +267,7 @@ export class Vault {
     this.fileHash = "";
     this.adopt(db, creds);
     await this.saveNow(); // the first write creates the file; a conflict here means someone else made it meanwhile
-    await saveKey(keyOf(creds));
+    await this.rememberKey(creds);
     this.emit("status");
     return this.status();
   }
@@ -215,7 +280,7 @@ export class Vault {
     this.fileHash = file.sha256;
     this.lockReason = undefined;
     this.adopt(db, creds);
-    await saveKey(keyOf(creds));
+    await this.rememberKey(creds);
     if (upgraded) this.markDirty();
     this.emit("status");
     return this.status();
@@ -269,6 +334,7 @@ export class Vault {
     this.versionConflicts = [];
     this.lockReason = reason;
     await clearKey();
+    if (this.settings.useKeychain) await helper.clearKey().catch(() => {}); // a copy in the keychain must go too
     this.rev++;
     this.emit("status");
     this.emit("changed");
@@ -547,7 +613,7 @@ export class Vault {
       }
       this.db = restored;
       this.creds = creds;
-      await saveKey(keyOf(creds));
+      await this.rememberKey(creds);
       this.edits++;
       this.versionConflicts = [];
       this.rev++;
@@ -566,7 +632,7 @@ export class Vault {
         throw new AppError("The current password is wrong.", "wrong-password");
       }
       this.creds = await changePassword(db, next);
-      await saveKey(keyOf(this.creds));
+      await this.rememberKey(this.creds);
       this.edits++;
       await this.write();
     });

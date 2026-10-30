@@ -26,6 +26,25 @@ const reopen = async (db: Kdbx) =>
   (await openDatabase(await saveDatabase(db), creds, fastKdf)).db;
 const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1, 2, 3]);
 
+describe("text from pages and imports", () => {
+  it("keeps a hostile page's title and description to a sane size", async () => {
+    const db = fresh();
+    const id = await model.addBookmark(db, {
+      folderId: null,
+      title: "t".repeat(100_000),
+      url: "https://x.test/",
+      excerpt: "e".repeat(100_000),
+    });
+    const [saved] = model.readSnapshot(db).bookmarks.filter((b) => b.id === id);
+    expect(saved!.title).toHaveLength(500);
+    expect(saved!.excerpt).toHaveLength(2000);
+    await model.updateBookmark(db, id, { title: "u".repeat(5_000) });
+    expect(
+      model.readSnapshot(db).bookmarks.find((b) => b.id === id)!.title,
+    ).toHaveLength(500);
+  });
+});
+
 describe("vault format", () => {
   it("creates a KDBX 4.1 file that opens with the password hash alone", async () => {
     const db = fresh();

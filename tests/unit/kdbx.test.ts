@@ -3,6 +3,9 @@ import { describe, expect, it } from "vitest";
 import * as model from "../../src/bookmark-model";
 import {
   changePassword,
+  checkKdfCost,
+  defaultKdf,
+  maxKdfMemoryMiB,
   createKeyFile,
   findEditConflicts,
   credentialsFromKey,
@@ -197,5 +200,31 @@ describe("edit conflicts", () => {
     entryOf(local).fields.set("Title", "Only there");
     entryOf(local).times.update();
     expect(findEditConflicts(local, remote, since)).toEqual([]);
+  });
+});
+
+describe("key derivation limits", () => {
+  it("accepts what BookPass writes and what KeePass users commonly pick", () => {
+    checkKdfCost(
+      defaultKdf.memoryMiB * 1024,
+      defaultKdf.iterations,
+      defaultKdf.parallelism,
+    );
+    checkKdfCost(maxKdfMemoryMiB * 1024, 20, 8);
+  });
+
+  it("refuses a vault that asks for far more than that", () => {
+    expect(() => checkKdfCost(8 * 1024 * 1024, 3, 2)).toThrow(/8192 MiB/);
+    expect(() => checkKdfCost(1024, 100_000, 2)).toThrow(/more work/);
+    expect(() => checkKdfCost(1024, 3, 1_000)).toThrow(/more work/);
+  });
+
+  it("refuses to derive a key at those settings, before allocating anything", async () => {
+    const db = newDatabase(await credentialsFromPassword("pw"), {
+      memoryMiB: 4096,
+      iterations: 3,
+      parallelism: 2,
+    });
+    await expect(saveDatabase(db)).rejects.toThrow(/more than BookPass allows/);
   });
 });

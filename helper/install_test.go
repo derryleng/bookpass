@@ -45,7 +45,16 @@ func readManifest(t *testing.T, path string) map[string]any {
 	return m
 }
 
+// withChromeID stands in for the development id, which only `-tags dev` builds contain.
+func withChromeID(t *testing.T) {
+	t.Helper()
+	old := devChromeIDs
+	devChromeIDs = []string{"abcdefghijklmnopabcdefghijklmnop"}
+	t.Cleanup(func() { devChromeIDs = old })
+}
+
 func TestInstallOnLinuxWritesManifestsForInstalledBrowsersOnly(t *testing.T) {
+	withChromeID(t)
 	home := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", "")
 	// Chrome and Firefox are installed, the rest are not.
@@ -97,6 +106,7 @@ func TestInstallOnLinuxWritesManifestsForInstalledBrowsersOnly(t *testing.T) {
 }
 
 func TestInstallOnMacUsesApplicationSupport(t *testing.T) {
+	withChromeID(t)
 	home := t.TempDir()
 	root := filepath.Join(home, "Library", "Application Support", "Google", "Chrome")
 	if err := os.MkdirAll(root, 0o755); err != nil {
@@ -114,6 +124,7 @@ func TestInstallOnMacUsesApplicationSupport(t *testing.T) {
 }
 
 func TestInstallOnWindowsRegistersEveryBrowser(t *testing.T) {
+	withChromeID(t)
 	home := t.TempDir()
 	t.Setenv("LOCALAPPDATA", filepath.Join(home, "Local"))
 	reg := &fakeRegistry{keys: map[string]string{}}
@@ -151,12 +162,13 @@ func TestBrowserLaunchArgumentsAreNotCommands(t *testing.T) {
 
 func TestIdsAreComplete(t *testing.T) {
 	i, err := loadIDs()
-	if err != nil || i.HostName == "" || i.FirefoxID == "" || len(i.ChromeIDs) == 0 {
+	if err != nil || i.HostName == "" || i.FirefoxID == "" {
 		t.Fatalf("ids.json incomplete: %+v %v", i, err)
 	}
 }
 
 func TestUninstallFromTheInstalledProgramWorksWhereTheSystemAllows(t *testing.T) {
+	withChromeID(t)
 	home := t.TempDir()
 	root := filepath.Join(home, ".config", "google-chrome")
 	if err := os.MkdirAll(root, 0o755); err != nil {
@@ -185,5 +197,35 @@ func TestUninstallFromTheInstalledProgramWorksWhereTheSystemAllows(t *testing.T)
 	}
 	if _, err := os.Stat(filepath.Dir(exe)); err == nil {
 		t.Fatal("the install folder survived")
+	}
+}
+
+func TestNoChromeManifestIsWrittenWithoutAnExtensionId(t *testing.T) {
+	old := devChromeIDs
+	devChromeIDs = nil
+	t.Cleanup(func() { devChromeIDs = old })
+	i, err := loadIDs()
+	if err != nil || len(i.ChromeIDs) != 0 {
+		t.Skip("this build knows a Chrome extension id")
+	}
+	home := t.TempDir()
+	for _, dir := range []string{".config/google-chrome", ".mozilla"} {
+		if err := os.MkdirAll(filepath.Join(home, filepath.FromSlash(dir)), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var out bytes.Buffer
+	in := installer{goos: "linux", home: home, out: &out}
+	if err := in.install(fakeProgram(t)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(home, ".config", "google-chrome", "NativeMessagingHosts", "com.bookpass.helper.json")); err == nil {
+		t.Fatal("wrote a Chrome manifest that names no extension")
+	}
+	if !strings.Contains(out.String(), "Skipped Chrome") {
+		t.Fatalf("the skip was not reported: %q", out.String())
+	}
+	if _, err := os.Stat(filepath.Join(home, ".mozilla", "native-messaging-hosts", "com.bookpass.helper.json")); err != nil {
+		t.Fatalf("Firefox was skipped too: %v", err)
 	}
 }

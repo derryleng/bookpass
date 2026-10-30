@@ -33,7 +33,7 @@ The file goes in `.bookpass/bookmarks.kdbx` in your home folder by default. "Use
 
 ## Privacy
 
-Bookmarks exist only in the vault file in the place you choose. The helper only sees encrypted data. Settings are kept in the browser's extension storage. The unlock key (a hash of the master password) is kept in memory while unlocked and is never written to disk.
+Bookmarks exist only in the vault file in the place you choose. The helper only sees encrypted data. Settings are kept in the browser's extension storage. The unlock key (a hash of the master password) is kept in memory while unlocked and is never written to the browser's own storage. If you turn on "Keep the unlock key in my system keychain" (off by default, timer lock modes only), the helper also keeps it in Windows data protection, the macOS Keychain or the Linux Secret Service so the vault can stay unlocked across a browser restart, and removes it when the vault locks.
 
 The extension reads a page only when you save it. The only network requests are the picture fetches you start with a button (for one bookmark, a folder, a selection or everything). Those ask for permission to reach all sites, and removes permissions when done. They never go to a favicon service or any other third party, and nothing is fetched automatically, not even after an import.
 
@@ -41,7 +41,7 @@ The extension reads a page only when you save it. The only network requests are 
 
 The vault is KDBX 4.1 with Argon2id (256 MiB, 3 iterations), so a copy of the file from a disk, backup or sync service is protected by the master password and the optional key file. BookPass does not protect against malware running as you on an unlocked computer or against a weak password. A lost password cannot be recovered.
 
-The helper reads and writes one configured file, never opens network connections, and only the BookPass extension may start it. The extension holds no site permissions at rest, has no content scripts and has no remote code.
+The helper reads and writes one configured file on this computer (network shares are refused), never opens network connections, and only the BookPass extension may start it. Release builds of the helper do not accept the public development extension id. The extension holds no site permissions at rest, has no content scripts and has no remote code.
 
 ## Documents
 

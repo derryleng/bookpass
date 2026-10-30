@@ -33,6 +33,11 @@ export interface Settings {
   coversFromOtherServers: boolean;
   /** Width in pixels of the stored cover picture. */
   coverWidth: number;
+  /**
+   * Keep the unlock key in the system keychain, so the vault can stay unlocked when the browser restarts. Only
+   * applies to the two locking modes that run on a timer (see keepsKeyInKeychain).
+   */
+  useKeychain: boolean;
 }
 
 export const defaultSettings: Settings = {
@@ -46,7 +51,19 @@ export const defaultSettings: Settings = {
   captureCovers: true,
   coversFromOtherServers: false,
   coverWidth: 256,
+  useKeychain: false,
 };
+
+/**
+ * Whether the unlock key goes into the system keychain. "When the browser closes" and "Every time you close it" mean
+ * the vault must be locked after a restart, so for them the key stays in browser memory only.
+ */
+export function keepsKeyInKeychain(settings: Settings): boolean {
+  return (
+    settings.useKeychain &&
+    (settings.lockMode === "idle" || settings.lockMode === "system-idle")
+  );
+}
 
 export const coverWidths = [128, 256, 384, 512];
 
@@ -94,6 +111,7 @@ export function normalizeSettings(
     s.darkTheme = defaultSettings.darkTheme;
   if (!coverWidths.includes(s.coverWidth))
     s.coverWidth = defaultSettings.coverWidth;
+  s.useKeychain = s.useKeychain === true;
   return s;
 }
 

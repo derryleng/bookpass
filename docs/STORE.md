@@ -15,7 +15,7 @@ The extension needs a small helper program to read and write the vault file, bec
 | Permission           | Justification                                                                                                              |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | nativeMessaging      | Talks to the helper, which reads and writes the encrypted vault file                                                       |
-| storage              | Keeps the settings and, while unlocked, the unlock key in memory                                                           |
+| storage              | Keeps the settings and, while unlocked, the unlock key in memory (session storage)                                         |
 | activeTab, scripting | Reads the title, description, icon and preview image of the one page the user saves, and screenshots that tab as its cover |
 | contextMenus         | Adds Save page, Save link and Save image to the right click menu                                                           |
 | alarms, idle         | Lock the vault after the time the user chose                                                                               |

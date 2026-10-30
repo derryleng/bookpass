@@ -233,3 +233,19 @@ func TestWriteBeginRemovesOnlyStaleTempFiles(t *testing.T) {
 		t.Error("a recent temporary file may belong to a save in progress and must stay")
 	}
 }
+
+func TestNetworkPathsAreRefusedOnWindows(t *testing.T) {
+	for _, p := range []string{`\\server\share\vault.kdbx`, `//server/share/vault.kdbx`, `\\?\UNC\server\share\vault.kdbx`} {
+		if !isNetworkPath("windows", p) {
+			t.Errorf("%q should be a network path on Windows", p)
+		}
+		if isNetworkPath("linux", p) {
+			t.Errorf("%q is not a network path on Linux", p)
+		}
+	}
+	for _, p := range []string{`C:\Users\me\vault.kdbx`, `D:/vault.kdbx`, "/home/me/vault.kdbx"} {
+		if isNetworkPath("windows", p) {
+			t.Errorf("%q is a local path", p)
+		}
+	}
+}

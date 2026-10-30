@@ -65,6 +65,51 @@ describe("Netscape bookmark files", () => {
     expect(parsed.emptyFolders).toEqual([["Bookmarks bar", "Empty"]]);
   });
 
+  it("keeps only web addresses, however the scheme is written", () => {
+    const anchors = [
+      "javascript:alert(1)",
+      "java\tscript:alert(1)",
+      "  JavaScript:alert(1)",
+      "data:text/html,<script>alert(1)</script>",
+      "file:///etc/passwd",
+      "vbscript:x",
+      "place:sort=8",
+      "about:blank",
+      "mailto:me@example.org",
+      "/relative/path",
+      "ftp://files.example.org/a",
+      "https://ok.example.org/",
+    ].map((href) => `<DT><A HREF="${href}">link</A>`);
+    const parsed = parseNetscape(`<DL><p>${anchors.join("\n")}</DL><p>`);
+    expect(parsed.bookmarks.map((b) => b.url)).toEqual([
+      "ftp://files.example.org/a",
+      "https://ok.example.org/",
+    ]);
+  });
+
+  it("reads a file of unclosed tags in linear time", () => {
+    // Every search for a closing tag used to run to the end of the file. 40,000 of them took about 8 seconds.
+    const unclosed = "<DL>" + '<DT><A HREF="https://x.test/">'.repeat(40_000);
+    const noTagEnd = "<a".repeat(300_000);
+    const started = Date.now();
+    expect(parseNetscape(unclosed).bookmarks).toHaveLength(40_000);
+    expect(parseNetscape(noTagEnd).bookmarks).toEqual([]);
+    expect(parseNetscape("<h3>".repeat(40_000)).bookmarks).toEqual([]);
+    expect(Date.now() - started).toBeLessThan(2_000);
+  });
+
+  it("keeps a note at the end of a cut off file", () => {
+    const parsed = parseNetscape(
+      '<DL><DT><A HREF="https://x.test/">x</A>\n<DD>last note\n<DT><A HREF="htt',
+    );
+    expect(parsed.bookmarks).toHaveLength(1);
+    expect(parsed.bookmarks[0]!.note).toBe("last note");
+    expect(
+      parseNetscape('<DT><A HREF="https://x.test/">x</A><DD>no tag after me')
+        .bookmarks[0]!.note,
+    ).toBe("no tag after me");
+  });
+
   it("survives an empty or broken file", () => {
     expect(parseNetscape("").bookmarks).toEqual([]);
     expect(() =>
@@ -85,6 +130,31 @@ describe("CSV", () => {
   it("writes what it reads", () => {
     const rows = [["a", "b,c", 'say "hi"', "x\ny"]];
     expect(parseCsv(toCsv(rows))).toEqual(rows);
+  });
+
+  it("puts a quote before cells a spreadsheet would run as a formula", () => {
+    const rows = [
+      [
+        '=HYPERLINK("http://evil.test")',
+        "+1",
+        "-2",
+        "@SUM(A1)",
+        "\tx",
+        "plain",
+        "a=b",
+      ],
+    ];
+    expect(toCsv(rows)).toBe(
+      `"'=HYPERLINK(""http://evil.test"")",'+1,'-2,'@SUM(A1),'\tx,plain,a=b\r\n`,
+    );
+  });
+
+  it("skips rows whose address is not a web address", () => {
+    const csv =
+      "title,url\r\na,javascript:alert(1)\r\nb,file:///etc/passwd\r\nc,https://ok.test/\r\n";
+    expect(parseRaindropCsv(csv).bookmarks.map((b) => b.url)).toEqual([
+      "https://ok.test/",
+    ]);
   });
 
   it("reads a Raindrop export", () => {
@@ -186,6 +256,16 @@ describe("export", () => {
     }),
     bookmark({ title: "Loose" }),
   ];
+
+  it("gives a Raindrop file back what it wrote, formula quotes and all", () => {
+    const risky = [bookmark({ title: "=1+1", note: "-note", excerpt: "@x" })];
+    const back = parseRaindropCsv(toRaindropCsv([], risky)).bookmarks;
+    expect(back[0]).toMatchObject({
+      title: "=1+1",
+      note: "-note",
+      excerpt: "@x",
+    });
+  });
 
   it("writes Netscape HTML that reads back the same", () => {
     const back = parseNetscape(toNetscape(folders, bookmarks));

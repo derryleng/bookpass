@@ -6,6 +6,7 @@ import {
 } from "../../src/lock";
 import {
   defaultSettings,
+  keepsKeyInKeychain,
   normalizeSettings,
   type Settings,
 } from "../../src/settings";
@@ -77,5 +78,24 @@ describe("settings", () => {
     expect(s.lockMode).toBe("browser-close");
     expect(s.idleMinutes).toBe(defaultSettings.idleMinutes);
     expect(s.systemIdleMinutes).toBe(defaultSettings.systemIdleMinutes);
+  });
+});
+
+describe("the keychain setting", () => {
+  it("is off by default and only counts in the two timer modes", () => {
+    expect(keepsKeyInKeychain(defaultSettings)).toBe(false);
+    const on = (lockMode: Settings["lockMode"]) =>
+      keepsKeyInKeychain(settings({ useKeychain: true, lockMode }));
+    expect(on("idle")).toBe(true);
+    expect(on("system-idle")).toBe(true);
+    expect(on("browser-close")).toBe(false);
+    expect(on("every-time")).toBe(false);
+  });
+
+  it("ignores a stored value that is not a plain true", () => {
+    expect(
+      normalizeSettings({ useKeychain: "yes" as unknown as boolean })
+        .useKeychain,
+    ).toBe(false);
   });
 });

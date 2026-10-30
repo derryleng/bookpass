@@ -191,6 +191,34 @@ describe("import", () => {
     expect(again.added).toBe(0);
   });
 
+  it("cuts the huge notes and titles an imported file may carry", async () => {
+    const db = fresh();
+    await importInto(
+      db,
+      {
+        bookmarks: [
+          {
+            folderPath: [],
+            title: "t".repeat(50_000),
+            url: "https://x.test/",
+            note: "n".repeat(500_000),
+            excerpt: "e".repeat(50_000),
+            tags: [],
+            favorite: false,
+          },
+        ],
+        emptyFolders: [],
+      },
+      null,
+      undefined,
+      false,
+    );
+    const [saved] = model.readSnapshot(db).bookmarks;
+    expect(saved!.note).toHaveLength(10_000);
+    expect(saved!.title).toHaveLength(500);
+    expect(saved!.excerpt).toHaveLength(2_000);
+  });
+
   it("copes with a big import", async () => {
     const db = fresh();
     const many = {

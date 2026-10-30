@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Bookmark, ViewSettings } from "../bookmark-model";
 import { domainOf, type BookmarkGroup } from "../browse";
+import { isWebUrl } from "../web-url";
 import { send, useImage } from "./api";
 import { btn } from "./cls";
 import { isOurs, readDrag, startDrag } from "./dnd";
@@ -260,7 +261,7 @@ function BookmarkItem({
             <Favicon iconId={b.iconId} url={b.url} />
             <a
               className={`${c.title} text-fg no-underline hover:text-accent`}
-              href={b.url}
+              href={isWebUrl(b.url) ? b.url : undefined}
               target="_blank"
               rel="noreferrer noopener"
             >
@@ -276,7 +277,7 @@ function BookmarkItem({
           <>
             <a
               className={`${c.title} text-fg no-underline hover:text-accent`}
-              href={b.url}
+              href={isWebUrl(b.url) ? b.url : undefined}
               target="_blank"
               rel="noreferrer noopener"
               title={b.title}

@@ -23,7 +23,7 @@ The workflow skips signing and store steps until these exist.
 
 - Windows signing: add the secrets `WINDOWS_CERT_PFX_BASE64` and `WINDOWS_CERT_PASSWORD`. The `sign-windows` job has not been run. EV certificates on a hardware token cannot be used on a hosted runner, so Azure Trusted Signing or a self hosted runner may suit better.
 - macOS signing and notarizing needs an Apple Developer Program membership. The workflow has no job for it yet.
-- Chrome Web Store: a developer account. The store assigns the extension id. Add it to `chromeIds` in `helper/ids.json`, rebuild and publish the helper, or the store version cannot reach it.
+- Chrome Web Store: a developer account. The store assigns the extension id. Add it to `chromeIds` in `helper/ids.json` (never the development id from `helper/ids.dev.json`), rebuild and publish the helper, or the store version cannot reach it. Until then a release helper registers with Firefox only, and says so for Chrome.
 - Firefox add-ons: a free account. Upload the Firefox and sources zips. The add-on id `bookpass@derryleng.github.io` is fixed.
 - A privacy policy at a public address (the README Privacy section is the text), screenshots and the text in [STORE.md](STORE.md).
 - `helperDownloadUrl` in `src/constants.ts` links to the releases page, because `/releases/latest` skips pre-releases and every `0.x` release is one. Change it to `/releases/latest` at 1.0.

@@ -6,6 +6,7 @@ import { homedir } from "node:os";
 import { createServer } from "node:http";
 import { join, resolve } from "node:path";
 import puppeteer, { type Page } from "puppeteer-core";
+import devIds from "../../helper/ids.dev.json" with { type: "json" };
 import ids from "../../helper/ids.json" with { type: "json" };
 
 export const root = resolve(import.meta.dirname, "../..");
@@ -148,7 +149,9 @@ async function createSession(
         description: "BookPass native helper",
         path: installed,
         type: "stdio",
-        allowed_origins: ids.chromeIds.map((id) => `chrome-extension://${id}/`),
+        allowed_origins: [...ids.chromeIds, ...devIds.chromeIds].map(
+          (id) => `chrome-extension://${id}/`,
+        ),
       }),
     );
   }

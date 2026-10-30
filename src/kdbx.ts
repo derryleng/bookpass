@@ -22,6 +22,31 @@ export const defaultKdf: KdfParams = {
   parallelism: 2,
 };
 
+/**
+ * The most a vault file may ask for when it is opened. The settings are read from the file, so a copy that someone
+ * tampered with in a synced folder could ask for gigabytes and freeze the browser. BookPass writes 256 MiB, and
+ * KeePass tops out around 1 GiB in practice.
+ */
+export const maxKdfMemoryMiB = 1024;
+export const maxKdfIterations = 100;
+export const maxKdfParallelism = 64;
+
+/** Throws if the key derivation settings are beyond what BookPass will run. Memory is in KiB, as kdbxweb passes it. */
+export function checkKdfCost(
+  memoryKiB: number,
+  iterations: number,
+  parallelism: number,
+) {
+  if (memoryKiB > maxKdfMemoryMiB * 1024)
+    throw new Error(
+      `This vault asks for ${Math.round(memoryKiB / 1024)} MiB of memory to unlock, more than BookPass allows (${maxKdfMemoryMiB} MiB). The file may have been tampered with.`,
+    );
+  if (iterations > maxKdfIterations || parallelism > maxKdfParallelism)
+    throw new Error(
+      "This vault asks for more work to unlock than BookPass allows. The file may have been tampered with.",
+    );
+}
+
 // kdbxweb ships no Argon2 code. hash-wasm is a small WebAssembly build that needs 'wasm-unsafe-eval' in the CSP.
 const argon2Types: Record<number, typeof argon2d> = {
   0: argon2d,
@@ -32,6 +57,7 @@ kdbxweb.CryptoEngine.setArgon2Impl(
   async (password, salt, memory, iterations, length, parallelism, type) => {
     const hash = argon2Types[type];
     if (!hash) throw new Error(`Unsupported Argon2 type ${type}`);
+    checkKdfCost(memory, iterations, parallelism);
     const out = await hash({
       password: new Uint8Array(password),
       salt: new Uint8Array(salt),

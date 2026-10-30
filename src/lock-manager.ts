@@ -2,11 +2,11 @@
 // The rules themselves are in lock.ts.
 import { browser } from "wxt/browser";
 import { idleDetectionSeconds, shouldLock, type LockState } from "./lock";
-import { loadKey } from "./key-store";
+import { ACTIVITY_KEY, loadKey } from "./key-store";
+import { keepsKeyInKeychain } from "./settings";
 import type { Vault } from "./vault";
 
 const ALARM = "bookpass-lock-check";
-const ACTIVITY_KEY = "lastActivity";
 /** How long after the last page closes before "every time" mode locks, so popup to manager hand-offs survive. */
 const CLOSE_GRACE_MS = 2000;
 
@@ -33,11 +33,17 @@ export function startLockManager(vault: Vault) {
     browser.idle.setDetectionInterval(idleDetectionSeconds(vault.settings));
   }
 
-  // A restarted background picks up where the last one left off.
-  void browser.storage.session.get(ACTIVITY_KEY).then((stored) => {
-    const saved = stored[ACTIVITY_KEY] as number | undefined;
+  // A restarted background picks up where the last one left off. So does a restarted browser, when the unlock key
+  // is kept in the system keychain: the time is then also kept on disk (it is only a time), so a vault restored
+  // after a restart is still locked once its idle time is up.
+  const loaded = Promise.all([
+    browser.storage.session.get(ACTIVITY_KEY),
+    browser.storage.local.get(ACTIVITY_KEY),
+  ]).then(([session, local]) => {
+    const saved = (session[ACTIVITY_KEY] ?? local[ACTIVITY_KEY]) as
+      number | undefined;
     if (saved && saved < lastActivity) lastActivity = saved;
-    void check();
+    return check();
   });
 
   void browser.alarms.create(ALARM, { periodInMinutes: 1 });
@@ -61,6 +67,8 @@ export function startLockManager(vault: Vault) {
       if (lastActivity - persistedAt > 10_000) {
         persistedAt = lastActivity;
         void browser.storage.session.set({ [ACTIVITY_KEY]: lastActivity });
+        if (keepsKeyInKeychain(vault.settings))
+          void browser.storage.local.set({ [ACTIVITY_KEY]: lastActivity });
       }
     },
     /** Registers an open page. The port closing tells us the page went away. */
@@ -73,5 +81,7 @@ export function startLockManager(vault: Vault) {
     },
     applyIdleSettings,
     check,
+    /** Resolves once the last activity time has been read back and the first check has run. */
+    loaded,
   };
 }

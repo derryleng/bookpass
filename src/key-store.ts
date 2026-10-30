@@ -6,6 +6,9 @@ import { browser } from "wxt/browser";
 
 const KEY = "unlockKey";
 
+/** When BookPass was last used. Kept in session storage, and on disk too while the keychain holds the unlock key. */
+export const ACTIVITY_KEY = "lastActivity";
+
 export async function loadKey(): Promise<string | undefined> {
   return (await browser.storage.session.get(KEY))[KEY] as string | undefined;
 }

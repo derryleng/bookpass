@@ -12,9 +12,14 @@
 //  - The page is read once, only far enough to find its picture links. Icons come from the page's own list, then
 //    from /favicon.ico. A cover is taken only from the address, or one on the same site, unless the person has
 //    allowed covers from other servers.
+//  - Addresses on this computer or its local network (localhost, 192.168.x.x, a bare name like "router") are never
+//    contacted, unless the bookmark itself is on such an address. A page cannot aim the request at the person's
+//    devices that way. A redirect into the local network is still followed by the browser, as described above, and
+//    its answer is thrown away.
 //  - Only pictures are kept, and only after being shrunk. Nothing else from the page is stored.
 //  - There is no third party lookup service, so no one but the site hears about the bookmark.
 import { shrinkCover, toIconPng } from "./images";
+import { isPrivateHost } from "./network-guard";
 import { findPictureLinks } from "./pictures";
 
 const MAX_PAGE_BYTES = 1_000_000;
@@ -113,6 +118,15 @@ export async function fetchPictures(
     return result;
   }
 
+  // A bookmark on the local network may use pictures from it. Any other page may not point us there.
+  const allowPrivate = isPrivateHost(pageUrl);
+  let blocked = false;
+  const reachable = (href: string) => {
+    const ok = canFetch(href) && (allowPrivate || !isPrivateHost(href));
+    if (canFetch(href) && !ok) blocked = true;
+    return ok;
+  };
+
   let links = { icons: [] as string[], covers: [] as string[] };
   let base = pageUrl;
   try {
@@ -138,7 +152,7 @@ export async function fetchPictures(
     for (const candidate of [
       ...new Set([...links.icons, `${site}/favicon.ico`]),
     ]
-      .filter(canFetch)
+      .filter(reachable)
       .slice(0, 4)) {
       try {
         const picture = await get(candidate, MAX_PICTURE_BYTES, options.signal);
@@ -159,7 +173,7 @@ export async function fetchPictures(
   if (wish.cover) {
     const allowed = links.covers.filter(
       (href) =>
-        canFetch(href) && (options.otherServers || origin(href) === site),
+        reachable(href) && (options.otherServers || origin(href) === site),
     );
     result.skippedOtherServer = allowed.length < links.covers.length;
     for (const candidate of allowed.slice(0, 2)) {
@@ -184,5 +198,9 @@ export async function fetchPictures(
       );
     }
   }
+  if (blocked)
+    result.problems.push(
+      "Picture links to addresses on your own network were skipped.",
+    );
   return result;
 }

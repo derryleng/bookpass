@@ -9,6 +9,7 @@
 import { toBase64 } from "./base64";
 import type { Kdbx, KdbxEntry, KdbxGroup } from "./kdbx";
 import { KdbxUuid } from "./kdbx";
+import { clip, maxExcerptLength, maxTitleLength } from "./limits";
 import type { Layout } from "./settings";
 
 export type BookmarkType =
@@ -287,11 +288,12 @@ function applyBookmark(
   entry: KdbxEntry,
   patch: Partial<BookmarkInput> & { order?: number },
 ) {
-  if (patch.title !== undefined) entry.fields.set("Title", patch.title);
+  if (patch.title !== undefined)
+    entry.fields.set("Title", clip(patch.title, maxTitleLength));
   if (patch.url !== undefined) entry.fields.set("URL", patch.url);
   if (patch.note !== undefined) setText(entry, "Notes", patch.note);
   if (patch.excerpt !== undefined)
-    setText(entry, entryField.excerpt, patch.excerpt);
+    setText(entry, entryField.excerpt, clip(patch.excerpt, maxExcerptLength));
   if (patch.type !== undefined)
     setText(entry, entryField.type, patch.type === "link" ? "" : patch.type);
   if (patch.favorite !== undefined)

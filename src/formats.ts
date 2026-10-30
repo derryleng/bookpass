@@ -1,5 +1,6 @@
 // Reading and writing the bookmark file formats other tools use. Pure text in, plain objects out.
 import type { Bookmark, Folder } from "./bookmark-model";
+import { isWebUrl } from "./web-url";
 
 export interface ImportBookmark {
   /** Folder names from the top down, empty for a bookmark with no folder. */
@@ -71,10 +72,31 @@ function dateFromSeconds(value: string | undefined): number | undefined {
 }
 
 /**
+ * Finds the next match of a closing tag at or after a position, or -1. Positions only move forward, so the last
+ * answer is kept: a run of tags that never close then costs one scan of the file, not one scan each.
+ */
+function closeFinder(text: string, pattern: RegExp) {
+  let found = -2; // -2: not looked yet, -1: there is no more
+  return (from: number): number => {
+    if (found === -1 || found >= from) return found;
+    pattern.lastIndex = from;
+    found = pattern.exec(text)?.index ?? -1;
+    return found;
+  };
+}
+
+/**
  * The "Netscape bookmark file" that Chrome, Firefox, Raindrop and most other services export.
  * It is HTML that was never well formed, so this reads it tag by tag instead of building a tree.
  */
-export function parseNetscape(html: string): ParsedImport {
+export function parseNetscape(source: string): ParsedImport {
+  // A "<" with no ">" after it would otherwise be scanned to the end of the file once for every "<". Anything from
+  // the first such "<" on is not a tag, so it is dropped, and the text before it is kept.
+  const lastTagEnd = source.lastIndexOf(">") + 1;
+  const junk = source.indexOf("<", lastTagEnd);
+  const html = junk === -1 ? source : source.slice(0, junk);
+  const closeH3 = closeFinder(html, /<\/h3>/gi);
+  const closeA = closeFinder(html, /<\/a>/gi);
   const result: ParsedImport = { bookmarks: [], emptyFolders: [] };
   const path: string[] = [];
   let pendingFolder: string | undefined;
@@ -94,13 +116,13 @@ export function parseNetscape(html: string): ParsedImport {
     lastWasDescription = element === "dd" && !closing;
     if (element === "h3" && !closing) {
       const from = tag.lastIndex;
-      const close = html.slice(from).search(/<\/h3>/i);
+      const close = closeH3(from);
       if (close >= 0) {
         pendingFolder =
           decodeEntities(
-            html.slice(from, from + close).replace(/<[^>]*>/g, ""),
+            html.slice(from, close).replace(/<[^>]*>/g, ""),
           ).trim() || "Untitled";
-        tag.lastIndex = from + close;
+        tag.lastIndex = close;
       }
     } else if (element === "dl" && !closing) {
       if (pendingFolder !== undefined) {
@@ -112,12 +134,12 @@ export function parseNetscape(html: string): ParsedImport {
       path.pop();
     } else if (element === "a" && !closing) {
       const from = tag.lastIndex;
-      const close = html.slice(from).search(/<\/a>/i);
-      const label = close >= 0 ? html.slice(from, from + close) : "";
+      const close = closeA(from);
+      const label = close >= 0 ? html.slice(from, close) : "";
       const attrs = parseAttributes(rest ?? "");
-      if (close >= 0) tag.lastIndex = from + close;
+      if (close >= 0) tag.lastIndex = close;
       const url = (attrs.href ?? "").trim();
-      if (!url || /^(place|javascript|about):/i.test(url)) {
+      if (!isWebUrl(url)) {
         last = undefined;
         continue;
       }
@@ -183,9 +205,16 @@ export function parseCsv(text: string): string[][] {
   return rows;
 }
 
+// A spreadsheet runs a cell that starts with one of these as a formula, and a page title can be anything. Such cells
+// get a leading quote on the way out, and lose it when BookPass reads its own file back.
+const formulaStart = /^[=+\-@\t\r]/;
+const quotedFormula = /^'[=+\-@\t\r]/;
+
 export function toCsv(rows: string[][]): string {
-  const cell = (value: string) =>
-    /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+  const cell = (raw: string) => {
+    const value = formulaStart.test(raw) ? `'${raw}` : raw;
+    return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+  };
   return rows.map((row) => row.map(cell).join(",")).join("\r\n") + "\r\n";
 }
 
@@ -213,9 +242,11 @@ export function parseRaindropCsv(text: string): ParsedImport {
   if (url < 0) throw new Error("URL column not found in CSV");
   const bookmarks: ImportBookmark[] = [];
   for (const row of rows) {
-    const get = (name: string) =>
-      col(name) >= 0 ? (row[col(name)] ?? "").trim() : "";
-    if (!get("url")) continue;
+    const get = (name: string) => {
+      const cell = col(name) >= 0 ? (row[col(name)] ?? "").trim() : "";
+      return quotedFormula.test(cell) ? cell.slice(1) : cell;
+    };
+    if (!isWebUrl(get("url"))) continue;
     const created = Date.parse(get("created"));
     bookmarks.push({
       folderPath: get("folder")
@@ -250,7 +281,7 @@ export function fromBrowserTree(roots: BrowserNode[]): ParsedImport {
   const result: ParsedImport = { bookmarks: [], emptyFolders: [] };
   const walk = (node: BrowserNode, path: string[]) => {
     if (node.url) {
-      if (/^(https?|ftp):/i.test(node.url)) {
+      if (isWebUrl(node.url)) {
         result.bookmarks.push({
           folderPath: path,
           title: node.title || node.url,

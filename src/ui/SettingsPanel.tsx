@@ -4,6 +4,7 @@ import type { SnapshotReply, Status } from "../messages";
 import {
   coverWidths,
   idleChoices,
+  keepsKeyInKeychain,
   lockModes,
   type Layout,
   type LockMode,
@@ -128,6 +129,34 @@ export function SettingsPanel({
             </label>
           );
         })}
+        <label className="flex items-start gap-3">
+          <input
+            className="mt-1"
+            type="checkbox"
+            checked={settings.useKeychain}
+            onChange={(e) => void change({ useKeychain: e.target.checked })}
+          />
+          <div>
+            <div className="font-semibold">
+              Keep the unlock key in my system keychain
+            </div>
+            <div className={hint}>
+              Windows data protection, the macOS Keychain or the Linux Secret
+              Service holds the unlock key, so the vault can stay unlocked when
+              the browser restarts. It still locks by the timer you picked, and
+              this only works with the two timer modes. Other programs running
+              as you may be able to read the key.
+            </div>
+            {settings.useKeychain && !keepsKeyInKeychain(settings) && (
+              <div className={hint}>
+                Not in use: pick one of the timer modes above.
+              </div>
+            )}
+          </div>
+        </label>
+        {status.keychainProblem && (
+          <div className={callout("error")}>{status.keychainProblem}</div>
+        )}
         <div>
           <button
             className={btn()}

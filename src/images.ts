@@ -2,6 +2,7 @@
 // Works in a page and in the background (which has no document), apart from drawing an SVG, which needs a page.
 import { toBase64 } from "./base64";
 import { maxCoverBytes } from "./constants";
+import { isTooLarge } from "./image-size";
 
 type Source = Blob | string;
 
@@ -9,6 +10,8 @@ type Source = Blob | string;
 async function decode(source: Source): Promise<ImageBitmap> {
   const blob =
     typeof source === "string" ? await (await fetch(source)).blob() : source;
+  if (isTooLarge(new Uint8Array(await blob.arrayBuffer())))
+    throw new Error("The picture is too large to use.");
   try {
     return await createImageBitmap(blob);
   } catch (error) {

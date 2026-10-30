@@ -3,6 +3,7 @@ import { addBookmark, createFolder, inBin } from "./bookmark-model";
 import { normalizeUrl } from "./browse";
 import type { ParsedImport } from "./formats";
 import type { Kdbx } from "./kdbx";
+import { clip, maxImportedNoteLength } from "./limits";
 
 export interface ImportResult {
   added: number;
@@ -95,7 +96,7 @@ export async function importInto(
       folderId: folderFor(b.folderPath),
       title: b.title,
       url: b.url,
-      note: b.note,
+      note: clip(b.note, maxImportedNoteLength),
       excerpt: b.excerpt,
       tags: b.tags,
       favorite: b.favorite,

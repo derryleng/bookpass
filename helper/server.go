@@ -10,6 +10,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -38,6 +39,7 @@ type server struct {
 	defaultPath string
 	cfg         config
 	up          *upload
+	keys        keyStore
 }
 
 // newServer loads the config. BOOKPASS_CONFIG_DIR and BOOKPASS_DEFAULT_VAULT exist for tests.
@@ -58,7 +60,7 @@ func newServer() (*server, error) {
 		}
 		def = filepath.Join(home, ".bookpass", "bookmarks.kdbx")
 	}
-	s := &server{configPath: filepath.Join(dir, "config.json"), defaultPath: def, cfg: config{VaultPath: def, BackupCount: defaultBackupCount}}
+	s := &server{configPath: filepath.Join(dir, "config.json"), defaultPath: def, cfg: config{VaultPath: def, BackupCount: defaultBackupCount}, keys: systemKeys(dir)}
 	data, err := os.ReadFile(s.configPath)
 	if errors.Is(err, fs.ErrNotExist) {
 		return s, nil
@@ -119,6 +121,12 @@ func (s *server) handle(req *request) *response {
 		return s.writeChunk(req)
 	case "writeCommit":
 		return s.writeCommit(req)
+	case "keySet":
+		return s.keySet(req)
+	case "keyGet":
+		return s.keyGet(req)
+	case "keyClear":
+		return s.keyClear(req)
 	default:
 		return fail(req.ID, codeInvalid, fmt.Sprintf("unknown op %q", req.Op))
 	}
@@ -151,9 +159,21 @@ func (s *server) setConfig(req *request) *response {
 	return &response{ID: req.ID, OK: true, VaultPath: s.cfg.VaultPath, BackupCount: &s.cfg.BackupCount}
 }
 
-// expandPath accepts a leading ~ and requires an absolute path.
+// isNetworkPath reports whether p names a share on another computer (\\server\share on Windows). Opening one makes
+// Windows send the user's credentials to that server, so the helper never uses such a path.
+func isNetworkPath(goos, p string) bool {
+	if goos != "windows" {
+		return false
+	}
+	return strings.HasPrefix(strings.ReplaceAll(p, "/", `\`), `\\`)
+}
+
+// expandPath accepts a leading ~ and requires an absolute path on this computer.
 func expandPath(p string) (string, error) {
 	p = strings.TrimSpace(p)
+	if isNetworkPath(runtime.GOOS, p) {
+		return "", errors.New(`network paths such as \\server\share are not supported, use a folder on this computer`)
+	}
 	if p == "~" || strings.HasPrefix(p, "~/") || strings.HasPrefix(p, `~\`) {
 		home, err := os.UserHomeDir()
 		if err != nil {

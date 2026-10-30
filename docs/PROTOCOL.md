@@ -38,6 +38,9 @@ Binary data (`data`) is base64.
 | `writeBegin`  | none                               | none. Starts a temporary file next to the vault.                                                                                                |
 | `writeChunk`  | `data`                             | none                                                                                                                                            |
 | `writeCommit` | `size`, `sha256`, `expectedSha256` | `sha256`, `size`                                                                                                                                |
+| `keySet`      | `key` (1 to 4096 characters)       | none. Puts the unlock key in the system keychain. Fails with `unavailable` on a computer with none.                                             |
+| `keyGet`      | none                               | `key`, empty if none is stored. The only reply that ever carries the key.                                                                       |
+| `keyClear`    | none                               | none. Removes the stored key. Having none is not an error.                                                                                      |
 
 Reading a vault is `stat`, then `read` chunks until `eof`, then the extension checks the SHA-256 of what it received against the `stat`, and starts again if they differ (the file changed while reading).
 
@@ -45,10 +48,21 @@ Writing a vault is `writeBegin`, `writeChunk` for each 512 KiB piece, then `writ
 
 ## Safety rules
 
-- The helper reads and writes exactly one file, the `vaultPath` from its config file, which must be absolute and end in `.kdbx`. The path changes only through `setConfig`.
+- The helper reads and writes exactly one vault file, the `vaultPath` from its config file, which must be absolute, end in `.kdbx` and be on this computer: on Windows a network path (`\\server\share`) is refused, because opening one sends the user's credentials to that server. The path changes only through `setConfig` and `moveVault`.
+- The extension is a trusted caller. Anything that can send these messages can point the helper at any `.kdbx` file the user can write, so the helper must only be startable by the BookPass extension (see the manifest rule below).
 - Backups go in a `backups` folder next to the vault, named `<vault>-<UTC time>.kdbx`, and the oldest beyond `backupCount` (default 5) are removed.
 - Files are created for the current user only (folder 0700, files 0600 on macOS and Linux).
-- The native messaging manifest names the extension that may start the helper: `allowed_origins` for Chrome and the other Chromium browsers, `allowed_extensions` for Firefox. Web pages and other extensions cannot reach it.
+- The native messaging manifest names the extension that may start the helper: `allowed_origins` for Chrome and the other Chromium browsers, `allowed_extensions` for Firefox. Web pages and other extensions cannot reach it. Release builds name only the store extension id, and the Firefox add-on id. The development id (`helper/ids.dev.json`) is compiled in only with `-tags dev`.
+
+## The unlock key and the system keychain
+
+`keySet`, `keyGet` and `keyClear` let the extension keep its unlock key (the hash of the master password, see `src/key-store.ts`) in the operating system's secret store. They were added without a protocol change: an older helper answers `invalid` (unknown op) and the extension reports that the keychain cannot be used.
+
+- Windows: encrypted with the user's data protection key (`CryptProtectData`) into `unlock-key.dpapi` in the config folder. It cannot be decrypted by another user or on another computer.
+- macOS: the login keychain, through `/usr/bin/security`. The secret is sent on the standard input of `security -i`, never on the command line.
+- Linux and other Unix systems: the Secret Service through `secret-tool` (package `libsecret-tools`), also on standard input. Without `secret-tool` the ops fail with `unavailable`.
+
+The helper stores the key as base64, never logs it, and puts it in no reply except `keyGet`. Other programs running as the same user may be able to read it back, which is why the setting is off by default.
 
 ## Versioning
 
