@@ -52,9 +52,7 @@ try {
   );
   await manager.evaluate(() =>
     document
-      .querySelector<HTMLButtonElement>(
-        "dialog button[type=submit], dialog button.primary",
-      )
+      .querySelector<HTMLButtonElement>("dialog footer button:last-child")
       ?.click(),
   );
   check(
@@ -63,7 +61,7 @@ try {
       manager,
       "folder",
       () =>
-        !!document.querySelector(".tree-row") &&
+        !!document.querySelector("nav [role=button]") &&
         document.body.innerText.includes("Reading"),
     ),
   );
@@ -85,7 +83,7 @@ try {
         popup,
         "title",
         () =>
-          (document.querySelector("input.input") as HTMLInputElement | null)
+          (document.querySelector("input") as HTMLInputElement | null)
             ?.value === "A fine article about Rust",
         15000,
       ),
@@ -93,8 +91,7 @@ try {
     await sleep(500);
     await shot(popup, "03-popup");
     await popup.evaluate(() => {
-      const select =
-        document.querySelector<HTMLSelectElement>(".popup select")!;
+      const select = document.querySelector<HTMLSelectElement>("select")!;
       select.value = [...select.options].find((o) =>
         o.text.includes("Reading"),
       )!.value;
@@ -118,8 +115,8 @@ try {
       popup2,
       "title",
       () =>
-        (document.querySelector("input.input") as HTMLInputElement | null)
-          ?.value === "Plain page",
+        (document.querySelector("input") as HTMLInputElement | null)?.value ===
+        "Plain page",
       15000,
     );
     await sleep(800);
@@ -137,7 +134,7 @@ try {
   );
   await sleep(1000);
   const covers = await manager.$$eval(
-    ".bm-cover",
+    "article [role=img]",
     (els) =>
       els.filter((e) =>
         (e as HTMLElement).style.backgroundImage.startsWith("url("),
@@ -148,7 +145,7 @@ try {
     covers === 2,
     `${covers} covers`,
   );
-  const iconsInList = await manager.$$eval("img.favicon", (els) => els.length);
+  const iconsInList = await manager.$$eval("article img", (els) => els.length);
   check(
     "the declared site icon was saved and shown",
     iconsInList >= 1,
@@ -167,7 +164,7 @@ try {
   await sleep(400);
   check(
     "search narrows the list",
-    (await manager.$$eval(".bm", (e) => e.length)) === 1,
+    (await manager.$$eval("article", (e) => e.length)) === 1,
   );
   await manager.click("input[aria-label=Search]", { count: 3 });
   await manager.keyboard.press("Backspace");
@@ -177,7 +174,11 @@ try {
   await hasText(manager, "Locking");
   await shot(manager, "07-settings");
   await manager.evaluate(() =>
-    [...document.querySelectorAll<HTMLElement>(".radio-card")]
+    [
+      ...document.querySelectorAll<HTMLElement>(
+        "label:has(input[name=lock-mode])",
+      ),
+    ]
       .find((e) => e.innerText.includes("Every time"))
       ?.click(),
   );
@@ -186,19 +187,27 @@ try {
     (
       document
         .querySelector("input[name=lock-mode]:checked")
-        ?.closest(".radio-card") as HTMLElement | null
+        ?.closest("label:has(input[name=lock-mode])") as HTMLElement | null
     )?.innerText.includes("Every time"),
   );
   check("the lock setting can be changed", !!modeSaved);
   await manager.evaluate(() =>
-    [...document.querySelectorAll<HTMLElement>(".radio-card")]
+    [
+      ...document.querySelectorAll<HTMLElement>(
+        "label:has(input[name=lock-mode])",
+      ),
+    ]
       .find((e) => e.innerText.includes("After a period"))
       ?.click(),
   );
   await sleep(500);
   await shot(manager, "08-settings-idle");
   await manager.evaluate(() =>
-    [...document.querySelectorAll<HTMLElement>(".radio-card")]
+    [
+      ...document.querySelectorAll<HTMLElement>(
+        "label:has(input[name=lock-mode])",
+      ),
+    ]
       .find((e) => e.innerText.includes("Every time"))
       ?.click(),
   );
@@ -213,7 +222,11 @@ try {
   const pickMode = async (label: string) => {
     await manager.evaluate(
       (label) =>
-        [...document.querySelectorAll<HTMLElement>(".radio-card")]
+        [
+          ...document.querySelectorAll<HTMLElement>(
+            "label:has(input[name=lock-mode])",
+          ),
+        ]
           .find((e) => e.innerText.includes(label))
           ?.click(),
       label,

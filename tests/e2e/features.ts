@@ -40,7 +40,7 @@ const upload = async (page: Page, selector: string, file: string) => {
 const nav = (page: Page, label: string) =>
   page.evaluate(
     (label) =>
-      [...document.querySelectorAll<HTMLElement>(".nav-item")]
+      [...document.querySelectorAll<HTMLElement>("nav button")]
         .find((e) => e.innerText.trim().startsWith(label))
         ?.click(),
     label,
@@ -98,7 +98,7 @@ try {
 
   // 2. Import a bookmarks file.
   await click(manager, "summary", "Tools");
-  await click(manager, ".menu-list button", "Import bookmarks…");
+  await click(manager, "[role=menu] button", "Import bookmarks…");
   await manager.waitForSelector("dialog[open] input[type=file]");
   await upload(manager, "dialog[open] input[type=file]", importPath);
   await mustHave(
@@ -122,7 +122,7 @@ try {
 
   // 3. Tags.
   await click(manager, "button", "Manage tags");
-  await manager.waitForSelector("dialog[open] .tag-list");
+  await manager.waitForSelector("dialog[open] ul");
   await click(manager, "dialog button", "Rename food");
   await manager.evaluate(() => {
     const input = document.querySelector<HTMLInputElement>(
@@ -139,17 +139,17 @@ try {
 
   // 4. History: edit a bookmark twice, then see the earlier version.
   await manager.evaluate(() =>
-    (document.querySelector(".tree-row") as HTMLElement | null)?.click(),
+    (
+      document.querySelector("nav [role=button]") as HTMLElement | null
+    )?.click(),
   );
   await sleep(500);
   await manager
-    .click(".bm .bm-actions button[aria-label=Edit]", { delay: 50 })
+    .click("article button[aria-label=Edit]", { delay: 50 })
     .catch(async () => {
       await manager.evaluate(() =>
         document
-          .querySelector<HTMLButtonElement>(
-            ".bm-actions button[aria-label=Edit]",
-          )
+          .querySelector<HTMLButtonElement>("article button[aria-label=Edit]")
           ?.click(),
       );
     });
@@ -166,13 +166,13 @@ try {
   await sleep(1200);
   await manager.evaluate(() =>
     document
-      .querySelector<HTMLButtonElement>(".bm-actions button[aria-label=Edit]")
+      .querySelector<HTMLButtonElement>("article button[aria-label=Edit]")
       ?.click(),
   );
-  await manager.waitForSelector("dialog[open] details.history");
+  await manager.waitForSelector("dialog[open] details");
   await manager.evaluate(() =>
     document
-      .querySelector<HTMLElement>("dialog[open] details.history summary")
+      .querySelector<HTMLElement>("dialog[open] details summary")
       ?.click(),
   );
   await mustHave(
@@ -187,11 +187,11 @@ try {
   await nav(manager, "All bookmarks");
   await sleep(500);
   const dragged = await manager.evaluate(async () => {
-    const item = [...document.querySelectorAll<HTMLElement>(".bm")].find((b) =>
-      b.innerText.includes("Pasta, edited"),
+    const item = [...document.querySelectorAll<HTMLElement>("article")].find(
+      (b) => b.innerText.includes("Pasta, edited"),
     );
     const target = [
-      ...document.querySelectorAll<HTMLElement>(".nav-item"),
+      ...document.querySelectorAll<HTMLElement>("nav button"),
     ].find((r) => r.innerText.trim().startsWith("Unsorted"));
     if (!item || !target) return false;
     const data = new DataTransfer();
@@ -292,13 +292,13 @@ try {
   await click(manager, "button", "Settings");
   await mustHave(manager, "Backups", "the settings list backups");
   const backupRows = await manager.$$eval(
-    "section:has(h2) ul.tag-list li",
+    "section:has(h2) ul li",
     (els) => els.length,
   );
   check("the helper has kept backups", backupRows > 0, `${backupRows} backups`);
   await shot(manager, "07-settings-more");
 
-  const inputs = await manager.$$("form.panel input[type=password]");
+  const inputs = await manager.$$("form input[type=password]");
   await inputs[0]!.type(password);
   await inputs[1]!.type("a brand new password");
   await inputs[2]!.type("a brand new password");

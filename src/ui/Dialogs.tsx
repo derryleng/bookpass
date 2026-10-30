@@ -19,6 +19,7 @@ import {
 import { IconPicker } from "./IconPicker";
 import { renderIconPng, rememberIcon, useIconsFor } from "./icon-library";
 import { errorText, FolderSelect, TagInput } from "./parts";
+import { btn, callout, field, hint, input, summaryLabel } from "./cls";
 
 interface BookmarkDialogProps {
   snapshot: SnapshotReply;
@@ -101,25 +102,30 @@ export function BookmarkDialog({
       footer={
         <>
           {bookmark && (
-            <button type="button" className="btn danger" onClick={remove}>
+            <button type="button" className={btn("danger")} onClick={remove}>
               <I n="trash" /> Move to trash
             </button>
           )}
-          <span className="grow" />
-          <button type="button" className="btn" onClick={onClose}>
+          <span className="min-w-0 flex-1" />
+          <button type="button" className={btn()} onClick={onClose}>
             Cancel
           </button>
-          <button className="btn primary" form="bookmark-form">
+          <button className={btn("primary")} form="bookmark-form">
             Save
           </button>
         </>
       }
     >
-      <form id="bookmark-form" className="stack" onSubmit={save} noValidate>
-        <label className="field">
+      <form
+        id="bookmark-form"
+        className="flex flex-col gap-3"
+        onSubmit={save}
+        noValidate
+      >
+        <label className={field}>
           <span>Address</span>
           <input
-            className="input"
+            className={input}
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
@@ -128,24 +134,24 @@ export function BookmarkDialog({
             autoFocus={!bookmark}
           />
         </label>
-        <label className="field">
+        <label className={field}>
           <span>Title</span>
           <input
-            className="input"
+            className={input}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Page title"
           />
         </label>
-        <div className="row">
-          <label className="field grow">
+        <div className="flex items-center gap-2">
+          <label className={`${field} min-w-0 flex-1`}>
             <span>Folder</span>
             <FolderSelect tree={tree} value={folder} onChange={setFolder} />
           </label>
-          <label className="field">
+          <label className={field}>
             <span>Type</span>
             <select
-              className="select"
+              className={input}
               value={type}
               onChange={(e) => setType(e.target.value as BookmarkType)}
             >
@@ -157,14 +163,14 @@ export function BookmarkDialog({
             </select>
           </label>
         </div>
-        <div className="field">
+        <div className={field}>
           <span>Tags</span>
           <TagInput tags={tags} onChange={setTags} suggestions={allTags} />
         </div>
-        <label className="field">
+        <label className={field}>
           <span>Note</span>
           <textarea
-            className="textarea"
+            className={`${input} min-h-18 resize-y`}
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
@@ -176,7 +182,7 @@ export function BookmarkDialog({
           pending={pictures}
           onPending={setPictures}
         />
-        <label className="row">
+        <label className="flex items-center gap-2">
           <input
             type="checkbox"
             checked={favorite}
@@ -184,11 +190,11 @@ export function BookmarkDialog({
           />
           <span>Favorite</span>
         </label>
-        {error && <div className="callout error">{error}</div>}
+        {error && <div className={callout("error")}>{error}</div>}
       </form>
       {bookmark && (
-        <details className="history" style={{ marginTop: 10 }}>
-          <summary>Earlier versions</summary>
+        <details className="mt-2.5">
+          <summary className={summaryLabel}>Earlier versions</summary>
           <HistoryList id={bookmark.id} onRestored={onClose} />
         </details>
       )}
@@ -275,32 +281,32 @@ export function FolderDialog({
       footer={
         <>
           {folder && (
-            <button type="button" className="btn danger" onClick={remove}>
+            <button type="button" className={btn("danger")} onClick={remove}>
               <I n="trash" /> Move to trash
             </button>
           )}
-          <span className="grow" />
-          <button type="button" className="btn" onClick={onClose}>
+          <span className="min-w-0 flex-1" />
+          <button type="button" className={btn()} onClick={onClose}>
             Cancel
           </button>
-          <button className="btn primary" form="folder-form">
+          <button className={btn("primary")} form="folder-form">
             Save
           </button>
         </>
       }
     >
-      <form id="folder-form" className="stack" onSubmit={save}>
-        <label className="field">
+      <form id="folder-form" className="flex flex-col gap-3" onSubmit={save}>
+        <label className={field}>
           <span>Name</span>
           <input
-            className="input"
+            className={input}
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
             autoFocus
           />
         </label>
-        <label className="field">
+        <label className={field}>
           <span>Inside</span>
           <FolderSelect
             tree={tree}
@@ -317,12 +323,12 @@ export function FolderDialog({
           onColor={setColor}
         />
         {folder && onFetchPictures && (
-          <div className="field">
+          <div className={field}>
             <span>Pictures</span>
-            <div className="row">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                className="btn"
+                className={btn()}
                 onClick={() => {
                   const inside = descendantIds(tree, folder.id);
                   onClose();
@@ -337,13 +343,13 @@ export function FolderDialog({
                 <I n="globe" /> Fetch missing pictures…
               </button>
             </div>
-            <span className="hint" style={{ fontWeight: 400 }}>
+            <span className={`${hint} font-normal!`}>
               For the bookmarks in this folder and the folders inside it. You
               choose which sites to contact first.
             </span>
           </div>
         )}
-        {error && <div className="callout error">{error}</div>}
+        {error && <div className={callout("error")}>{error}</div>}
       </form>
     </Dialog>
   );

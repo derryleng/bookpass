@@ -11,6 +11,14 @@ import type { SnapshotReply } from "../messages";
 import { send } from "./api";
 import { FolderDialog, TagDialog } from "./Dialogs";
 import { isOurs, readDrag, startDrag, type DragPayload } from "./dnd";
+import {
+  btn,
+  dropTarget,
+  hint,
+  navItem,
+  countLabel,
+  sectionTitle,
+} from "./cls";
 import { I, Icon } from "./Icon";
 
 interface Props {
@@ -31,7 +39,7 @@ function same(a: Selection, b: Selection): boolean {
 function useDropTarget(folderId: string | null, tree: TreeNode[]) {
   const [over, setOver] = useState(false);
   return {
-    className: over ? "drop-target" : "",
+    className: over ? dropTarget : "",
     onDragOver: (e: DragEvent) => {
       if (!isOurs(e)) return;
       e.preventDefault();
@@ -88,21 +96,24 @@ export function Sidebar({
   ) {
     return (
       <button
-        className={`nav-item ${same(selection, kind) ? "active" : ""} ${drop?.className ?? ""}`}
+        className={`${navItem(same(selection, kind))} ${drop?.className ?? ""}`}
         onClick={() => onSelect(kind)}
         onDragOver={drop?.onDragOver}
         onDragLeave={drop?.onDragLeave}
         onDrop={drop?.onDrop}
       >
         <I n={icon} />
-        <span className="grow">{label}</span>
-        {count !== undefined && <span className="count">{count}</span>}
+        <span className="min-w-0 flex-1">{label}</span>
+        {count !== undefined && <span className={countLabel}>{count}</span>}
       </button>
     );
   }
 
   return (
-    <nav className="sidebar" aria-label="Collections">
+    <nav
+      className="overflow-y-auto border-r border-line px-2.5 pt-3.5 pb-6 max-[800px]:max-h-47 max-[800px]:border-r-0 max-[800px]:border-b"
+      aria-label="Collections"
+    >
       {item(
         { kind: "all" },
         "layer-group",
@@ -112,11 +123,10 @@ export function Sidebar({
       {item({ kind: "unsorted" }, "inbox", "Unsorted", unsorted, topDrop)}
       {item({ kind: "favorites" }, "star", "Favorites", favorites)}
 
-      <div className="section-title">
+      <div className={sectionTitle}>
         <span>Folders</span>
         <button
-          className="btn ghost small square"
-          style={{ width: 24, height: 24 }}
+          className={btn("quiet tiny")}
           onClick={() => setDialog({ parentId: null })}
           aria-label="New folder"
         >
@@ -124,7 +134,7 @@ export function Sidebar({
         </button>
       </div>
       {tree.length === 0 && (
-        <p className="hint" style={{ margin: "0 9px" }}>
+        <p className={`${hint} mx-2.5`}>
           No folders yet. Create one to organise your bookmarks.
         </p>
       )}
@@ -142,11 +152,10 @@ export function Sidebar({
 
       {tags.length > 0 && (
         <>
-          <div className="section-title">
+          <div className={sectionTitle}>
             <span>Tags</span>
             <button
-              className="btn ghost small square"
-              style={{ width: 24, height: 24 }}
+              className={btn("quiet tiny")}
               onClick={() => setTagDialog(true)}
               aria-label="Manage tags"
               title="Rename, merge, color and delete tags"
@@ -157,12 +166,12 @@ export function Sidebar({
           {tags.map(({ tag, count }) => (
             <button
               key={tag}
-              className={`nav-item ${same(selection, { kind: "tag", tag }) ? "active" : ""}`}
+              className={navItem(same(selection, { kind: "tag", tag }))}
               onClick={() => onSelect({ kind: "tag", tag })}
             >
               <I n="tag" />
               <span
-                className="grow"
+                className="min-w-0 flex-1"
                 style={
                   snapshot.tagColors[tag]
                     ? { color: snapshot.tagColors[tag] }
@@ -171,13 +180,13 @@ export function Sidebar({
               >
                 {tag}
               </span>
-              <span className="count">{count}</span>
+              <span className={countLabel}>{count}</span>
             </button>
           ))}
         </>
       )}
 
-      <div className="section-title" />
+      <div className={sectionTitle} />
       {item({ kind: "trash" }, "trash", "Trash", snapshot.trash.length)}
 
       {dialog && (
@@ -224,15 +233,12 @@ function FolderRow({
   const drop = useDropTarget(folder.id, tree);
 
   return (
-    <div className="tree-item">
+    <div className="relative">
       <div
         role="button"
         tabIndex={0}
-        className={`tree-row ${active ? "active" : ""} ${drop.className}`}
-        style={{
-          paddingLeft: 6 + depth * 16,
-          ["--folder-color" as string]: folder.color || undefined,
-        }}
+        className={`group/row ${navItem(active)} ${drop.className}`}
+        style={{ paddingLeft: 6 + depth * 16 }}
         draggable
         onDragStart={(e) => startDrag(e, { kind: "folder", id: folder.id })}
         onDragOver={drop.onDragOver}
@@ -244,27 +250,24 @@ function FolderRow({
         }
       >
         <button
-          className={`tree-twisty ${node.children.length ? "" : "leaf"}`}
+          className={`-mr-1 grid size-4.5 cursor-pointer place-items-center rounded-sm p-0 text-[10px] text-muted hover:bg-line ${node.children.length ? "" : "invisible"}`}
           onClick={(e) => (e.stopPropagation(), toggle())}
           aria-label={open ? "Collapse" : "Expand"}
           tabIndex={-1}
         >
           <I n={open ? "chevron-down" : "chevron-right"} />
         </button>
-        <Icon name={folder.icon} className="tree-icon" />
-        <span
-          className="grow"
-          style={{
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
+        <Icon
+          name={folder.icon}
+          className={`w-[1.1em] ${folder.color || active ? "" : "text-muted"}`}
+          style={{ color: folder.color || undefined }}
+        />
+        <span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
           {folder.name}
         </span>
-        <span className="tree-actions">
+        <span className="ml-auto hidden gap-0.5 group-focus-within/row:flex group-hover/row:flex">
           <button
-            className="btn ghost"
+            className={btn("quiet tiny")}
             aria-label={`New folder in ${folder.name}`}
             onClick={(e) => (
               e.stopPropagation(),
@@ -274,14 +277,18 @@ function FolderRow({
             <I n="folder-plus" />
           </button>
           <button
-            className="btn ghost"
+            className={btn("quiet tiny")}
             aria-label={`Edit ${folder.name}`}
             onClick={(e) => (e.stopPropagation(), onEdit({ folder }))}
           >
             <I n="pen" />
           </button>
         </span>
-        <span className="count">{node.total || ""}</span>
+        <span
+          className={`${countLabel} group-focus-within/row:hidden group-hover/row:hidden`}
+        >
+          {node.total || ""}
+        </span>
       </div>
       {open &&
         node.children.map((child) => (

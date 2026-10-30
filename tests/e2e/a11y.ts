@@ -88,7 +88,9 @@ try {
   await audit(manager, "folder dialog");
   await manager.type("dialog[open] input", "Reading");
   await manager.evaluate(() =>
-    document.querySelector<HTMLButtonElement>("dialog button.primary")?.click(),
+    document
+      .querySelector<HTMLButtonElement>("dialog footer button:last-child")
+      ?.click(),
   );
   await sleep(800);
 
@@ -116,7 +118,7 @@ try {
   await manager.keyboard.press("Escape");
 
   await click(manager, "summary", "Tools");
-  await click(manager, ".menu-list button", "Manage tags…");
+  await click(manager, "[role=menu] button", "Manage tags…");
   await manager.waitForSelector("dialog[open]");
   await audit(manager, "tags dialog");
   await manager.keyboard.press("Escape");

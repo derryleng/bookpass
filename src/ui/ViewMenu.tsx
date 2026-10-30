@@ -2,7 +2,13 @@
 // included and what each bookmark shows. The layout buttons stay outside it because they are used most.
 import { useEffect, useRef } from "react";
 import type { GroupKey, SortKey, ViewSettings } from "../bookmark-model";
+import { btn, hint, input, menu, menuTrigger, segment, segmented } from "./cls";
 import { I } from "./Icon";
+
+const fieldset = "m-0 flex min-w-0 flex-col items-stretch gap-2 border-0 p-0";
+const legend =
+  "mb-1.5 p-0 text-xs font-semibold tracking-wide text-muted uppercase";
+const checkRow = "flex items-center gap-2 py-0.5";
 
 const sorts: { value: SortKey; label: string; up: string; down: string }[] = [
   {
@@ -67,17 +73,18 @@ export function ViewMenu({
   inFolder: boolean;
   onChange: (patch: Partial<ViewSettings>) => void;
 }) {
-  const menu = useRef<HTMLDetailsElement>(null);
+  const menuRef = useRef<HTMLDetailsElement>(null);
   const sort = sorts.find((s) => s.value === view.sort)!;
 
   // Closes when something else is clicked or Escape is pressed, as a menu should.
   useEffect(() => {
     const close = (e: Event) => {
-      if (e.target instanceof Node && menu.current?.contains(e.target)) return;
-      menu.current?.removeAttribute("open");
+      if (e.target instanceof Node && menuRef.current?.contains(e.target))
+        return;
+      menuRef.current?.removeAttribute("open");
     };
     const escape = (e: KeyboardEvent) =>
-      e.key === "Escape" && menu.current?.removeAttribute("open");
+      e.key === "Escape" && menuRef.current?.removeAttribute("open");
     document.addEventListener("pointerdown", close);
     document.addEventListener("keydown", escape);
     return () => {
@@ -87,19 +94,23 @@ export function ViewMenu({
   }, []);
 
   return (
-    <details className="menu view-menu" ref={menu}>
+    <details className={menu} ref={menuRef}>
       <summary
-        className="btn"
+        className={`${btn()} ${menuTrigger}`}
         title="Sort, group and choose what to show"
         aria-label="View options"
       >
         <I n="sliders" /> View
       </summary>
-      <div className="menu-list view-panel">
-        <fieldset>
-          <legend>Sort by</legend>
+      <div
+        role="group"
+        aria-label="View"
+        className="absolute right-0 z-5 mt-1.5 flex min-w-70 flex-col gap-3.5 rounded-[10px] border border-line bg-surface p-3.5 shadow-card"
+      >
+        <fieldset className={fieldset}>
+          <legend className={legend}>Sort by</legend>
           <select
-            className="select"
+            className={input}
             value={view.sort}
             onChange={(e) => onChange({ sort: e.target.value as SortKey })}
             aria-label="Sort by"
@@ -110,12 +121,12 @@ export function ViewMenu({
               </option>
             ))}
           </select>
-          <div className="segmented" role="group" aria-label="Sort direction">
+          <div className={segmented} role="group" aria-label="Sort direction">
             {(["asc", "desc"] as const).map((dir) => (
               <button
                 key={dir}
                 type="button"
-                className={`btn ${view.sortDir === dir ? "active" : ""}`}
+                className={segment(view.sortDir === dir)}
                 aria-pressed={view.sortDir === dir}
                 onClick={() => onChange({ sortDir: dir })}
               >
@@ -132,10 +143,10 @@ export function ViewMenu({
           </div>
         </fieldset>
 
-        <fieldset>
-          <legend>Split into sections by</legend>
+        <fieldset className={fieldset}>
+          <legend className={legend}>Split into sections by</legend>
           <select
-            className="select"
+            className={input}
             value={view.group}
             onChange={(e) => {
               const group = e.target.value as GroupKey;
@@ -155,16 +166,16 @@ export function ViewMenu({
             ))}
           </select>
           {view.sort === "manual" && view.group !== "none" && (
-            <span className="hint">
+            <span className={hint}>
               Dragging to reorder works only without sections.
             </span>
           )}
         </fieldset>
 
         {inFolder && (
-          <fieldset>
-            <legend>Include</legend>
-            <label>
+          <fieldset className={fieldset}>
+            <legend className={legend}>Include</legend>
+            <label className={checkRow}>
               <input
                 type="checkbox"
                 checked={view.subfolders}
@@ -184,10 +195,10 @@ export function ViewMenu({
           </fieldset>
         )}
 
-        <fieldset>
-          <legend>Show on each bookmark</legend>
+        <fieldset className={fieldset}>
+          <legend className={legend}>Show on each bookmark</legend>
           {shows.map(([key, label]) => (
-            <label key={key}>
+            <label key={key} className={checkRow}>
               <input
                 type="checkbox"
                 checked={view[key]}

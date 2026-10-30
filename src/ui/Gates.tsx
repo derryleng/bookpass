@@ -4,16 +4,18 @@ import { toBase64 } from "../base64";
 import { helperDownloadUrl } from "../constants";
 import type { Status } from "../messages";
 import { send } from "./api";
+import {
+  btn,
+  callout,
+  caption,
+  field,
+  input,
+  path as pathClass,
+  segment,
+  segmented,
+} from "./cls";
 import { I } from "./Icon";
-import { errorText } from "./parts";
-
-function Logo() {
-  return (
-    <span className="logo">
-      <I n="bookmark" />
-    </span>
-  );
-}
+import { errorText, Logo } from "./parts";
 
 /** Shows the vault file location with a way to change it. */
 export function VaultLocation({
@@ -45,18 +47,18 @@ export function VaultLocation({
 
   if (!editing) {
     return (
-      <div className="stack" style={{ gap: 4 }}>
-        {showLabel && <span className="label">Vault file</span>}
-        <span className="path">{status.vaultPath}</span>
-        <div className="row">
+      <div className="flex flex-col gap-1">
+        {showLabel && <span className={caption}>Vault file</span>}
+        <span className={pathClass}>{status.vaultPath}</span>
+        <div className="flex items-center gap-2">
           {onMove && (
-            <button type="button" className="btn small" onClick={onMove}>
+            <button type="button" className={btn("small")} onClick={onMove}>
               <I n="folder-open" /> Move vault…
             </button>
           )}
           <button
             type="button"
-            className="btn small"
+            className={btn("small")}
             onClick={() => setEditing(true)}
           >
             Use a different file
@@ -66,26 +68,26 @@ export function VaultLocation({
     );
   }
   return (
-    <form className="stack" style={{ gap: 8 }} onSubmit={apply}>
-      <label className="field">
+    <form className="flex flex-col gap-2" onSubmit={apply}>
+      <label className={field}>
         <span>Vault file (full path, ending in .kdbx)</span>
         <input
-          className="input path"
+          className={`${input} font-mono text-xs`}
           value={path}
           onChange={(e) => setPath(e.target.value)}
           autoFocus
         />
       </label>
       {error && (
-        <div className="callout error" role="alert">
+        <div className={callout("error")} role="alert">
           {error}
         </div>
       )}
-      <div className="row">
-        <button className="btn primary small">Use this file</button>
+      <div className="flex items-center gap-2">
+        <button className={btn("primary small")}>Use this file</button>
         <button
           type="button"
-          className="btn small"
+          className={btn("small")}
           onClick={() => (setEditing(false), setPath(status.vaultPath))}
         >
           Cancel
@@ -134,22 +136,24 @@ export function KeyFileField({
   }
 
   return (
-    <div className="stack" style={{ gap: 6 }}>
+    <div className="flex flex-col gap-1.5">
       {value ? (
-        <div className="row">
+        <div className="flex items-center gap-2">
           <I n="key" />
-          <span className="grow path">{value.name}</span>
+          <span className="min-w-0 flex-1 font-mono text-xs break-all">
+            {value.name}
+          </span>
           <button
             type="button"
-            className="btn small"
+            className={btn("small")}
             onClick={() => onChange(undefined)}
           >
             Remove
           </button>
         </div>
       ) : (
-        <div className="row">
-          <label className="btn small">
+        <div className="flex items-center gap-2">
+          <label className={btn("small")}>
             <I n="key" /> Choose key file
             <input
               type="file"
@@ -160,7 +164,7 @@ export function KeyFileField({
           {allowCreate && (
             <button
               type="button"
-              className="btn small"
+              className={btn("small")}
               onClick={() => void create()}
             >
               Make a new key file
@@ -169,7 +173,7 @@ export function KeyFileField({
         </div>
       )}
       {error && (
-        <div className="callout error" role="alert">
+        <div className={callout("error")} role="alert">
           {error}
         </div>
       )}
@@ -177,12 +181,20 @@ export function KeyFileField({
   );
 }
 
+/** The card every gate screen sits in. In the popup it fills the whole window. */
+const gatePage = (popup?: boolean) =>
+  popup ? "block" : "grid min-h-full place-items-center px-4 py-6";
+const gateCard = (popup?: boolean) =>
+  `flex w-full flex-col gap-3 border border-line bg-surface ${popup ? "p-4" : "max-w-110 rounded-2xl p-7 shadow-card"}`;
+
 export function HelperMissing({
   status,
   onRetry,
+  popup,
 }: {
   status: Status;
   onRetry: () => void;
+  popup?: boolean;
 }) {
   const system = /Mac/i.test(navigator.userAgent)
     ? "macOS"
@@ -190,21 +202,21 @@ export function HelperMissing({
       ? "Linux"
       : "Windows";
   return (
-    <main className="gate">
-      <div className="gate-card stack">
+    <main className={gatePage(popup)}>
+      <div className={gateCard(popup)}>
         <Logo />
-        <h1>
+        <h1 className="text-xl leading-tight font-semibold">
           {status.helper === "outdated"
             ? "Update the BookPass helper"
             : "Install the BookPass helper"}
         </h1>
-        <p className="muted" style={{ margin: 0 }}>
+        <p className="m-0 text-muted">
           BookPass keeps your bookmarks in an encrypted file on your computer.
           Browsers cannot write to a file themselves, so a small helper program
           does it. The helper only ever sees encrypted data and makes no network
           connections.
         </p>
-        <ol className="steps">
+        <ol className="m-0 flex list-decimal flex-col gap-1.5 pl-5">
           <li>
             <a
               href={helperDownloadUrl}
@@ -217,17 +229,20 @@ export function HelperMissing({
           </li>
           <li>
             Run it once: double click it on Windows, or run{" "}
-            <span className="path">./bookpass-helper</span> in a terminal on
-            macOS and Linux. It installs itself for your user only.
+            <span className="font-mono text-xs break-all">
+              ./bookpass-helper
+            </span>{" "}
+            in a terminal on macOS and Linux. It installs itself for your user
+            only.
           </li>
           <li>Come back here and press the button below.</li>
         </ol>
         {status.helperMessage && (
-          <div className="callout warn" role="alert">
+          <div className={callout("warn")} role="alert">
             {status.helperMessage}
           </div>
         )}
-        <button className="btn primary" onClick={onRetry}>
+        <button className={btn("primary")} onClick={onRetry}>
           <I n="rotate-left" /> Check again
         </button>
       </div>
@@ -239,9 +254,11 @@ export function HelperMissing({
 export function Gate({
   status,
   onStatus,
+  popup,
 }: {
   status: Status;
   onStatus: (s: Status) => void;
+  popup?: boolean;
 }) {
   const [creating, setCreating] = useState(!status.vaultExists);
   const [path, setPath] = useState(status.vaultPath);
@@ -276,15 +293,15 @@ export function Gate({
   }
 
   return (
-    <main className="gate">
-      <form className="gate-card stack" onSubmit={submit}>
-        <div className="row">
+    <main className={gatePage(popup)}>
+      <form className={gateCard(popup)} onSubmit={submit}>
+        <div className="flex items-center gap-2">
           <Logo />
-          <h1 style={{ margin: 0 }}>
+          <h1 className="text-xl leading-tight font-semibold">
             {creating ? "Create your vault" : "Unlock BookPass"}
           </h1>
         </div>
-        <div className="segmented" role="group" aria-label="Vault">
+        <div className={segmented} role="group" aria-label="Vault">
           {[
             { creating: true, label: "Create new" },
             { creating: false, label: "Use existing vault" },
@@ -292,7 +309,7 @@ export function Gate({
             <button
               type="button"
               key={tab.label}
-              className={`btn ${creating === tab.creating ? "active" : ""}`}
+              className={segment(creating === tab.creating)}
               aria-pressed={creating === tab.creating}
               onClick={() => (setCreating(tab.creating), setError(undefined))}
             >
@@ -300,19 +317,19 @@ export function Gate({
             </button>
           ))}
         </div>
-        <label className="field">
+        <label className={field}>
           <span>Vault file (full path, ending in .kdbx)</span>
           <input
-            className="input path"
+            className={`${input} font-mono text-xs`}
             value={path}
             onChange={(e) => setPath(e.target.value)}
             required
           />
         </label>
-        <label className="field">
+        <label className={field}>
           <span>Master password</span>
           <input
-            className="input"
+            className={input}
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -321,10 +338,10 @@ export function Gate({
           />
         </label>
         {creating && (
-          <label className="field">
+          <label className={field}>
             <span>Repeat the password</span>
             <input
-              className="input"
+              className={input}
               type="password"
               value={again}
               onChange={(e) => setAgain(e.target.value)}
@@ -332,7 +349,7 @@ export function Gate({
             />
           </label>
         )}
-        <div className="field">
+        <div className={field}>
           <span>Key file (optional)</span>
           <KeyFileField
             value={keyFile}
@@ -341,17 +358,17 @@ export function Gate({
           />
         </div>
         {!creating && status.lockReason && !error && (
-          <div className="callout warn" role="status">
+          <div className={callout("warn")} role="status">
             <I n="triangle-exclamation" />
             <span>{status.lockReason}</span>
           </div>
         )}
         {error && (
-          <div className="callout error" role="alert">
+          <div className={callout("error")} role="alert">
             {error}
           </div>
         )}
-        <button className="btn primary" disabled={busy}>
+        <button className={btn("primary")} disabled={busy}>
           {busy ? (
             <I n="spinner" spin />
           ) : (

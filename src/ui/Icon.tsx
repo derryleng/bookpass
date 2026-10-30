@@ -1,20 +1,23 @@
+import type { CSSProperties } from "react";
 import { iconFor } from "./icons";
 
 interface Props {
   /** Icon key such as fa-solid:folder. */
   name: string;
   className?: string;
+  style?: CSSProperties;
   spin?: boolean;
 }
 
 /** Draws a Font Awesome Free icon from its path data, so no icon font or extra package is needed. */
-export function Icon({ name, className = "", spin }: Props) {
+export function Icon({ name, className = "", style, spin }: Props) {
   const [width, height, , , path] = iconFor(name).icon;
   return (
     <svg
-      className={`icon ${spin ? "spin" : ""} ${className}`}
+      className={`inline-block size-[1em] shrink-0 align-[-0.125em] ${spin ? "animate-spin" : ""} ${className}`}
       viewBox={`0 0 ${width} ${height}`}
       fill="currentColor"
+      style={style}
       aria-hidden="true"
       focusable="false"
     >

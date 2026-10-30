@@ -78,7 +78,7 @@ try {
     const read = await popup
       .waitForFunction(
         (title) =>
-          (document.querySelector("input.input") as HTMLInputElement | null)
+          (document.querySelector("input") as HTMLInputElement | null)
             ?.value === title,
         { timeout: 20000 },
         title,
@@ -110,7 +110,7 @@ try {
       (await text(manager)).includes("Plain page"),
   );
   const covers = await manager.$$eval(
-    ".bm-cover",
+    "article [role=img]",
     (els) =>
       els.filter((e) =>
         (e as HTMLElement).style.backgroundImage.startsWith("url("),
@@ -123,7 +123,7 @@ try {
   );
   check(
     "the declared site icon was saved and shown",
-    (await manager.$$eval("img.favicon", (els) => els.length)) >= 1,
+    (await manager.$$eval("article img", (els) => els.length)) >= 1,
   );
   await shot(manager, "03-list");
 

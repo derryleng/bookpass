@@ -9,8 +9,9 @@ import type { ParsedImport } from "../formats";
 import type { CaptureData } from "../messages";
 import { send } from "./api";
 import { I } from "./Icon";
-import { errorText, FolderSelect, TagInput } from "./parts";
+import { errorText, FolderSelect, Logo, TagInput } from "./parts";
 import { Shell, type PageContext } from "./Shell";
+import { btn, callout, field, hint, input, summaryLabel } from "./cls";
 
 const LAST_FOLDER = "bookpass.lastFolder";
 
@@ -139,15 +140,13 @@ function Popup({ status, snapshot }: PageContext) {
 
   return (
     <>
-      <div className="popup-head">
-        <h1 className="brand">
-          <span className="logo">
-            <I n="bookmark" />
-          </span>
+      <div className="flex items-center gap-2 border-b border-line bg-surface px-3 py-2.5">
+        <h1 className="flex flex-1 items-center gap-2 text-[15px] font-bold">
+          <Logo className="size-6.5 rounded-lg text-xs" />
           BookPass
         </h1>
         <button
-          className="btn ghost square"
+          className={btn("ghost square")}
           title="Open manager"
           aria-label="Open manager"
           onClick={() => openManager()}
@@ -155,7 +154,7 @@ function Popup({ status, snapshot }: PageContext) {
           <I n="arrow-up-right-from-square" />
         </button>
         <button
-          className="btn ghost square"
+          className={btn("ghost square")}
           title="Settings"
           aria-label="Settings"
           onClick={() => openManager("#settings")}
@@ -163,7 +162,7 @@ function Popup({ status, snapshot }: PageContext) {
           <I n="gear" />
         </button>
         <button
-          className="btn ghost square"
+          className={btn("ghost square")}
           title="Lock"
           aria-label="Lock"
           onClick={() => void send("lock", undefined)}
@@ -173,40 +172,40 @@ function Popup({ status, snapshot }: PageContext) {
       </div>
 
       {done ? (
-        <div className="popup-body">
-          <div className="empty" style={{ padding: "30px 10px" }}>
+        <div className="p-3">
+          <div className="grid place-items-center gap-2 px-2.5 py-7.5 text-center text-muted [&>svg]:text-4xl [&>svg]:opacity-55">
             <I n="circle-check" />
             <strong>{done}</strong>
           </div>
         </div>
       ) : !page ? (
-        <div className="popup-body">
+        <div className="p-3">
           {error ? (
-            <div className="callout error">{error}</div>
+            <div className={callout("error")}>{error}</div>
           ) : (
-            <span className="muted">
+            <span className="text-muted">
               <I n="spinner" spin /> Reading the page…
             </span>
           )}
         </div>
       ) : !savable ? (
-        <div className="popup-body stack">
-          <div className="callout warn">
+        <div className="flex flex-col gap-3 p-3">
+          <div className={callout("warn")}>
             <I n="triangle-exclamation" />
             <span>
               BookPass can only save web pages (addresses starting with http or
               https).
             </span>
           </div>
-          <button className="btn" onClick={() => openManager()}>
+          <button className={btn()} onClick={() => openManager()}>
             Open manager
           </button>
         </div>
       ) : (
         <form onSubmit={save}>
-          <div className="popup-body stack">
+          <div className="flex flex-col gap-3 p-3">
             {existing && (
-              <div className="callout">
+              <div className={callout()}>
                 <I n="circle-check" />
                 <span>
                   You saved this page before. Saving again updates that
@@ -214,9 +213,9 @@ function Popup({ status, snapshot }: PageContext) {
                 </span>
               </div>
             )}
-            <div className="popup-preview">
+            <div className="flex items-stretch gap-3">
               <div
-                className="popup-cover"
+                className="grid min-h-18.5 w-29.5 flex-none place-items-center rounded-lg bg-raised bg-cover bg-center bg-no-repeat text-center text-xs text-muted"
                 style={
                   coverPreview
                     ? { backgroundImage: `url(${coverPreview})` }
@@ -226,45 +225,40 @@ function Popup({ status, snapshot }: PageContext) {
                 {!coverPreview &&
                   (page.cover ? <span>No cover</span> : <I n="image" />)}
               </div>
-              <div className="grow stack" style={{ gap: 6 }}>
-                <label className="field">
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                <label className={field}>
                   <span>Title</span>
                   <input
-                    className="input"
+                    className={input}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     autoFocus
                   />
                 </label>
-                <span className="row hint" title={page.url}>
+                <span
+                  className={`flex items-center gap-2 ${hint}`}
+                  title={page.url}
+                >
                   {page.favicon ? (
                     <img
-                      className="favicon"
+                      className="size-5 shrink-0 rounded-[5px] object-contain"
                       src={page.favicon}
                       alt="Site icon"
                     />
                   ) : (
                     <span
-                      className="favicon-letter"
+                      className="grid size-5 shrink-0 place-items-center rounded-[5px] bg-raised text-[11px] font-bold text-muted uppercase"
                       title="No site icon could be read"
                     >
                       {(domainOf(page.url) || "?").charAt(0)}
                     </span>
                   )}
-                  <span
-                    style={{
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {domainOf(page.url)}
-                  </span>
+                  <span className="truncate">{domainOf(page.url)}</span>
                 </span>
               </div>
             </div>
             {page.cover && !existing?.hasCover && (
-              <label className="row hint">
+              <label className={`flex items-center gap-2 ${hint}`}>
                 <input
                   type="checkbox"
                   checked={keepCover}
@@ -273,28 +267,27 @@ function Popup({ status, snapshot }: PageContext) {
                 <span>Save this cover picture</span>
               </label>
             )}
-            <label className="field">
+            <label className={field}>
               <span>Folder</span>
               <FolderSelect tree={tree} value={folder} onChange={setFolder} />
             </label>
-            <div className="field">
+            <div className={field}>
               <span>Tags</span>
               <TagInput tags={tags} onChange={setTags} suggestions={allTags} />
             </div>
-            <label className="field">
+            <label className={field}>
               <span>Note</span>
               <textarea
-                className="textarea"
-                style={{ minHeight: 52 }}
+                className={`${input} min-h-13 resize-y`}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
               />
             </label>
-            {error && <div className="callout error">{error}</div>}
+            {error && <div className={callout("error")}>{error}</div>}
           </div>
           <SaveTabs folder={folder} onDone={setDone} onError={setError} />
-          <div className="popup-foot">
-            <button className="btn primary" disabled={busy}>
+          <div className="flex gap-2 px-3 pb-3">
+            <button className={`${btn("primary")} flex-1`} disabled={busy}>
               {busy ? <I n="spinner" spin /> : <I n="bookmark" />}{" "}
               {existing ? "Update bookmark" : "Save bookmark"}
             </button>
@@ -307,8 +300,8 @@ function Popup({ status, snapshot }: PageContext) {
 
 export function PopupApp() {
   return (
-    <div className="popup">
-      <Shell>{(context) => <Popup {...context} />}</Shell>
+    <div className="min-h-50 w-95 bg-canvas">
+      <Shell popup>{(context) => <Popup {...context} />}</Shell>
     </div>
   );
 }
@@ -368,25 +361,25 @@ function SaveTabs({
   }
 
   return (
-    <details className="history" style={{ padding: "0 12px 10px" }}>
-      <summary>Save several tabs…</summary>
-      <div className="row" style={{ marginTop: 8 }}>
+    <details className="px-3 pb-2.5">
+      <summary className={summaryLabel}>Save several tabs…</summary>
+      <div className="mt-2 flex items-center gap-2">
         <button
           type="button"
-          className="btn small"
+          className={btn("small")}
           onClick={() => void save(false)}
         >
           All tabs in this window
         </button>
         <button
           type="button"
-          className="btn small"
+          className={btn("small")}
           onClick={() => void save(true)}
         >
           Selected tabs
         </button>
       </div>
-      <p className="hint" style={{ margin: "6px 0 0" }}>
+      <p className={`${hint} mt-1.5`}>
         They go into a new folder. Hold Ctrl or Shift and click tabs to select
         several.
       </p>

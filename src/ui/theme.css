@@ -1,0 +1,182 @@
+@import "tailwindcss";
+
+/*
+ * Colours come from variables set on <html data-mode="light|dark" data-theme="mode-name">.
+ * The neutral colours belong to the mode, and the accent colours to the theme.
+ * To add a theme, copy an accent block below and add its name to src/themes.ts.
+ */
+[data-mode="light"] {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-2: #eceef2;
+  --border: #dfe2e8;
+  --text: #1a1d24;
+  --muted: #566074;
+  --danger: #d92d20;
+  --danger-soft: #fdecea;
+  --warn: #b54708;
+  --warn-soft: #fff4e5;
+  --ok: #1a7f4b;
+  --star: #c98a00;
+  --shadow: 0 1px 2px rgb(16 24 40 / 6%), 0 4px 14px rgb(16 24 40 / 6%);
+  color-scheme: light;
+}
+
+[data-mode="dark"] {
+  --bg: #101216;
+  --surface: #181b21;
+  --surface-2: #20242c;
+  --border: #2a2f39;
+  --text: #e9ebef;
+  --muted: #9aa3b5;
+  --danger: #ff7b72;
+  --danger-soft: #3a1f1d;
+  --warn: #f0a24b;
+  --warn-soft: #3a2a14;
+  --ok: #4ac98a;
+  --star: #e5a000;
+  --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 6px 18px rgb(0 0 0 / 35%);
+  color-scheme: dark;
+}
+
+[data-theme="light-blue"] {
+  --accent: #2563eb;
+  --accent-text: #ffffff;
+  --accent-soft: #dbeafe;
+  --accent-strong: #1d4ed8;
+}
+
+[data-theme="light-teal"] {
+  --accent: #0f766e;
+  --accent-text: #ffffff;
+  --accent-soft: #d9f3ef;
+  --accent-strong: #0b5c56;
+}
+
+[data-theme="light-orange"] {
+  --accent: #c2410c;
+  --accent-text: #ffffff;
+  --accent-soft: #ffedd5;
+  --accent-strong: #9a3412;
+}
+
+[data-theme="light-rose"] {
+  --accent: #be123c;
+  --accent-text: #ffffff;
+  --accent-soft: #ffe4e6;
+  --accent-strong: #9f1239;
+}
+
+[data-theme="light-violet"] {
+  --accent: #6d28d9;
+  --accent-text: #ffffff;
+  --accent-soft: #ede9fe;
+  --accent-strong: #5b21b6;
+}
+
+[data-theme="dark-blue"] {
+  --accent: #60a5fa;
+  --accent-text: #0b1220;
+  --accent-soft: #1b2f4d;
+  --accent-strong: #93c5fd;
+}
+
+[data-theme="dark-teal"] {
+  --accent: #2dd4bf;
+  --accent-text: #042f2e;
+  --accent-soft: #123a37;
+  --accent-strong: #5eead4;
+}
+
+[data-theme="dark-orange"] {
+  --accent: #fb923c;
+  --accent-text: #1c0a02;
+  --accent-soft: #4a2511;
+  --accent-strong: #fdba74;
+}
+
+[data-theme="dark-rose"] {
+  --accent: #fb7185;
+  --accent-text: #2a0610;
+  --accent-soft: #4c1220;
+  --accent-strong: #fda4af;
+}
+
+[data-theme="dark-violet"] {
+  --accent: #a78bfa;
+  --accent-text: #14082b;
+  --accent-soft: #2e1d57;
+  --accent-strong: #c4b5fd;
+}
+
+/* Turns the variables above into utilities such as bg-surface, text-muted and border-line. */
+@theme inline {
+  --color-canvas: var(--bg);
+  --color-surface: var(--surface);
+  --color-raised: var(--surface-2);
+  --color-line: var(--border);
+  --color-fg: var(--text);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--accent-text);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-strong: var(--accent-strong);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-ok: var(--ok);
+  --color-star: var(--star);
+  --shadow-card: var(--shadow);
+}
+
+@theme {
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  /* The popup is as tall as its content. A fixed 100% would keep it at the tallest size it has had. */
+  html[data-page="popup"],
+  html[data-page="popup"] body,
+  html[data-page="popup"] #root {
+    height: auto;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  a {
+    color: var(--accent);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: var(--accent);
+  }
+}

@@ -3,6 +3,7 @@ import { tagCounts } from "../browse";
 import type { SnapshotReply } from "../messages";
 import { send } from "./api";
 import { Dialog } from "./Dialog";
+import { btn, callout, countLabel, input, inputSmall } from "./cls";
 import { I } from "./Icon";
 import { folderColors } from "./icons";
 import { errorText } from "./parts";
@@ -32,46 +33,47 @@ export function TagDialog({
 
   return (
     <Dialog title="Tags" onClose={onClose}>
-      {tags.length === 0 && <p className="muted">No bookmark has a tag yet.</p>}
-      <ul className="tag-list">
+      {tags.length === 0 && (
+        <p className="text-muted">No bookmark has a tag yet.</p>
+      )}
+      <ul className="m-0 flex list-none flex-col gap-2 p-0">
         {tags.map(({ tag, count }) => (
           <li key={tag}>
             {editing === tag ? (
               <form
-                className="row"
+                className="flex items-center gap-2"
                 onSubmit={(e) => {
                   e.preventDefault();
                   void run(() => send("renameTag", { from: tag, to: name }));
                 }}
               >
                 <input
-                  className="input"
+                  className={input}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   autoFocus
                   aria-label={`New name for ${tag}`}
                 />
-                <button className="btn primary small">Rename</button>
+                <button className={btn("primary small")}>Rename</button>
                 <button
                   type="button"
-                  className="btn small"
+                  className={btn("small")}
                   onClick={() => setEditing(undefined)}
                 >
                   Cancel
                 </button>
               </form>
             ) : (
-              <div className="row">
+              <div className="flex items-center gap-2">
                 <span
-                  className="grow"
+                  className="min-w-0 flex-1"
                   style={{ color: snapshot.tagColors[tag] }}
                 >
                   {tag}
                 </span>
-                <span className="count">{count}</span>
+                <span className={countLabel}>{count}</span>
                 <select
-                  className="select"
-                  style={{ width: "auto" }}
+                  className={inputSmall}
                   value={snapshot.tagColors[tag] ?? ""}
                   onChange={(e) =>
                     void run(() =>
@@ -87,7 +89,7 @@ export function TagDialog({
                   ))}
                 </select>
                 <button
-                  className="btn ghost square"
+                  className={btn("ghost square")}
                   title="Rename or merge"
                   aria-label={`Rename ${tag}`}
                   onClick={() => (setEditing(tag), setName(tag))}
@@ -95,7 +97,7 @@ export function TagDialog({
                   <I n="pen" />
                 </button>
                 <button
-                  className="btn ghost square"
+                  className={btn("ghost square")}
                   title="Delete the tag from every bookmark"
                   aria-label={`Delete ${tag}`}
                   onClick={() =>
@@ -112,7 +114,7 @@ export function TagDialog({
         ))}
       </ul>
       {error && (
-        <div className="callout error" role="alert">
+        <div className={callout("error")} role="alert">
           {error}
         </div>
       )}

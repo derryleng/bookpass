@@ -43,7 +43,7 @@ try {
   await sleep(1500);
   await shot(page, "01-big-vault");
 
-  const shown = await page.$$eval(".bm", (els) => els.length);
+  const shown = await page.$$eval("article", (els) => els.length);
   check(
     "the first screenful is drawn, not all 10,000",
     shown > 0 && shown < 400,
@@ -54,7 +54,7 @@ try {
   t = performance.now();
   await page.type("input[aria-label=Search]", "Bookmark 9999");
   await page.waitForFunction(
-    () => document.querySelectorAll(".bm").length === 1,
+    () => document.querySelectorAll("article").length === 1,
     {
       timeout: 20000,
     },
@@ -70,14 +70,16 @@ try {
 
   // A change is saved as a whole file.
   await page.waitForFunction(
-    () => document.querySelectorAll(".bm").length > 10,
+    () => document.querySelectorAll("article").length > 10,
     {
       timeout: 20000,
     },
   );
   t = performance.now();
   await page.evaluate(() =>
-    document.querySelector<HTMLButtonElement>(".bm .fav")?.click(),
+    document
+      .querySelector<HTMLButtonElement>("article button[aria-label^=Toggle]")
+      ?.click(),
   );
   await sleep(500);
   await page.waitForFunction(() => document.body.innerText.includes("Saved"), {

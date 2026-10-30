@@ -1,5 +1,12 @@
 // User settings. They live in browser storage on this device, not in the vault.
 
+import {
+  defaultThemeName,
+  isThemeMode,
+  themeNames,
+  type ThemeMode,
+} from "./themes";
+
 /**
  * When the vault locks again after being unlocked.
  *  - browser-close: stays unlocked until the browser closes or you lock it. The default.
@@ -10,14 +17,17 @@
 export type LockMode = "browser-close" | "idle" | "system-idle" | "every-time";
 
 export type Layout = "list" | "grid" | "headlines" | "masonry";
-export type Theme = "auto" | "light" | "dark";
 
 export interface Settings {
   lockMode: LockMode;
   idleMinutes: number;
   systemIdleMinutes: number;
   defaultLayout: Layout;
-  theme: Theme;
+  /** Light, dark, or "system" to follow the browser. */
+  theme: ThemeMode;
+  /** The names of the themes used in light and in dark mode. */
+  lightTheme: string;
+  darkTheme: string;
   captureCovers: boolean;
   /** Also read a page's preview image when it sits on another server than the page. Off keeps requests to the page's own server. */
   coversFromOtherServers: boolean;
@@ -30,7 +40,9 @@ export const defaultSettings: Settings = {
   idleMinutes: 15,
   systemIdleMinutes: 10,
   defaultLayout: "list",
-  theme: "auto",
+  theme: "system",
+  lightTheme: defaultThemeName,
+  darkTheme: defaultThemeName,
   captureCovers: true,
   coversFromOtherServers: false,
   coverWidth: 256,
@@ -75,6 +87,11 @@ export function normalizeSettings(
     s.systemIdleMinutes,
     defaultSettings.systemIdleMinutes,
   );
+  if (!isThemeMode(s.theme)) s.theme = defaultSettings.theme; // also moves the old "auto" to "system"
+  if (!themeNames.light.includes(s.lightTheme))
+    s.lightTheme = defaultSettings.lightTheme;
+  if (!themeNames.dark.includes(s.darkTheme))
+    s.darkTheme = defaultSettings.darkTheme;
   if (!coverWidths.includes(s.coverWidth))
     s.coverWidth = defaultSettings.coverWidth;
   return s;

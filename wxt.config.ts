@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "wxt";
 import { chromeDevKey, firefoxId } from "./scripts/ids";
 
@@ -20,7 +21,10 @@ export default defineConfig({
   },
   // Whatever a test run left in tests/output is not source.
   zip: { excludeSources: ["tests/output/**"] },
-  vite: () => ({ define: { __E2E__: JSON.stringify(!!process.env.WXT_E2E) } }),
+  vite: () => ({
+    plugins: [tailwindcss()],
+    define: { __E2E__: JSON.stringify(!!process.env.WXT_E2E) },
+  }),
   manifestVersion: 3,
   modules: ["@wxt-dev/module-react"],
   manifest: ({ browser }) => ({

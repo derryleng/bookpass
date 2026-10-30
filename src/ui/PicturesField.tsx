@@ -11,6 +11,7 @@ import { useImage } from "./api";
 import { I } from "./Icon";
 import { errorText, Favicon } from "./parts";
 import { withSiteAccess } from "./site-access";
+import { btn, callout, hint, caption } from "./cls";
 
 /** What the person changed. undefined: not touched. null: take it away. A string: the new picture, base64. */
 export interface PicturePending {
@@ -123,16 +124,24 @@ export function PicturesField({
   }
 
   return (
-    <fieldset className="pictures">
-      <legend>Pictures</legend>
-      <div className="pictures-grid">
-        <div className="picture-slot">
-          <span className="label">Site icon</span>
-          <div className="picture-icon">
+    <fieldset className="m-0 flex flex-col gap-2.5 rounded-[10px] border border-line px-3 pt-2.5 pb-3">
+      <legend className={`px-1.5 ${caption}`}>Pictures</legend>
+      <div className="grid grid-cols-2 gap-4 max-[560px]:grid-cols-1">
+        <div
+          role="group"
+          aria-label="Site icon"
+          className="flex min-w-0 flex-col gap-1.5"
+        >
+          <span className={caption}>Site icon</span>
+          <div className="grid size-14 place-items-center rounded-[10px] bg-raised">
             {icon ? (
-              <img className="favicon big" src={icon} alt="Site icon" />
+              <img
+                className="size-10 shrink-0 rounded-lg object-contain"
+                src={icon}
+                alt="Site icon"
+              />
             ) : icon === null ? (
-              <span className="favicon-letter big">
+              <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-raised text-lg font-bold text-muted uppercase">
                 {(
                   url.replace(/^https?:\/\/(www\.)?/i, "")[0] ?? "?"
                 ).toUpperCase()}
@@ -141,17 +150,17 @@ export function PicturesField({
               <Favicon iconId={bookmark?.iconId ?? null} url={url} big />
             )}
           </div>
-          <div className="picture-actions">
+          <div className="flex flex-wrap gap-1.5">
             <button
               type="button"
-              className="btn small"
+              className={btn("small")}
               disabled={!webAddress || !!busy}
               onClick={() => void fetchFromSite("icon")}
             >
               {busy === "icon" ? <I n="spinner" spin /> : <I n="globe" />} Fetch
               from site
             </button>
-            <label className="btn small">
+            <label className={btn("small")}>
               <I n="image" /> Choose file
               <input
                 type="file"
@@ -163,7 +172,7 @@ export function PicturesField({
             {hasIcon && (
               <button
                 type="button"
-                className="btn small"
+                className={btn("small")}
                 onClick={() => onPending((p) => ({ ...p, icon: null }))}
               >
                 Remove
@@ -172,25 +181,31 @@ export function PicturesField({
           </div>
         </div>
 
-        <div className="picture-slot">
-          <span className="label">Cover</span>
+        <div
+          role="group"
+          aria-label="Cover"
+          className="flex min-w-0 flex-col gap-1.5"
+        >
+          <span className={caption}>Cover</span>
           <div
-            className="picture-cover"
+            role="img"
+            aria-label="Cover picture"
+            className="grid aspect-[16/10] w-full max-w-50 place-items-center rounded-lg bg-raised bg-cover bg-center bg-no-repeat text-muted"
             style={cover ? { backgroundImage: `url(${cover})` } : undefined}
           >
             {!cover && <I n="image" />}
           </div>
-          <div className="picture-actions">
+          <div className="flex flex-wrap gap-1.5">
             <button
               type="button"
-              className="btn small"
+              className={btn("small")}
               disabled={!webAddress || !!busy}
               onClick={() => void fetchFromSite("cover")}
             >
               {busy === "cover" ? <I n="spinner" spin /> : <I n="globe" />}{" "}
               Fetch from site
             </button>
-            <label className="btn small">
+            <label className={btn("small")}>
               <I n="image" /> Choose file
               <input
                 type="file"
@@ -202,7 +217,7 @@ export function PicturesField({
             {hasCover && (
               <button
                 type="button"
-                className="btn small"
+                className={btn("small")}
                 onClick={() => onPending((p) => ({ ...p, cover: null }))}
               >
                 Remove
@@ -211,13 +226,13 @@ export function PicturesField({
           </div>
         </div>
       </div>
-      <p className="hint" style={{ margin: 0 }}>
+      <p className={hint}>
         Fetching visits the site once, with no cookies and no referrer, and asks
         your browser for permission to reach it each time. Pictures you choose
         never leave this computer.
       </p>
       {notes.map((note) => (
-        <div className="callout" key={note} role="status">
+        <div className={callout()} key={note} role="status">
           <I n="circle-exclamation" />
           <span>{note}</span>
         </div>

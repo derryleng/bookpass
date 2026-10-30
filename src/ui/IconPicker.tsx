@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { field, hint, input, inputSmall } from "./cls";
 import { Icon } from "./Icon";
 import { allIconKeys, loadAllIcons, recentIcons } from "./icon-library";
 import { folderColors, folderIconChoices } from "./icons";
@@ -47,12 +48,12 @@ export function IconPicker({
   }, [searching, query, all, style]);
 
   return (
-    <div className="stack" style={{ gap: 10 }}>
-      <div className="field">
+    <div className="flex flex-col gap-2.5">
+      <div className={field}>
         <span>Icon</span>
-        <div className="row">
+        <div className="flex items-center gap-2">
           <input
-            className="input"
+            className={input}
             placeholder="Search all icons, for example rocket or github"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -60,8 +61,7 @@ export function IconPicker({
           />
           {searching && (
             <select
-              className="select"
-              style={{ width: "auto" }}
+              className={inputSmall}
               value={style}
               onChange={(e) => setStyle(e.target.value)}
               aria-label="Icon style"
@@ -74,14 +74,18 @@ export function IconPicker({
             </select>
           )}
         </div>
-        <div className="icon-grid" role="listbox" aria-label="Icons">
+        <div
+          className="flex max-h-35.5 flex-wrap gap-1.5 overflow-y-auto"
+          role="listbox"
+          aria-label="Icons"
+        >
           {shown.map((key) => (
             <button
               type="button"
               key={key}
               role="option"
               aria-selected={key === icon}
-              className={`icon-choice ${key === icon ? "active" : ""}`}
+              className={`grid size-8.5 cursor-pointer place-items-center rounded-lg border ${key === icon ? "border-accent bg-accent-soft text-accent-strong" : "border-transparent bg-raised text-fg"}`}
               onClick={() => onIcon(key)}
               title={key.split(":")[1]}
               aria-label={key.split(":")[1]}
@@ -91,22 +95,22 @@ export function IconPicker({
             </button>
           ))}
           {searching && all && shown.length === 0 && (
-            <span className="hint">No icon matches that.</span>
+            <span className={hint}>No icon matches that.</span>
           )}
           {searching && !all && (
-            <span className="hint">Loading the icons…</span>
+            <span className={hint}>Loading the icons…</span>
           )}
         </div>
       </div>
-      <div className="field">
+      <div className={field}>
         <span>Color</span>
-        <div className="swatches">
+        <div className="flex flex-wrap gap-1.5">
           {folderColors.map((c) => (
             <button
               type="button"
               key={c || "none"}
-              className={`swatch ${c === color ? "active" : ""}`}
-              style={{ ["--c" as string]: c || "var(--muted)" }}
+              className={`size-6 cursor-pointer rounded-full border-2 p-0 ${c === color ? "border-fg shadow-[inset_0_0_0_2px_var(--surface)]" : "border-transparent"}`}
+              style={{ background: c || "var(--muted)" }}
               onClick={() => onColor(c)}
               aria-label={c || "No color"}
             />

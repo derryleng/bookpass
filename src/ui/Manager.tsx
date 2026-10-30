@@ -16,14 +16,27 @@ import { send } from "./api";
 import { Banners } from "./Banners";
 import { BookmarkList } from "./BookmarkList";
 import { BookmarkDialog } from "./Dialogs";
+import {
+  btn,
+  callout,
+  inputSearch,
+  inputSmall,
+  menu,
+  menuItem,
+  menuList,
+  menuTrigger,
+  segment,
+  segmented,
+} from "./cls";
 import { I, Icon } from "./Icon";
 import { useIconsFor } from "./icon-library";
 import { DuplicatesDialog, ExportDialog, ImportDialog } from "./ImportExport";
 import { FetchMissingDialog } from "./FetchMissing";
-import { FolderSelect, SelectAll, errorText } from "./parts";
+import { FolderSelect, Logo, SelectAll, errorText } from "./parts";
 import { SettingsPanel } from "./SettingsPanel";
 import { Shell, type PageContext } from "./Shell";
 import { Sidebar } from "./Sidebar";
+import { ThemeToggle } from "./ThemeToggle";
 import { ViewMenu, viewSummary } from "./ViewMenu";
 import { TagDialog } from "./TagDialog";
 
@@ -246,19 +259,20 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
     selection.kind !== "trash";
 
   return (
-    <div className="mgr">
-      <header className="topbar">
-        <div className="brand">
-          <span className="logo">
-            <I n="bookmark" />
-          </span>
-          <span>BookPass</span>
+    <div className="grid h-full grid-cols-[270px_1fr] grid-rows-[56px_1fr] max-[800px]:grid-cols-1 max-[800px]:grid-rows-[56px_auto_1fr]">
+      <header className="col-span-full flex items-center gap-3 border-b border-line bg-surface px-4">
+        <div className="flex w-59.5 items-center gap-2.5 text-base font-bold max-[800px]:w-auto">
+          <Logo className="size-7.5 rounded-[9px] text-sm" />
+          <span className="max-[800px]:hidden">BookPass</span>
         </div>
-        <div className="search">
-          <I n="magnifying-glass" />
+        <div className="relative max-w-140 flex-1">
+          <I
+            n="magnifying-glass"
+            className="absolute top-1/2 left-2.5 -translate-y-1/2 text-muted"
+          />
           <input
             ref={searchRef}
-            className="input"
+            className={inputSearch}
             placeholder="Search bookmarks   ( / )"
             value={query}
             onChange={(e) => {
@@ -269,9 +283,9 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
             aria-label="Search"
           />
         </div>
-        <span className="grow" />
+        <span className="min-w-0 flex-1" />
         <span
-          className={`save-state ${save === "error" ? "error" : ""}`}
+          className={`inline-flex items-center gap-1.5 text-[13px] ${save === "error" ? "text-danger" : "text-muted"}`}
           title={status.saveError}
           role="status"
         >
@@ -289,7 +303,7 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
             <>
               <I n="triangle-exclamation" /> Not saved
               <button
-                className="btn small"
+                className={btn("small")}
                 onClick={() =>
                   void send("saveNow", undefined).then(refreshStatus)
                 }
@@ -299,18 +313,18 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
             </>
           )}
         </span>
-        <button className="btn primary" onClick={() => setDialog({})}>
+        <button className={btn("primary")} onClick={() => setDialog({})}>
           <I n="plus" /> Add bookmark
         </button>
-        <details className="menu">
+        <details className={menu}>
           <summary
-            className="btn ghost square"
+            className={`${btn("ghost square")} ${menuTrigger}`}
             title="Tools"
             aria-label="Tools"
           >
             <I n="ellipsis" />
           </summary>
-          <div className="menu-list">
+          <div className={menuList} role="menu">
             {(
               [
                 ["import", "Import bookmarks…"],
@@ -321,6 +335,8 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
             ).map(([value, label]) => (
               <button
                 key={value}
+                role="menuitem"
+                className={menuItem}
                 onClick={(e) => {
                   setTool(value);
                   e.currentTarget.closest("details")?.removeAttribute("open");
@@ -330,6 +346,8 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
               </button>
             ))}
             <button
+              role="menuitem"
+              className={menuItem}
               onClick={(e) => {
                 setFetching({
                   scope: "all your bookmarks",
@@ -342,8 +360,16 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
             </button>
           </div>
         </details>
+        <ThemeToggle
+          mode={status.settings.theme}
+          onChange={(theme) =>
+            void send("setSettings", { theme }).then(refreshStatus)
+          }
+        />
         <button
-          className={`btn ghost square ${page === "settings" ? "active" : ""}`}
+          className={btn(
+            page === "settings" ? "ghost square active" : "ghost square",
+          )}
           onClick={() =>
             setPage(page === "settings" ? "bookmarks" : "settings")
           }
@@ -353,7 +379,7 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
           <I n="gear" />
         </button>
         <button
-          className="btn ghost square"
+          className={btn("ghost square")}
           onClick={() => void send("lock", undefined)}
           title="Lock"
           aria-label="Lock"
@@ -371,7 +397,7 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
         }
       />
 
-      <main className="main">
+      <main className="overflow-y-auto px-7 pt-5 pb-10 max-[800px]:p-4">
         <Banners status={status} />
         {page === "settings" ? (
           <SettingsPanel
@@ -381,8 +407,8 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
           />
         ) : (
           <>
-            <div className="content-head">
-              <div className="head-line">
+            <header className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-0.5">
+              <div className="flex min-w-0 items-center gap-3">
                 {list.length > 0 && (
                   <SelectAll
                     ids={list.map((b) => b.id)}
@@ -399,16 +425,20 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
                     </span>
                   </SelectAll>
                 )}
-                <h1>{title}</h1>
-                <span className="muted">{list.length}</span>
+                <h1 className="text-[22px] leading-tight font-bold">{title}</h1>
+                <span className="text-muted">{list.length}</span>
               </div>
-              <span className="view-summary">
+              <span className="col-start-1 pl-9.5 text-xs text-muted">
                 {viewSummary(view, !!folder)}
               </span>
-              <div className="view-controls">
+              <div
+                role="toolbar"
+                aria-label="View"
+                className="col-start-2 row-span-2 row-start-1 flex items-center gap-1.5 max-[900px]:col-span-full max-[900px]:col-start-1 max-[900px]:row-span-1 max-[900px]:row-start-3 max-[900px]:mt-2.5"
+              >
                 {inTrash && snapshot.trash.length > 0 && (
                   <button
-                    className="btn danger small"
+                    className={btn("danger small")}
                     onClick={() =>
                       confirm("Delete everything in the trash for good?") &&
                       void send("emptyTrash", undefined)
@@ -422,11 +452,15 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
                   inFolder={!!folder}
                   onChange={updateView}
                 />
-                <div className="segmented" role="group" aria-label="Layout">
+                <div
+                  className={`${segmented} w-fit`}
+                  role="group"
+                  aria-label="Layout"
+                >
                   {layouts.map((l) => (
                     <button
                       key={l.value}
-                      className={`btn ${view.layout === l.value ? "active" : ""}`}
+                      className={segment(view.layout === l.value)}
                       onClick={() => updateView({ layout: l.value })}
                       title={l.label}
                       aria-label={l.label}
@@ -437,26 +471,26 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
                   ))}
                 </div>
               </div>
-            </div>
+            </header>
 
             {error && (
-              <div
-                className="callout error"
-                role="alert"
-                style={{ marginBottom: 12 }}
-              >
+              <div className={`${callout("error")} mb-3`} role="alert">
                 {error}
               </div>
             )}
 
             {picked.size > 0 && (
-              <div className="bulkbar">
+              <div
+                role="toolbar"
+                aria-label="Selection"
+                className="sticky -top-5 z-2 -mt-1 mb-3.5 flex items-center gap-2 rounded-[10px] bg-accent px-3 py-2 text-on-accent shadow-card"
+              >
                 <strong>{picked.size} selected</strong>
-                <span className="grow" />
+                <span className="min-w-0 flex-1" />
                 {inTrash ? (
                   <>
                     <button
-                      className="btn"
+                      className={btn("bulk")}
                       onClick={() =>
                         void attempt(send("restoreBookmarks", { ids }))
                       }
@@ -464,7 +498,7 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
                       <I n="rotate-left" /> Restore
                     </button>
                     <button
-                      className="btn"
+                      className={btn("bulk")}
                       onClick={() =>
                         void attempt(send("deleteForever", { ids }))
                       }
@@ -475,7 +509,7 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
                 ) : (
                   <>
                     <form
-                      className="row"
+                      className="flex items-center gap-2"
                       onSubmit={(e) => {
                         e.preventDefault();
                         const tags = bulkTag
@@ -489,18 +523,18 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
                       }}
                     >
                       <input
-                        className="input"
-                        style={{ width: 150, padding: "5px 8px" }}
+                        className={`${inputSmall} w-38`}
                         placeholder="Add a tag"
                         value={bulkTag}
                         onChange={(e) => setBulkTag(e.target.value)}
                         aria-label="Tag to add to the selection"
                       />
-                      <button className="btn">
+                      <button className={btn("bulk small")}>
                         <I n="tag" /> Tag
                       </button>
                     </form>
                     <FolderSelect
+                      className={inputSmall}
                       tree={tree}
                       value={null}
                       topLabel="Move to…"
@@ -511,7 +545,7 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
                       }
                     />
                     <button
-                      className="btn"
+                      className={btn("bulk")}
                       onClick={() =>
                         void attempt(send("trashBookmarks", { ids }))
                       }
@@ -519,7 +553,7 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
                       <I n="trash" /> Trash
                     </button>
                     <button
-                      className="btn"
+                      className={btn("bulk")}
                       onClick={() =>
                         setFetching({
                           scope: `the ${picked.size} selected bookmark${picked.size === 1 ? "" : "s"}`,
@@ -533,7 +567,7 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
                     </button>
                   </>
                 )}
-                <button className="btn" onClick={afterBulk}>
+                <button className={btn("bulk")} onClick={afterBulk}>
                   Clear
                 </button>
               </div>
@@ -616,6 +650,9 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
   );
 }
 
+const empty =
+  "grid place-items-center gap-2 px-5 py-17 text-center text-muted [&>svg]:text-4xl [&>svg]:opacity-55";
+
 function EmptyState({
   searching,
   selection,
@@ -627,7 +664,7 @@ function EmptyState({
 }) {
   if (searching) {
     return (
-      <div className="empty">
+      <div className={empty}>
         <I n="magnifying-glass" />
         <strong>Nothing matches your search</strong>
         <span>
@@ -639,21 +676,21 @@ function EmptyState({
   }
   if (selection.kind === "trash") {
     return (
-      <div className="empty">
+      <div className={empty}>
         <I n="trash" />
         <strong>The trash is empty</strong>
       </div>
     );
   }
   return (
-    <div className="empty">
+    <div className={empty}>
       <I n="bookmark" />
       <strong>No bookmarks here yet</strong>
       <span>
         Save the page you are on from the BookPass button in the toolbar, import
         your bookmarks from the menu, or add an address by hand.
       </span>
-      <button className="btn primary" onClick={onAdd}>
+      <button className={btn("primary")} onClick={onAdd}>
         <I n="plus" /> Add bookmark
       </button>
     </div>

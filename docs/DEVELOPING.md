@@ -25,6 +25,13 @@ npm run build:firefox      # .output/firefox-mv3
 
 Load `.output/chrome-mv3` as an unpacked extension in Chrome or Brave. The development build has a fixed extension id (see `scripts/ids.ts`), which is what the helper allows. For Firefox run `npm run dev:firefox`. `npm run helper:unregister` undoes the registration. Run `npm run helper:register` again after rebuilding the helper.
 
+## Styling and themes
+
+- Styling is Tailwind CSS v4 utility classes written in the components. There are no named CSS classes and no other stylesheets. Classes used in many places live in `src/ui/cls.ts`.
+- The end to end tests find elements by tag, role, label and text (`article`, `nav button`, `[role=toolbar]`, `dialog[open] footer button`), never by class. Use real elements and roles when markup is added, and the tests stay readable.
+- Colours come from variables in `src/ui/theme.css`: neutral colours per mode (`data-mode`) and accent colours per theme (`data-theme`). Use the named colours (`bg-surface`, `text-muted`, `border-line`) and never fixed colours, so every theme works.
+- The theme toggle (system, light, dark) picks the mode. The settings page picks which light theme and which dark theme are used. To add a theme, add its name to `themeNames` in `src/themes.ts` and copy an accent block in `theme.css` named `light-name` or `dark-name` (the name in lower case). A unit test fails if a name has no block.
+
 ## Checks
 
 `npm run check` runs types, lint, unit tests and helper tests. The end to end scripts and what to try by hand are in [TESTING.md](TESTING.md).

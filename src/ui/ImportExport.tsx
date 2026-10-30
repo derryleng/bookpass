@@ -18,6 +18,7 @@ import { send } from "./api";
 import { Dialog } from "./Dialog";
 import { I } from "./Icon";
 import { errorText, FolderSelect } from "./parts";
+import { btn, callout, field, hint } from "./cls";
 
 /** Works out the format from what the file contains, not what it is called. */
 export function parseBookmarkFile(text: string): ParsedImport {
@@ -108,7 +109,7 @@ export function ImportDialog({
     <Dialog title="Import bookmarks" onClose={onClose}>
       {done ? (
         <>
-          <div className="callout" role="status">
+          <div className={callout()} role="status">
             <I n="circle-check" />
             <span>
               Imported {done.added} bookmark{done.added === 1 ? "" : "s"} and{" "}
@@ -118,21 +119,21 @@ export function ImportDialog({
                 ` ${done.skipped} already in your vault were skipped.`}
             </span>
           </div>
-          <div className="modal-foot" style={{ padding: 0 }}>
-            <span className="grow" />
-            <button className="btn primary" onClick={onClose}>
+          <footer className="flex items-center gap-2">
+            <span className="min-w-0 flex-1" />
+            <button className={btn("primary")} onClick={onClose}>
               Done
             </button>
-          </div>
+          </footer>
         </>
       ) : (
         <>
-          <p className="hint" style={{ margin: 0 }}>
+          <p className={hint}>
             Bookmark files from Chrome, Firefox, Raindrop (HTML or CSV) and most
             other services work. The whole file is read here, on your computer.
           </p>
-          <div className="row">
-            <label className="btn">
+          <div className="flex items-center gap-2">
+            <label className={btn()}>
               <I n="file-lines" /> Choose a file
               <input
                 type="file"
@@ -141,13 +142,13 @@ export function ImportDialog({
                 onChange={(e) => void chooseFile(e.target.files?.[0])}
               />
             </label>
-            <button className="btn" onClick={() => void fromBrowser()}>
+            <button className={btn()} onClick={() => void fromBrowser()}>
               <I n="globe" /> My browser's bookmarks
             </button>
           </div>
           {preview && parsed && (
             <>
-              <div className="callout" role="status">
+              <div className={callout()} role="status">
                 <I n="circle-check" />
                 <span>
                   {source}: {preview.added} bookmark
@@ -158,7 +159,7 @@ export function ImportDialog({
                   .
                 </span>
               </div>
-              <label className="row">
+              <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   checked={skipDuplicates}
@@ -171,7 +172,7 @@ export function ImportDialog({
                   Skip bookmarks whose address is already in the vault
                 </span>
               </label>
-              <label className="row">
+              <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   checked={wrap}
@@ -179,7 +180,7 @@ export function ImportDialog({
                 />
                 <span>Put them in a new folder called Imported {today}</span>
               </label>
-              <label className="field">
+              <label className={field}>
                 <span>Place it inside</span>
                 <FolderSelect
                   tree={tree}
@@ -191,23 +192,23 @@ export function ImportDialog({
             </>
           )}
           {error && (
-            <div className="callout error" role="alert">
+            <div className={callout("error")} role="alert">
               {error}
             </div>
           )}
-          <div className="modal-foot" style={{ padding: 0 }}>
-            <span className="grow" />
-            <button className="btn" onClick={onClose}>
+          <footer className="flex items-center gap-2">
+            <span className="min-w-0 flex-1" />
+            <button className={btn()} onClick={onClose}>
               Cancel
             </button>
             <button
-              className="btn primary"
+              className={btn("primary")}
               disabled={!preview || preview.added === 0 || busy}
               onClick={() => void run()}
             >
               {busy ? <I n="spinner" spin /> : <I n="plus" />} Import
             </button>
-          </div>
+          </footer>
         </>
       )}
     </Dialog>
@@ -233,7 +234,7 @@ export function ExportDialog({
   const { folders, bookmarks } = snapshot;
   return (
     <Dialog title="Export bookmarks" onClose={onClose}>
-      <div className="callout warn">
+      <div className={callout("warn")}>
         <I n="triangle-exclamation" />
         <span>
           Exported files are not encrypted. Anyone who gets a copy can read
@@ -241,9 +242,9 @@ export function ExportDialog({
           opens in KeePassXC and is the better backup.
         </span>
       </div>
-      <div className="stack" style={{ gap: 8 }}>
+      <div className="flex flex-col gap-2">
         <button
-          className="btn"
+          className={btn()}
           onClick={() =>
             download(
               `bookpass-${stamp}.html`,
@@ -255,7 +256,7 @@ export function ExportDialog({
           <I n="file-lines" /> HTML for browsers and most services
         </button>
         <button
-          className="btn"
+          className={btn()}
           onClick={() =>
             download(
               `bookpass-${stamp}.csv`,
@@ -267,7 +268,7 @@ export function ExportDialog({
           <I n="file-lines" /> CSV with folders, tags and notes
         </button>
         <button
-          className="btn"
+          className={btn()}
           onClick={() =>
             download(
               `bookpass-${stamp}.json`,
@@ -279,7 +280,7 @@ export function ExportDialog({
           <I n="file-lines" /> JSON with everything
         </button>
       </div>
-      <p className="hint" style={{ margin: 0 }}>
+      <p className={hint}>
         {bookmarks.length} bookmark{bookmarks.length === 1 ? "" : "s"} in{" "}
         {folders.length} folder
         {folders.length === 1 ? "" : "s"}. Cover pictures and icons stay in the
@@ -319,31 +320,28 @@ export function DuplicatesDialog({
   return (
     <Dialog title="Duplicate bookmarks" onClose={onClose}>
       {groups.length === 0 ? (
-        <div className="callout" role="status">
+        <div className={callout()} role="status">
           <I n="circle-check" />
           <span>No two bookmarks share an address.</span>
         </div>
       ) : (
         <>
-          <p className="hint" style={{ margin: 0 }}>
+          <p className={hint}>
             Addresses that differ only by a trailing slash or a #fragment count
             as the same page.
           </p>
-          <ul className="tag-list">
+          <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {groups.map((group) => (
               <li
                 key={group[0]!.id}
-                className="panel"
-                style={{ margin: 0, padding: 12 }}
+                className="rounded-[10px] border border-line bg-surface p-3"
               >
-                <div className="hint" style={{ wordBreak: "break-all" }}>
-                  {group[0]!.url}
-                </div>
+                <div className={`${hint} break-all`}>{group[0]!.url}</div>
                 {group.map((b) => (
-                  <div key={b.id} className="row" style={{ marginTop: 6 }}>
-                    <span className="grow" style={{ minWidth: 0 }}>
+                  <div key={b.id} className="mt-1.5 flex items-center gap-2">
+                    <span className="min-w-0 flex-1">
                       {b.title}{" "}
-                      <span className="hint">
+                      <span className={hint}>
                         in{" "}
                         {b.folderId
                           ? (folderName.get(b.folderId) ?? "a folder")
@@ -352,7 +350,7 @@ export function DuplicatesDialog({
                       </span>
                     </span>
                     <button
-                      className="btn small"
+                      className={btn("small")}
                       onClick={() =>
                         trash(
                           group.filter((x) => x.id !== b.id).map((x) => x.id),
@@ -366,14 +364,14 @@ export function DuplicatesDialog({
               </li>
             ))}
           </ul>
-          <button className="btn" onClick={() => trash(extras)}>
+          <button className={btn()} onClick={() => trash(extras)}>
             <I n="trash" /> Keep only the newest of each ({extras.length} to
             trash)
           </button>
         </>
       )}
       {error && (
-        <div className="callout error" role="alert">
+        <div className={callout("error")} role="alert">
           {error}
         </div>
       )}

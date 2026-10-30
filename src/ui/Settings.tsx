@@ -6,7 +6,7 @@ export function SettingsApp() {
   return (
     <Shell>
       {({ status, snapshot, refreshStatus }) => (
-        <div style={{ padding: "28px" }}>
+        <div className="p-7">
           <SettingsPanel
             status={status}
             snapshot={snapshot}

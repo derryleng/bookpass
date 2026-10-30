@@ -11,22 +11,30 @@ const { check, openPage, text, hasText, click, type, shot, finish } =
 
 const importPath = join(fixtures, "bookmarks.html");
 const heads = (page: Page) =>
-  page.$$eval(".group-head h2", (els) =>
+  page.$$eval("section header h2", (els) =>
     els.map((e) => (e as HTMLElement).innerText),
   );
 const selectedCount = (page: Page) =>
-  page.evaluate(() => document.querySelectorAll(".bm.selected").length);
+  page.evaluate(
+    () => document.querySelectorAll("article:has(input:checked)").length,
+  );
 const open = (page: Page, label: string) =>
   page.evaluate(
     (label) =>
-      [...document.querySelectorAll<HTMLElement>(".nav-item, .tree-row")]
+      [
+        ...document.querySelectorAll<HTMLElement>(
+          "nav button, nav [role=button]",
+        ),
+      ]
         .find((e) => e.innerText.trim().startsWith(label))
         ?.click(),
     label,
   );
 const menu = (page: Page) =>
   page.evaluate(() =>
-    document.querySelector<HTMLElement>(".view-menu summary")?.click(),
+    document
+      .querySelector<HTMLElement>('summary[aria-label="View options"]')
+      ?.click(),
   );
 /** Waits for a change to reach the vault, which shows as Saving… in the toolbar. */
 const settle = async (page: Page) => {
@@ -40,13 +48,16 @@ const settle = async (page: Page) => {
   await sleep(150);
 };
 const choose = async (page: Page, label: string, value: string) => {
-  await page.select(`.view-panel select[aria-label="${label}"]`, value);
+  await page.select(
+    `div[role=group][aria-label=View] select[aria-label="${label}"]`,
+    value,
+  );
   await settle(page);
 };
 const headTick = (page: Page) =>
   page.evaluate(() => {
     const box = document.querySelector<HTMLInputElement>(
-      ".content-head .select-all input",
+      "main > header input[type=checkbox]",
     )!;
     return {
       opacity: getComputedStyle(box).opacity,
@@ -63,7 +74,7 @@ try {
   await click(manager, "button", "Create vault");
   await hasText(manager, "All bookmarks", 15000);
   await click(manager, "summary", "Tools");
-  await click(manager, ".menu-list button", "Import bookmarks…");
+  await click(manager, "[role=menu] button", "Import bookmarks…");
   await manager.waitForSelector("dialog[open] input[type=file]");
   await (await manager.$("dialog[open] input[type=file]"))!.uploadFile(
     importPath,
@@ -72,10 +83,10 @@ try {
   await click(manager, "dialog button", "Import");
   await hasText(manager, "Imported");
   await click(manager, "dialog button", "Done");
-  await manager.waitForSelector(".bm", { timeout: 15000 });
+  await manager.waitForSelector("article", { timeout: 15000 });
 
   const root = await manager.$eval(
-    ".tree-row .grow",
+    "nav [role=button] > span",
     (e) => (e as HTMLElement).innerText,
   );
 
@@ -84,20 +95,20 @@ try {
   await sleep(500);
   check(
     "a folder shows its own bookmarks first",
-    (await manager.$$(".bm")).length === 1,
+    (await manager.$$("article")).length === 1,
   );
   check(
     "the tick box is hidden behind the icon",
     (await headTick(manager)).opacity === "0",
   );
-  await manager.hover(".content-head .select-all");
+  await manager.hover("main > header label");
   await sleep(250);
   check(
     "hovering the icon reveals the tick box",
     (await headTick(manager)).opacity === "1",
   );
   await shot(manager, "head-tick-hover");
-  await manager.click(".content-head .select-all input");
+  await manager.click("main > header input[type=checkbox]");
   await sleep(300);
   check(
     "ticking it picks every bookmark in the folder",
@@ -105,9 +116,13 @@ try {
   );
 
   await menu(manager);
-  await manager.waitForSelector(".view-panel");
+  await manager.waitForSelector("div[role=group][aria-label=View]");
   await manager.evaluate(() =>
-    [...document.querySelectorAll<HTMLElement>(".view-panel label")]
+    [
+      ...document.querySelectorAll<HTMLElement>(
+        "div[role=group][aria-label=View] label",
+      ),
+    ]
       .find((l) => l.innerText.includes("subfolders"))
       ?.querySelector("input")
       ?.click(),
@@ -115,7 +130,7 @@ try {
   await settle(manager);
   check(
     "including subfolders brings in their bookmarks",
-    (await manager.$$(".bm")).length === 3,
+    (await manager.$$("article")).length === 3,
   );
   check(
     "and the tick box is then partly ticked",
@@ -123,7 +138,9 @@ try {
   );
   await shot(manager, "view-menu");
   const box = await manager.evaluate(() => {
-    const r = document.querySelector(".view-panel")!.getBoundingClientRect();
+    const r = document
+      .querySelector("div[role=group][aria-label=View]")!
+      .getBoundingClientRect();
     return {
       left: r.left,
       right: r.right,
@@ -141,15 +158,15 @@ try {
   await sleep(200);
   check(
     "clicking elsewhere closes the menu",
-    !(await manager.$(".view-menu[open]")),
+    !(await manager.$('details[open]:has(summary[aria-label="View options"])')),
   );
-  await manager.click(".content-head .select-all input");
+  await manager.click("main > header input[type=checkbox]");
   await sleep(300);
   check(
     "ticking again picks everything, subfolders included",
     (await selectedCount(manager)) === 3,
   );
-  await manager.click(".content-head .select-all input");
+  await manager.click("main > header input[type=checkbox]");
   await sleep(300);
   check(
     "and once more puts everything down",
@@ -169,21 +186,21 @@ try {
     "each section has a rule under its subheading",
     await manager.evaluate(
       () =>
-        getComputedStyle(document.querySelector(".group-head")!)
+        getComputedStyle(document.querySelector("section header")!)
           .borderBottomWidth === "1px",
     ),
   );
   await manager.mouse.click(5, 5);
-  await manager.hover(".group-head");
+  await manager.hover("section header");
   await sleep(250);
   await shot(manager, "sections-by-subfolder");
-  await manager.click(".group:nth-of-type(2) .group-head input");
+  await manager.click("section:nth-of-type(2) header input");
   await sleep(300);
   check(
     "a section tick box picks only that section",
     (await selectedCount(manager)) === 1,
   );
-  await manager.click(".group:nth-of-type(2) .group-head input");
+  await manager.click("section:nth-of-type(2) header input");
 
   // The choice belongs to the folder, so another place keeps its own view.
   await open(manager, "All bookmarks");
@@ -251,7 +268,7 @@ try {
   await sleep(300);
   const narrow = await manager.evaluate(() => {
     const bar = document
-      .querySelector(".view-controls")!
+      .querySelector("[role=toolbar][aria-label=View]")!
       .getBoundingClientRect();
     return { right: bar.right, width: innerWidth };
   });

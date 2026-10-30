@@ -8,7 +8,6 @@ import {
   type Layout,
   type LockMode,
   type Settings,
-  type Theme,
 } from "../settings";
 import { send } from "./api";
 import { FetchMissingDialog } from "./FetchMissing";
@@ -16,6 +15,9 @@ import { KeyFileField, VaultLocation } from "./Gates";
 import { I } from "./Icon";
 import { MoveVaultDialog } from "./MoveVault";
 import { errorText } from "./parts";
+import { btn, callout, field, hint, input, panel } from "./cls";
+import { themeNames } from "../themes";
+import { ThemeToggle } from "./ThemeToggle";
 
 function minutesLabel(minutes: number): string {
   if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"}`;
@@ -35,7 +37,7 @@ function MinutesSelect({
     : [...idleChoices, value].sort((a, b) => a - b);
   return (
     <select
-      className="select"
+      className={input}
       value={value}
       onChange={(e) => onChange(Number(e.target.value))}
       aria-label="Minutes"
@@ -75,18 +77,14 @@ export function SettingsPanel({
   }
 
   return (
-    <div className="settings">
-      <h1>Settings</h1>
-      {error && (
-        <div className="callout error" style={{ marginBottom: 16 }}>
-          {error}
-        </div>
-      )}
+    <div className="flex max-w-190 flex-col gap-4.5">
+      <h1 className="text-[22px] leading-tight font-bold">Settings</h1>
+      {error && <div className={callout("error")}>{error}</div>}
 
-      <section className="panel stack">
+      <section className={`${panel} flex flex-col gap-3`}>
         <div>
-          <h2>Locking</h2>
-          <p className="hint" style={{ margin: 0 }}>
+          <h2 className="text-base font-semibold">Locking</h2>
+          <p className={hint}>
             When BookPass asks for your master password again. Choose what suits
             you: a long time means fewer prompts, a short time means more
             privacy.
@@ -97,9 +95,10 @@ export function SettingsPanel({
           return (
             <label
               key={mode.value}
-              className={`radio-card ${selected ? "selected" : ""}`}
+              className={`flex cursor-pointer items-start gap-3 rounded-[10px] border px-3.5 py-3 ${selected ? "border-accent bg-accent-soft" : "border-line hover:bg-raised"}`}
             >
               <input
+                className="mt-1"
                 type="radio"
                 name="lock-mode"
                 checked={selected}
@@ -107,11 +106,11 @@ export function SettingsPanel({
                   void change({ lockMode: mode.value as LockMode })
                 }
               />
-              <div className="grow">
-                <div className="title">{mode.label}</div>
-                <div className="hint">{mode.help}</div>
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold">{mode.label}</div>
+                <div className={hint}>{mode.help}</div>
                 {selected && mode.value === "idle" && (
-                  <div className="inline">
+                  <div className="mt-2 flex items-center gap-2">
                     <span>Lock after</span>
                     <MinutesSelect
                       value={settings.idleMinutes}
@@ -121,7 +120,7 @@ export function SettingsPanel({
                   </div>
                 )}
                 {selected && mode.value === "system-idle" && (
-                  <div className="inline">
+                  <div className="mt-2 flex items-center gap-2">
                     <span>Lock after</span>
                     <MinutesSelect
                       value={settings.systemIdleMinutes}
@@ -135,16 +134,19 @@ export function SettingsPanel({
           );
         })}
         <div>
-          <button className="btn" onClick={() => void send("lock", undefined)}>
+          <button
+            className={btn()}
+            onClick={() => void send("lock", undefined)}
+          >
             <I n="lock" /> Lock now
           </button>
         </div>
       </section>
 
-      <section className="panel stack">
+      <section className={`${panel} flex flex-col gap-3`}>
         <div>
-          <h2>Vault file</h2>
-          <p className="hint" style={{ margin: 0 }}>
+          <h2 className="text-base font-semibold">Vault file</h2>
+          <p className={hint}>
             All your bookmarks live in this one encrypted KeePass file. Changing
             it locks the vault.
           </p>
@@ -162,10 +164,10 @@ export function SettingsPanel({
             onClose={() => setMoving(false)}
           />
         )}
-        <label className="field" style={{ maxWidth: 300 }}>
+        <label className={`${field} max-w-75`}>
           <span>Backups to keep</span>
           <select
-            className="select"
+            className={input}
             value={status.backupCount}
             onChange={(e) =>
               void send("setBackupCount", {
@@ -183,32 +185,54 @@ export function SettingsPanel({
                 </option>
               ))}
           </select>
-          <span className="hint" style={{ fontWeight: 400 }}>
+          <span className={`${hint} font-normal!`}>
             Before every save the helper copies the old file into a backups
             folder next to the vault. Each backup is a full copy.
           </span>
         </label>
       </section>
 
-      <section className="panel stack">
-        <h2>Appearance</h2>
-        <div className="row">
-          <label className="field grow">
-            <span>Theme</span>
+      <section className={`${panel} flex flex-col gap-3`}>
+        <h2 className="text-base font-semibold">Appearance</h2>
+        <div className={field}>
+          <span>Theme</span>
+          <ThemeToggle
+            mode={settings.theme}
+            onChange={(theme) => void change({ theme })}
+            showLabels
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className={`${field} min-w-0 flex-1`}>
+            <span>Light theme</span>
             <select
-              className="select"
-              value={settings.theme}
-              onChange={(e) => void change({ theme: e.target.value as Theme })}
+              className={input}
+              value={settings.lightTheme}
+              onChange={(e) => void change({ lightTheme: e.target.value })}
             >
-              <option value="auto">Match the system</option>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
+              {themeNames.light.map((name) => (
+                <option key={name}>{name}</option>
+              ))}
             </select>
           </label>
-          <label className="field grow">
+          <label className={`${field} min-w-0 flex-1`}>
+            <span>Dark theme</span>
+            <select
+              className={input}
+              value={settings.darkTheme}
+              onChange={(e) => void change({ darkTheme: e.target.value })}
+            >
+              {themeNames.dark.map((name) => (
+                <option key={name}>{name}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className={`${field} min-w-0 flex-1`}>
             <span>Default layout</span>
             <select
-              className="select"
+              className={input}
               value={settings.defaultLayout}
               onChange={(e) =>
                 void change({ defaultLayout: e.target.value as Layout })
@@ -223,35 +247,37 @@ export function SettingsPanel({
         </div>
       </section>
 
-      <section className="panel stack">
+      <section className={`${panel} flex flex-col gap-3`}>
         <div>
-          <h2>Pictures</h2>
-          <p className="hint" style={{ margin: 0 }}>
+          <h2 className="text-base font-semibold">Pictures</h2>
+          <p className={hint}>
             The site icon and cover picture shown for each bookmark. Both are
             stored inside the vault. BookPass never asks a service about your
             bookmarks: pictures come from the page you are on, from the
             bookmarked site itself, or from files you choose.
           </p>
         </div>
-        <label className="toggle-row">
+        <label className="flex items-start gap-3">
           <input
+            className="mt-1"
             type="checkbox"
             checked={settings.captureCovers}
             onChange={(e) => void change({ captureCovers: e.target.checked })}
           />
           <div>
-            <div className="title" style={{ fontWeight: 600 }}>
+            <div className="font-semibold">
               Save a cover picture and site icon when I save a page
             </div>
-            <div className="hint">
+            <div className={hint}>
               BookPass looks at that one page for its icon and preview image, or
               takes a small screenshot of the tab. The screenshot never leaves
               this computer. Nothing is fetched in the background.
             </div>
           </div>
         </label>
-        <label className="toggle-row">
+        <label className="flex items-start gap-3">
           <input
+            className="mt-1"
             type="checkbox"
             checked={settings.coversFromOtherServers}
             onChange={(e) =>
@@ -259,10 +285,10 @@ export function SettingsPanel({
             }
           />
           <div>
-            <div className="title" style={{ fontWeight: 600 }}>
+            <div className="font-semibold">
               Also read preview images that sit on another server
             </div>
-            <div className="hint">
+            <div className={hint}>
               Many sites keep their preview image on a separate image server.
               Reading it makes a request there that the page you are on did not
               make, so it is off by default and BookPass uses a screenshot
@@ -271,10 +297,10 @@ export function SettingsPanel({
             </div>
           </div>
         </label>
-        <label className="field" style={{ maxWidth: 300 }}>
+        <label className={`${field} max-w-75`}>
           <span>Cover picture width</span>
           <select
-            className="select"
+            className={input}
             value={settings.coverWidth}
             onChange={(e) =>
               void change({ coverWidth: Number(e.target.value) })
@@ -286,23 +312,23 @@ export function SettingsPanel({
               </option>
             ))}
           </select>
-          <span className="hint" style={{ fontWeight: 400 }}>
+          <span className={`${hint} font-normal!`}>
             Wider covers look sharper and make the vault bigger. Each one is
             squeezed to at most 20 KB.
           </span>
         </label>
-        <div className="field">
+        <div className={field}>
           <span>Bookmarks without pictures</span>
-          <div className="row">
+          <div className="flex items-center gap-2">
             <button
-              className="btn"
+              className={btn()}
               disabled={!snapshot}
               onClick={() => setFetching(true)}
             >
               <I n="globe" /> Fetch missing pictures…
             </button>
           </div>
-          <span className="hint" style={{ fontWeight: 400 }}>
+          <span className={`${hint} font-normal!`}>
             For bookmarks that were typed in, imported or saved from a link. You
             can also fetch, choose or remove the pictures of a single bookmark
             when you edit it.
@@ -322,14 +348,14 @@ export function SettingsPanel({
       <PasswordPanel />
       <BackupsPanel />
 
-      <section className="panel stack">
-        <h2>About</h2>
-        <p style={{ margin: 0 }}>
+      <section className={`${panel} flex flex-col gap-3`}>
+        <h2 className="text-base font-semibold">About</h2>
+        <p>
           BookPass keeps bookmarks in an encrypted KeePass file on your own
           disk. It sends nothing anywhere. It only contacts a bookmarked site
           when you ask it to fetch that site’s pictures.
         </p>
-        <p className="hint" style={{ margin: 0 }}>
+        <p className={hint}>
           Icons by{" "}
           <a
             href="https://fontawesome.com"
@@ -385,38 +411,38 @@ function PasswordPanel() {
   }
 
   return (
-    <form className="panel stack" onSubmit={change}>
+    <form className={`${panel} flex flex-col gap-3`} onSubmit={change}>
       <div>
-        <h2>Master password</h2>
-        <p className="hint" style={{ margin: 0 }}>
+        <h2 className="text-base font-semibold">Master password</h2>
+        <p className={hint}>
           Changing it re-encrypts the vault. If you use a key file, it stays the
           same.
         </p>
       </div>
-      <label className="field" style={{ maxWidth: 360 }}>
+      <label className={`${field} max-w-90`}>
         <span>Current password</span>
         <input
-          className="input"
+          className={input}
           type="password"
           value={current}
           onChange={(e) => setCurrent(e.target.value)}
           required
         />
       </label>
-      <label className="field" style={{ maxWidth: 360 }}>
+      <label className={`${field} max-w-90`}>
         <span>New password</span>
         <input
-          className="input"
+          className={input}
           type="password"
           value={next}
           onChange={(e) => setNext(e.target.value)}
           required
         />
       </label>
-      <label className="field" style={{ maxWidth: 360 }}>
+      <label className={`${field} max-w-90`}>
         <span>Repeat the new password</span>
         <input
-          className="input"
+          className={input}
           type="password"
           value={again}
           onChange={(e) => setAgain(e.target.value)}
@@ -432,7 +458,7 @@ function PasswordPanel() {
         </div>
       )}
       <div>
-        <button className="btn" disabled={busy}>
+        <button className={btn()} disabled={busy}>
           {busy ? <I n="spinner" spin /> : <I n="key" />} Change password
         </button>
       </div>
@@ -481,36 +507,36 @@ function BackupsPanel() {
   }
 
   return (
-    <section className="panel stack">
+    <section className={`${panel} flex flex-col gap-3`}>
       <div>
-        <h2>Backups</h2>
-        <p className="hint" style={{ margin: 0 }}>
+        <h2 className="text-base font-semibold">Backups</h2>
+        <p className={hint}>
           The helper keeps these next to the vault file. Restoring one replaces
           what you have now.
         </p>
       </div>
       {!backups && !message && (
-        <span className="muted">
+        <span className="text-muted">
           <I n="spinner" spin /> Looking…
         </span>
       )}
       {backups?.length === 0 && (
-        <p className="muted" style={{ margin: 0 }}>
+        <p className="text-muted">
           No backups yet. The first appears after the second save.
         </p>
       )}
-      <ul className="tag-list">
+      <ul className="m-0 flex list-none flex-col gap-2 p-0">
         {backups?.map((b) => (
           <li key={b.name}>
-            <div className="row">
-              <span className="grow">
+            <div className="flex items-center gap-2">
+              <span className="min-w-0 flex-1">
                 {new Date(b.modified).toLocaleString()}{" "}
-                <span className="hint">
+                <span className={hint}>
                   {Math.max(1, Math.round(b.size / 1024))} KB
                 </span>
               </span>
               <button
-                className="btn small"
+                className={btn("small")}
                 onClick={() => void restore(b.name, false)}
               >
                 Restore
@@ -518,17 +544,16 @@ function BackupsPanel() {
             </div>
             {asking === b.name && (
               <form
-                className="stack"
-                style={{ marginTop: 8 }}
+                className="mt-2 flex flex-col gap-3"
                 onSubmit={(e) => {
                   e.preventDefault();
                   void restore(b.name, true);
                 }}
               >
-                <label className="field" style={{ maxWidth: 360 }}>
+                <label className={`${field} max-w-90`}>
                   <span>Password this backup was saved with</span>
                   <input
-                    className="input"
+                    className={input}
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -538,7 +563,7 @@ function BackupsPanel() {
                 </label>
                 <KeyFileField value={keyFile} onChange={setKeyFile} />
                 <div>
-                  <button className="btn primary small">
+                  <button className={btn("primary small")}>
                     Restore with these
                   </button>
                 </div>

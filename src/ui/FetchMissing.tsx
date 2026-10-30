@@ -16,6 +16,7 @@ import { Dialog } from "./Dialog";
 import { I } from "./Icon";
 import { errorText } from "./parts";
 import { withSiteAccess } from "./site-access";
+import { btn, callout, caption, hint } from "./cls";
 
 const WORKERS = 3;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -175,19 +176,19 @@ export function FetchMissingDialog({
       onClose={running ? () => stop.current?.abort() : onClose}
       footer={
         <>
-          <span className="grow" />
+          <span className="min-w-0 flex-1" />
           {running ? (
-            <button className="btn" onClick={() => stop.current?.abort()}>
+            <button className={btn()} onClick={() => stop.current?.abort()}>
               Stop
             </button>
           ) : (
             <>
-              <button className="btn" onClick={onClose}>
+              <button className={btn()} onClick={onClose}>
                 {finished ? "Close" : "Cancel"}
               </button>
               {!finished && (
                 <button
-                  className="btn primary"
+                  className={btn("primary")}
                   disabled={targetCount === 0}
                   onClick={() => void start()}
                 >
@@ -202,12 +203,12 @@ export function FetchMissingDialog({
     >
       {!progress && (
         <>
-          <p className="hint" style={{ margin: 0 }}>
+          <p className={hint}>
             Looking at {scope}: {missingIcons} of {reachable.length} have no
             site icon and {missingCovers} have no cover picture. BookPass will
             ask each site you leave ticked for its own icon and preview image.
           </p>
-          <label className="row">
+          <label className="flex items-center gap-2">
             <input
               type="checkbox"
               checked={wantIcons}
@@ -215,7 +216,7 @@ export function FetchMissingDialog({
             />
             <span>Site icons ({missingIcons})</span>
           </label>
-          <label className="row">
+          <label className="flex items-center gap-2">
             <input
               type="checkbox"
               checked={wantCovers && !coversPaused}
@@ -228,46 +229,46 @@ export function FetchMissingDialog({
             </span>
           </label>
           {sites.size > 0 && (
-            <fieldset className="site-list">
-              <legend>
+            <fieldset className="m-0 flex min-w-0 flex-col gap-2 rounded-[10px] border border-line px-3 py-2.5">
+              <legend className={`px-1.5 ${caption}`}>
                 Sites to contact ({targets.length} of {sites.size})
               </legend>
-              <div className="row">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  className="btn small"
+                  className={btn("small")}
                   onClick={() => setSkipSites(new Set())}
                 >
                   Tick all
                 </button>
                 <button
                   type="button"
-                  className="btn small"
+                  className={btn("small")}
                   onClick={() => setSkipSites(new Set(sites.keys()))}
                 >
                   Untick all
                 </button>
               </div>
-              <ul>
+              <ul className="m-0 max-h-45 list-none overflow-y-auto p-0">
                 {[...sites].map(([site, list]) => (
-                  <li key={site}>
-                    <label className="row">
+                  <li key={site} className="py-0.5">
+                    <label className="flex items-center gap-2">
                       <input
                         type="checkbox"
                         checked={!skipSites.has(site)}
                         onChange={() => toggleSite(site)}
                       />
-                      <span className="grow">
+                      <span className="min-w-0 flex-1">
                         {site.replace(/^https?:\/\//, "")}
                       </span>
-                      <span className="muted">{list.length}</span>
+                      <span className="text-muted">{list.length}</span>
                     </label>
                   </li>
                 ))}
               </ul>
             </fieldset>
           )}
-          <div className="callout">
+          <div className={callout()}>
             <I n="shield" />
             <span>
               Your browser will ask for permission to reach all sites, and the
@@ -291,9 +292,9 @@ export function FetchMissingDialog({
           <progress
             value={progress.done}
             max={Math.max(1, progress.total)}
-            style={{ width: "100%" }}
+            className="w-full"
           />
-          <p style={{ margin: 0 }} role="status">
+          <p role="status">
             {progress.done} of {progress.total} looked at. Added{" "}
             {progress.icons} icon
             {progress.icons === 1 ? "" : "s"} and {progress.covers} cover
@@ -302,7 +303,7 @@ export function FetchMissingDialog({
             {finished && stopped && " Stopped early."}
           </p>
           {finished && progress.reasons.size > 0 && (
-            <ul className="tag-list hint">
+            <ul className={`m-0 flex list-none flex-col gap-2 p-0 ${hint}`}>
               {[...progress.reasons]
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 6)
@@ -316,7 +317,7 @@ export function FetchMissingDialog({
         </>
       )}
       {error && (
-        <div className="callout error" role="alert">
+        <div className={callout("error")} role="alert">
           {error}
         </div>
       )}

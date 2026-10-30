@@ -29,9 +29,9 @@ const dialogText = (page: Page) =>
   );
 const setField = async (page: Page, label: string, value: string) => {
   await page.evaluate((label) => {
-    const field = [
-      ...document.querySelectorAll("dialog[open] label.field"),
-    ].find((l) => (l as HTMLElement).innerText.startsWith(label))!;
+    const field = [...document.querySelectorAll("dialog[open] label")].find(
+      (l) => (l as HTMLElement).innerText.startsWith(label),
+    )!;
     const input = field.querySelector("input")!;
     input.focus();
     input.select();
@@ -70,7 +70,7 @@ try {
   const settings = await openPage("options.html");
   await hasText(settings, "Vault file");
   await click(settings, "button", "Move vault…");
-  await settings.waitForSelector("dialog[open] label.field");
+  await settings.waitForSelector("dialog[open] label");
   await shot(settings, "move-open");
 
   // Typed paths are checked before anything moves.

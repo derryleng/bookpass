@@ -7,6 +7,7 @@ import { send } from "./api";
 import { Dialog } from "./Dialog";
 import { I } from "./Icon";
 import { errorText } from "./parts";
+import { btn, callout, field, hint, input, path } from "./cls";
 
 const lastSeparator = /[\\/][^\\/]*$/;
 
@@ -106,10 +107,10 @@ export function MoveVaultDialog({
       onClose={busy ? () => {} : onClose}
       footer={
         <>
-          <span className="grow" />
+          <span className="min-w-0 flex-1" />
           <button
             type="button"
-            className="btn"
+            className={btn()}
             onClick={onClose}
             disabled={busy}
           >
@@ -117,7 +118,7 @@ export function MoveVaultDialog({
           </button>
           <button
             type="button"
-            className="btn primary"
+            className={btn("primary")}
             disabled={!usable || busy}
             onClick={() => void move()}
           >
@@ -126,61 +127,65 @@ export function MoveVaultDialog({
         </>
       }
     >
-      <p className="hint" style={{ margin: 0 }}>
+      <p className={hint}>
         The vault file and the backups beside it are copied to the new place and
         checked, and only then removed from the old one. BookPass stays
         unlocked.
       </p>
-      <div className="field">
+      <div className={field}>
         <span>Now</span>
-        <span className="path">{status.vaultPath}</span>
+        <span className={path}>{status.vaultPath}</span>
       </div>
-      <label className="field">
+      <label className={field}>
         <span>New folder</span>
-        <div className="row">
+        <div className="flex items-center gap-2">
           <input
-            className="input path grow"
+            className={`${input} min-w-0 flex-1 font-mono text-xs`}
             value={folder}
             onChange={(e) => setFolder(e.target.value)}
             spellCheck={false}
             autoFocus
           />
           {!noDialog && (
-            <button type="button" className="btn" onClick={() => void browse()}>
+            <button
+              type="button"
+              className={btn()}
+              onClick={() => void browse()}
+            >
               <I n="folder-open" /> Browse…
             </button>
           )}
         </div>
         {noDialog && (
-          <span className="hint" style={{ fontWeight: 400 }}>
+          <span className={`${hint} font-normal!`}>
             This computer has no folder dialog for BookPass to open, so type the
             full path of the folder instead. A folder that does not exist yet is
             created.
           </span>
         )}
       </label>
-      <label className="field">
+      <label className={field}>
         <span>File name</span>
         <input
-          className="input path"
+          className={`${input} font-mono text-xs`}
           value={name}
           onChange={(e) => setName(e.target.value)}
           spellCheck={false}
         />
       </label>
       {check?.problem && (
-        <div className="callout error" role="alert">
+        <div className={callout("error")} role="alert">
           <I n="circle-exclamation" />
           <span>{check.problem}</span>
         </div>
       )}
       {usable && (
-        <div className="callout" role="status">
+        <div className={callout()} role="status">
           <I n="circle-check" />
           <span>
             {check.creates ? (
               <>
-                The folder <span className="path">{check.creates}</span> does
+                The folder <span className={path}>{check.creates}</span> does
                 not exist yet and will be created.
               </>
             ) : (
@@ -192,7 +197,7 @@ export function MoveVaultDialog({
         </div>
       )}
       {error && (
-        <div className="callout error" role="alert">
+        <div className={callout("error")} role="alert">
           {error}
         </div>
       )}

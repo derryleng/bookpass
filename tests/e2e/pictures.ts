@@ -68,7 +68,7 @@ try {
   await click(manager, "button", "Create vault");
   await hasText(manager, "All bookmarks", 15000);
   await click(manager, "summary", "Tools");
-  await click(manager, ".menu-list button", "Import bookmarks…");
+  await click(manager, "[role=menu] button", "Import bookmarks…");
   await manager.waitForSelector("dialog[open] input[type=file]");
   await (await manager.$("dialog[open] input[type=file]"))!.uploadFile(
     importPath,
@@ -77,19 +77,19 @@ try {
   await click(manager, "dialog button", "Import");
   await hasText(manager, "Imported");
   await click(manager, "dialog button", "Done");
-  await manager.waitForSelector(".bm", { timeout: 15000 });
+  await manager.waitForSelector("article", { timeout: 15000 });
 
   // 2. The checkbox that appears over a bookmark keeps clear of its border and its text.
   for (const layout of ["List", "Headlines", "Grid", "Masonry"]) {
     await manager.click(`button[aria-label="${layout}"]`);
     await sleep(400);
-    await manager.hover(".bm");
+    await manager.hover("article");
     await sleep(250);
     const spots = await manager.evaluate(() => {
       const rect = (e: Element | null) => e?.getBoundingClientRect();
-      const bm = document.querySelector(".bm")!;
-      const check = rect(bm.querySelector(".bm-check"))!;
-      const body = rect(bm.querySelector(".bm-body"))!;
+      const bm = document.querySelector("article")!;
+      const check = rect(bm.querySelector("article input[type=checkbox]"))!;
+      const body = rect(bm.querySelector("article a"))!;
       const card = rect(bm)!;
       return {
         fromLeft: check.left - card.left,
@@ -113,21 +113,21 @@ try {
   // 3. The edit dialog has the same room on every side.
   await manager.evaluate(() =>
     document
-      .querySelector<HTMLButtonElement>(".bm-actions button[aria-label=Edit]")
+      .querySelector<HTMLButtonElement>("article button[aria-label=Edit]")
       ?.click(),
   );
-  await manager.waitForSelector("dialog[open] fieldset.pictures");
+  await manager.waitForSelector("dialog[open] fieldset");
   await sleep(300);
   const room = await manager.evaluate(() => {
     const dialog = document
       .querySelector("dialog[open]")!
       .getBoundingClientRect();
     const buttons = [
-      ...document.querySelectorAll("dialog[open] .modal-foot button"),
+      ...document.querySelectorAll("dialog[open] footer button"),
     ];
     const last = buttons[buttons.length - 1]!.getBoundingClientRect();
     const first = document.querySelector(
-      "dialog[open] .modal-body",
+      "dialog[open] > section",
     )!.firstElementChild!;
     return {
       bottom: dialog.bottom - last.bottom,
@@ -157,16 +157,17 @@ try {
     "#7048e8",
     "#15aabf",
   );
-  const inputs = await manager.$$(
-    "dialog[open] fieldset.pictures input[type=file]",
-  );
+  const inputs = await manager.$$("dialog[open] fieldset input[type=file]");
   await inputs[0]!.uploadFile(iconFile);
   await inputs[1]!.uploadFile(coverFile);
   await sleep(1000);
   const preview = await manager.evaluate(() => ({
-    icon: !!document.querySelector("dialog[open] .picture-icon img.favicon"),
-    cover: document.querySelector<HTMLElement>("dialog[open] .picture-cover")!
-      .style.backgroundImage,
+    icon: !!document.querySelector(
+      "dialog[open] [role=group][aria-label^=Site] img",
+    ),
+    cover: document.querySelector<HTMLElement>(
+      "dialog[open] [role=img][aria-label^=Cover]",
+    )!.style.backgroundImage,
   }));
   check(
     "a chosen icon and cover show in the dialog",
@@ -178,13 +179,13 @@ try {
     await sleep(300);
     const fit = await manager.evaluate(() => {
       const inside = document
-        .querySelector("dialog[open] fieldset.pictures")!
+        .querySelector("dialog[open] fieldset")!
         .getBoundingClientRect();
       const body = document.querySelector<HTMLElement>(
-        "dialog[open] .modal-body",
+        "dialog[open] > section",
       )!;
       const out = [
-        ...document.querySelectorAll("dialog[open] .picture-slot *"),
+        ...document.querySelectorAll("dialog[open] fieldset [role=group] *"),
       ].filter((e) => {
         const r = e.getBoundingClientRect();
         return (
@@ -206,9 +207,9 @@ try {
   await sleep(1500);
   const saved = await manager.evaluate(() => ({
     cover:
-      document.querySelector<HTMLElement>(".bm .bm-cover")?.style
+      document.querySelector<HTMLElement>("article [role=img]")?.style
         .backgroundImage ?? "",
-    icons: document.querySelectorAll(".bm img.favicon").length,
+    icons: document.querySelectorAll("article img").length,
   }));
   check(
     "the chosen cover and icon are saved on the bookmark",
@@ -218,12 +219,14 @@ try {
   // 5. And take them away again.
   await manager.evaluate(() =>
     document
-      .querySelector<HTMLButtonElement>(".bm-actions button[aria-label=Edit]")
+      .querySelector<HTMLButtonElement>("article button[aria-label=Edit]")
       ?.click(),
   );
-  await manager.waitForSelector("dialog[open] fieldset.pictures");
+  await manager.waitForSelector("dialog[open] fieldset");
   await manager.evaluate(() => {
-    for (const slot of document.querySelectorAll("dialog[open] .picture-slot"))
+    for (const slot of document.querySelectorAll(
+      "dialog[open] fieldset [role=group]",
+    ))
       [...slot.querySelectorAll("button")]
         .find((b) => b.innerText.includes("Remove"))
         ?.click();
@@ -232,9 +235,9 @@ try {
   await sleep(1500);
   const removed = await manager.evaluate(() => ({
     cover:
-      document.querySelector<HTMLElement>(".bm .bm-cover")?.style
+      document.querySelector<HTMLElement>("article [role=img]")?.style
         .backgroundImage ?? "",
-    icons: document.querySelectorAll(".bm:first-of-type img.favicon").length,
+    icons: document.querySelectorAll("article:first-of-type img").length,
   }));
   check(
     "removing the pictures takes them off the bookmark",
@@ -254,24 +257,27 @@ try {
   await addBookmark(`${site}/redirect`, "Local redirect");
 
   await manager.evaluate(() =>
-    [...document.querySelectorAll(".bm")]
+    [...document.querySelectorAll("article")]
       .find((b) => b.textContent?.includes("Local article"))
-      ?.querySelector<HTMLButtonElement>(".bm-actions button[aria-label=Edit]")
+      ?.querySelector<HTMLButtonElement>("article button[aria-label=Edit]")
       ?.click(),
   );
-  await manager.waitForSelector("dialog[open] fieldset.pictures");
+  await manager.waitForSelector("dialog[open] fieldset");
   await manager.evaluate(() => {
     for (const b of document.querySelectorAll<HTMLButtonElement>(
-      "dialog[open] .picture-actions button",
+      "dialog[open] fieldset [role=group] button",
     ))
       if (b.innerText.includes("Fetch from site")) b.click();
   });
   const fetched = await manager
     .waitForFunction(
       () =>
-        !!document.querySelector("dialog[open] .picture-icon img.favicon") &&
-        !!document.querySelector<HTMLElement>("dialog[open] .picture-cover")
-          ?.style.backgroundImage,
+        !!document.querySelector(
+          "dialog[open] [role=group][aria-label^=Site] img",
+        ) &&
+        !!document.querySelector<HTMLElement>(
+          "dialog[open] [role=img][aria-label^=Cover]",
+        )?.style.backgroundImage,
       { timeout: 20000 },
     )
     .then(
@@ -285,7 +291,7 @@ try {
   const bulk = await openPage("options.html");
   await hasText(bulk, "Pictures");
   await click(bulk, "button", "Fetch missing pictures…");
-  await bulk.waitForSelector("dialog[open] .site-list");
+  await bulk.waitForSelector("dialog[open] fieldset");
   const sites = await text(bulk);
   check(
     "the fetch dialog lists the sites it would contact",
@@ -296,14 +302,14 @@ try {
   await bulk.evaluate(() =>
     [
       ...document.querySelectorAll<HTMLButtonElement>(
-        "dialog[open] .site-list button",
+        "dialog[open] fieldset button",
       ),
     ]
       .find((b) => b.innerText === "Untick all")
       ?.click(),
   );
   await bulk.evaluate(() =>
-    [...document.querySelectorAll("dialog[open] .site-list label")]
+    [...document.querySelectorAll("dialog[open] fieldset label")]
       .find((l) => (l as HTMLElement).innerText.includes("127.0.0.1"))
       ?.querySelector("input")
       ?.click(),
@@ -356,10 +362,16 @@ try {
   );
   await click(manager, "dialog button", "Cancel");
   await manager.evaluate(() =>
-    document.querySelector<HTMLInputElement>(".bm-check")?.click(),
+    document
+      .querySelector<HTMLInputElement>("article input[type=checkbox]")
+      ?.click(),
   );
   await sleep(300);
-  await click(manager, ".bulkbar button", "Pictures…");
+  await click(
+    manager,
+    "[role=toolbar][aria-label=Selection] button",
+    "Pictures…",
+  );
   await manager.waitForFunction(
     () => document.body.innerText.includes("the 1 selected bookmark"),
     {
