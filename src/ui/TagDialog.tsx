@@ -33,9 +33,7 @@ export function TagDialog({
 
   return (
     <Dialog title="Tags" onClose={onClose}>
-      {tags.length === 0 && (
-        <p className="text-muted">No bookmark has a tag yet.</p>
-      )}
+      {tags.length === 0 && <p className="text-muted">No tags yet.</p>}
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
         {tags.map(({ tag, count }) => (
           <li key={tag}>
@@ -98,7 +96,7 @@ export function TagDialog({
                 </button>
                 <button
                   className={btn("ghost square")}
-                  title="Delete the tag from every bookmark"
+                  title="Delete tag"
                   aria-label={`Delete ${tag}`}
                   onClick={() =>
                     confirm(

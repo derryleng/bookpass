@@ -72,12 +72,10 @@ async function get(url: string, limit: number, signal?: AbortSignal) {
   });
   if (response.url && !sameSite(url, response.url)) {
     void response.body?.cancel().catch(() => {});
-    throw new Error(
-      "The address redirects to a different site, so nothing from it was kept",
-    );
+    throw new Error("Redirected to another site.");
   }
   if (!response.ok || !response.body)
-    throw new Error(`The site answered ${response.status}`);
+    throw new Error(`The site returned ${response.status}`);
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
@@ -126,9 +124,7 @@ export async function fetchPictures(
         page.finalUrl,
       );
     } else {
-      result.problems.push(
-        "The address is not a web page, so it lists no pictures.",
-      );
+      result.problems.push("Not a web page, no pictures found.");
     }
   } catch (error) {
     result.problems.push(
@@ -181,9 +177,9 @@ export async function fetchPictures(
     if (!result.cover) {
       result.problems.push(
         links.covers.length === 0
-          ? "The page does not list a cover picture."
+          ? "The page has no cover picture."
           : result.skippedOtherServer && allowed.length === 0
-            ? "The cover picture is on another server, which is not allowed in the settings."
+            ? "The cover picture is on another server, which is turned off in settings."
             : "The cover picture could not be read.",
       );
     }

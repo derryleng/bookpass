@@ -236,10 +236,7 @@ export async function readVault(from: Source = {}): Promise<VaultFile | null> {
     if (sha256 === stat.sha256) return { bytes, sha256 };
     // The file changed while we were reading it (a sync tool, for example). Try again.
   }
-  throw new AppError(
-    "The vault file keeps changing while BookPass reads it.",
-    "helper",
-  );
+  throw new AppError("The vault file changed while being read.", "helper");
 }
 
 /**

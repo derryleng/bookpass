@@ -209,11 +209,7 @@ export class Vault {
 
   async unlock(secret: Secret): Promise<Status> {
     const file = await helper.readVault();
-    if (!file)
-      throw new AppError(
-        "There is no vault file at that path yet.",
-        "no-vault",
-      );
+    if (!file) throw new AppError("No vault file at that path.", "no-vault");
     const creds = await this.credentials(secret);
     const { db, upgraded } = await this.open(file.bytes, creds);
     this.fileHash = file.sha256;
@@ -231,7 +227,7 @@ export class Vault {
     } catch (e) {
       if ((e as { code?: string }).code === "InvalidKey") {
         throw new AppError(
-          "Wrong master password, or the wrong key file.",
+          "Wrong master password or key file.",
           "wrong-password",
         );
       }
@@ -447,7 +443,7 @@ export class Vault {
       } catch (e) {
         if (e instanceof AppError && e.code === "wrong-password") {
           await this.forget(
-            "The master password was changed on another computer. Enter the new one.",
+            "The master password was changed on another computer.",
           );
           return;
         }
@@ -496,15 +492,13 @@ export class Vault {
     return this.exclusive(async () => {
       const db = await this.ensureOpen();
       const file = await helper.readVault({ source: "conflict", name });
-      if (!file) throw new AppError("That copy has gone.");
+      if (!file) throw new AppError("That copy no longer exists.");
       let remote: Kdbx;
       try {
         remote = (await this.open(file.bytes, this.creds!)).db;
       } catch (e) {
         if (e instanceof AppError && e.code === "wrong-password") {
-          throw new AppError(
-            "That copy uses a different master password. Open it in KeePassXC to merge it by hand.",
-          );
+          throw new AppError("That copy uses a different master password.");
         }
         throw e;
       }
@@ -537,7 +531,7 @@ export class Vault {
     return this.exclusive(async () => {
       await this.ensureOpen();
       const file = await helper.readVault({ source: "backup", name });
-      if (!file) throw new AppError("That backup has gone.");
+      if (!file) throw new AppError("That backup no longer exists.");
       const creds = secret ? await this.credentials(secret) : this.creds!;
       let restored: Kdbx;
       try {
@@ -545,7 +539,7 @@ export class Vault {
       } catch (e) {
         if (e instanceof AppError && e.code === "wrong-password") {
           throw new AppError(
-            "That backup uses a different master password or key file. Enter the ones it was saved with.",
+            "That backup uses a different master password or key file.",
             "wrong-password",
           );
         }

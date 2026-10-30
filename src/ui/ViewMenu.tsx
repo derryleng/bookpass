@@ -97,7 +97,7 @@ export function ViewMenu({
     <details className={menu} ref={menuRef}>
       <summary
         className={`${btn()} ${menuTrigger}`}
-        title="Sort, group and choose what to show"
+        title="Sort, group and display options"
         aria-label="View options"
       >
         <I n="sliders" /> View
@@ -167,7 +167,7 @@ export function ViewMenu({
           </select>
           {view.sort === "manual" && view.group !== "none" && (
             <span className={hint}>
-              Dragging to reorder works only without sections.
+              Drag to reorder works only without sections.
             </span>
           )}
         </fieldset>

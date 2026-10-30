@@ -29,11 +29,7 @@ export function HistoryList({
   if (error) return <p className={callout("error")}>{error}</p>;
   if (!versions) return <p className={hint}>Loading…</p>;
   if (versions.length === 0) {
-    return (
-      <p className={hint}>
-        No earlier versions. They appear here when you edit.
-      </p>
-    );
+    return <p className={hint}>No earlier versions.</p>;
   }
   return (
     <ul className="m-0 flex list-none flex-col gap-2 p-0">

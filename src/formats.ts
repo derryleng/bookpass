@@ -210,10 +210,7 @@ export function parseRaindropCsv(text: string): ParsedImport {
   const col = (name: string) =>
     header.map((h) => h.trim().toLowerCase()).indexOf(name);
   const url = col("url");
-  if (url < 0)
-    throw new Error(
-      "This CSV has no url column, so it is not a bookmark export.",
-    );
+  if (url < 0) throw new Error("URL column not found in CSV");
   const bookmarks: ImportBookmark[] = [];
   for (const row of rows) {
     const get = (name: string) =>

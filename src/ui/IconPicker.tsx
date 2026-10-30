@@ -54,7 +54,7 @@ export function IconPicker({
         <div className="flex items-center gap-2">
           <input
             className={input}
-            placeholder="Search all icons, for example rocket or github"
+            placeholder="Search icons"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             aria-label="Search icons"
@@ -95,11 +95,9 @@ export function IconPicker({
             </button>
           ))}
           {searching && all && shown.length === 0 && (
-            <span className={hint}>No icon matches that.</span>
+            <span className={hint}>No matches.</span>
           )}
-          {searching && !all && (
-            <span className={hint}>Loading the icons…</span>
-          )}
+          {searching && !all && <span className={hint}>Loading icons…</span>}
         </div>
       </div>
       <div className={field}>

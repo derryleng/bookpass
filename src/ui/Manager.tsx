@@ -440,7 +440,7 @@ function Manager({ status, snapshot, refreshStatus }: PageContext) {
                   <button
                     className={btn("danger small")}
                     onClick={() =>
-                      confirm("Delete everything in the trash for good?") &&
+                      confirm("Permanently delete everything in the trash?") &&
                       void send("emptyTrash", undefined)
                     }
                   >
@@ -666,10 +666,9 @@ function EmptyState({
     return (
       <div className={empty}>
         <I n="magnifying-glass" />
-        <strong>Nothing matches your search</strong>
+        <strong>No matches</strong>
         <span>
-          Try fewer words, or use #tag, domain:example.com, is:fav, type:video
-          or has:note.
+          Filters: #tag, domain:example.com, is:fav, type:video, has:note.
         </span>
       </div>
     );
@@ -685,11 +684,7 @@ function EmptyState({
   return (
     <div className={empty}>
       <I n="bookmark" />
-      <strong>No bookmarks here yet</strong>
-      <span>
-        Save the page you are on from the BookPass button in the toolbar, import
-        your bookmarks from the menu, or add an address by hand.
-      </span>
+      <strong>No bookmarks here</strong>
       <button className={btn("primary")} onClick={onAdd}>
         <I n="plus" /> Add bookmark
       </button>

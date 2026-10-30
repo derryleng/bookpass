@@ -322,7 +322,7 @@ try {
   );
   await shot(bulk, "fetch-sites");
   await click(bulk, "dialog button", "Fetch for 2 bookmarks");
-  const done = await hasText(bulk, "2 of 2 looked at", 40000);
+  const done = await hasText(bulk, "2 of 2 checked", 40000);
   const summary = await text(bulk);
   check(
     "the bulk fetch runs only for the ticked site",
@@ -330,7 +330,7 @@ try {
   );
   check(
     "an address that redirects to a different site is left alone",
-    summary.includes("redirects to a different site"),
+    summary.includes("Redirected to another site"),
   );
   check(
     "the other bookmark got its cover",
@@ -384,7 +384,7 @@ try {
   // 7. The settings: picture options and the tool for filling in what is missing.
   const settings = await openPage("options.html");
   await hasText(settings, "Pictures");
-  const other = "Also read preview images that sit on another server";
+  const other = "Allow cover pictures from other servers";
   check(
     "the settings offer the cover options",
     (await text(settings)).includes(other),
@@ -431,8 +431,8 @@ try {
     ])[0],
   );
   check(
-    "the fetch dialog explains what is sent",
-    (await text(settings)).includes("no cookies and no referrer"),
+    "the fetch dialog mentions the site access",
+    (await text(settings)).includes("access to all sites"),
   );
   await shot(settings, "fetch-missing");
   await click(settings, "dialog button", "Cancel");

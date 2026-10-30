@@ -70,7 +70,7 @@ export function VaultLocation({
   return (
     <form className="flex flex-col gap-2" onSubmit={apply}>
       <label className={field}>
-        <span>Vault file (full path, ending in .kdbx)</span>
+        <span>Vault file (path ending in .kdbx)</span>
         <input
           className={`${input} font-mono text-xs`}
           value={path}
@@ -211,10 +211,8 @@ export function HelperMissing({
             : "Install the BookPass helper"}
         </h1>
         <p className="m-0 text-muted">
-          BookPass keeps your bookmarks in an encrypted file on your computer.
-          Browsers cannot write to a file themselves, so a small helper program
-          does it. The helper only ever sees encrypted data and makes no network
-          connections.
+          BookPass needs a small helper program to save the encrypted vault
+          file.
         </p>
         <ol className="m-0 flex list-decimal flex-col gap-1.5 pl-5">
           <li>
@@ -228,14 +226,12 @@ export function HelperMissing({
             .
           </li>
           <li>
-            Run it once: double click it on Windows, or run{" "}
+            Run it once. On macOS and Linux, use a terminal:{" "}
             <span className="font-mono text-xs break-all">
               ./bookpass-helper
             </span>{" "}
-            in a terminal on macOS and Linux. It installs itself for your user
-            only.
           </li>
-          <li>Come back here and press the button below.</li>
+          <li>Press Check again.</li>
         </ol>
         {status.helperMessage && (
           <div className={callout("warn")} role="alert">
@@ -271,7 +267,7 @@ export function Gate({
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (creating && password !== again)
-      return setError("The two passwords do not match.");
+      return setError("The passwords do not match.");
     setBusy(true);
     setError(undefined);
     try {
@@ -318,7 +314,7 @@ export function Gate({
           ))}
         </div>
         <label className={field}>
-          <span>Vault file (full path, ending in .kdbx)</span>
+          <span>Vault file path</span>
           <input
             className={`${input} font-mono text-xs`}
             value={path}

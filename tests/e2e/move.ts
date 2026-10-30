@@ -9,18 +9,8 @@ import { join } from "node:path";
 import type { Page } from "puppeteer-core";
 import { keepassxcCli, password, sleep, startSession } from "./lib.ts";
 
-const {
-  work,
-  vaultPath,
-  check,
-  openPage,
-  text,
-  hasText,
-  click,
-  type,
-  shot,
-  finish,
-} = await startSession("move");
+const { work, vaultPath, check, openPage, hasText, click, type, shot, finish } =
+  await startSession("move");
 
 const answer = join(work, "pick-answer.txt");
 const dialogText = (page: Page) =>
@@ -126,7 +116,7 @@ try {
   );
   writeFileSync(answer, "unavailable");
   await click(settings, "dialog button", "Browse…");
-  await hasText(settings, "no folder dialog", 5000);
+  await hasText(settings, "No folder dialog is available", 5000);
   check(
     "without a folder dialog the person is asked to type the path",
     !(await settings.evaluate(() =>
@@ -157,7 +147,7 @@ try {
   );
   check(
     "the settings show the new path",
-    (await text(settings)).includes(target),
+    await hasText(settings, target, 5000),
   );
 
   // Still unlocked, and the next save lands at the new place.

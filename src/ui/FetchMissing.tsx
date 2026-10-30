@@ -12,11 +12,11 @@ import {
 import type { CaptureData } from "../messages";
 import type { Settings } from "../settings";
 import { send } from "./api";
+import { btn, callout, caption, hint } from "./cls";
 import { Dialog } from "./Dialog";
 import { I } from "./Icon";
 import { errorText } from "./parts";
 import { withSiteAccess } from "./site-access";
-import { btn, callout, caption, hint } from "./cls";
 
 const WORKERS = 3;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -204,9 +204,8 @@ export function FetchMissingDialog({
       {!progress && (
         <>
           <p className={hint}>
-            Looking at {scope}: {missingIcons} of {reachable.length} have no
-            site icon and {missingCovers} have no cover picture. BookPass will
-            ask each site you leave ticked for its own icon and preview image.
+            {scope}: {missingIcons} of {reachable.length} have no site icon and{" "}
+            {missingCovers} have no cover picture.
           </p>
           <label className="flex items-center gap-2">
             <input
@@ -224,8 +223,7 @@ export function FetchMissingDialog({
               onChange={(e) => setWantCovers(e.target.checked)}
             />
             <span>
-              Cover pictures ({missingCovers})
-              {coversPaused ? ", paused because the vault is large" : ""}
+              Cover pictures ({missingCovers}){coversPaused ? ", paused" : ""}
             </span>
           </label>
           {sites.size > 0 && (
@@ -271,18 +269,9 @@ export function FetchMissingDialog({
           <div className={callout()}>
             <I n="shield" />
             <span>
-              Your browser will ask for permission to reach all sites, and the
-              permission is taken back when this finishes. Each request has no
-              cookies and no referrer and is not kept in the cache, so a site
-              sees only an ordinary visit to a page you bookmarked. Requests are
-              spread out with random pauses. Nothing goes to any other service.
-              If a bookmark redirects to a different site, what it returns is
-              thrown away, though that site has been asked once. Covers on a
-              different server than the page are{" "}
-              {settings.coversFromOtherServers
-                ? "fetched, as your settings allow"
-                : "skipped, as your settings say"}
-              .
+              The browser asks for access to all sites, removed when finished.
+              Covers on other servers are{" "}
+              {settings.coversFromOtherServers ? "fetched" : "skipped"}.
             </span>
           </div>
         </>
@@ -295,8 +284,8 @@ export function FetchMissingDialog({
             className="w-full"
           />
           <p role="status">
-            {progress.done} of {progress.total} looked at. Added{" "}
-            {progress.icons} icon
+            {progress.done} of {progress.total} checked. Added {progress.icons}{" "}
+            icon
             {progress.icons === 1 ? "" : "s"} and {progress.covers} cover
             {progress.covers === 1 ? "" : "s"}.
             {progress.nothing > 0 && ` ${progress.nothing} had nothing to add.`}

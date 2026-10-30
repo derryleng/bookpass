@@ -1,25 +1,25 @@
 // The dialogs for editing a bookmark or a folder.
 export { TagDialog } from "./TagDialog";
 import { useState, type FormEvent } from "react";
+import { toBase64 } from "../base64";
 import type { Bookmark, BookmarkType, Folder } from "../bookmark-model";
 import { bookmarkTypes } from "../bookmark-model";
 import { buildTree, completeUrl, descendantIds } from "../browse";
 import type { SnapshotReply } from "../messages";
-import { send } from "./api";
-import { Dialog } from "./Dialog";
-import { I } from "./Icon";
-import { toBase64 } from "../base64";
 import type { Settings } from "../settings";
+import { send } from "./api";
+import { btn, callout, field, input, summaryLabel } from "./cls";
+import { Dialog } from "./Dialog";
 import { HistoryList } from "./HistoryList";
+import { I } from "./Icon";
+import { rememberIcon, renderIconPng, useIconsFor } from "./icon-library";
+import { IconPicker } from "./IconPicker";
+import { errorText, FolderSelect, TagInput } from "./parts";
 import {
-  PicturesField,
   pendingToCapture,
+  PicturesField,
   type PicturePending,
 } from "./PicturesField";
-import { IconPicker } from "./IconPicker";
-import { renderIconPng, rememberIcon, useIconsFor } from "./icon-library";
-import { errorText, FolderSelect, TagInput } from "./parts";
-import { btn, callout, field, hint, input, summaryLabel } from "./cls";
 
 interface BookmarkDialogProps {
   snapshot: SnapshotReply;
@@ -60,7 +60,8 @@ export function BookmarkDialog({
   async function save(e: FormEvent) {
     e.preventDefault();
     const address = completeUrl(url);
-    if (!URL.canParse(address)) return setError("That is not a web address.");
+    if (!URL.canParse(address))
+      return setError("That is not a valid web address.");
     const input = {
       folderId: folder,
       title: title.trim() || address,
@@ -343,10 +344,6 @@ export function FolderDialog({
                 <I n="globe" /> Fetch missing pictures…
               </button>
             </div>
-            <span className={`${hint} font-normal!`}>
-              For the bookmarks in this folder and the folders inside it. You
-              choose which sites to contact first.
-            </span>
           </div>
         )}
         {error && <div className={callout("error")}>{error}</div>}

@@ -72,7 +72,11 @@ try {
   await hasText(manager, "Unlock BookPass");
   await type(manager, "input[type=password]", password);
   await click(manager, "button", "Unlock");
-  await mustHave(manager, "wrong key file", "the password alone is not enough");
+  await mustHave(
+    manager,
+    "Wrong master password or key file",
+    "the password alone is not enough",
+  );
   await type(manager, "input[type=password]", password);
   await manager.waitForSelector("input[type=file]");
   await upload(manager, "input[type=file]", keyFilePath);
@@ -272,11 +276,11 @@ try {
   });
   await mustHave(
     manager,
-    "Your sync tool left a separate copy",
+    "Conflicting vault copy",
     "a sync conflict copy is noticed",
   );
   await shot(manager, "06-conflict-copy");
-  await click(manager, "button", "Merge it");
+  await click(manager, "button", "Merge");
   await mustHave(
     manager,
     "Saved on the other computer",

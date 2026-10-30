@@ -7,9 +7,7 @@ const sites = { origins: ["*://*/*"] };
 export async function withSiteAccess<T>(job: () => Promise<T>): Promise<T> {
   const already = await browser.permissions.contains(sites);
   if (!already && !(await browser.permissions.request(sites))) {
-    throw new Error(
-      "Without permission to reach the sites, BookPass cannot fetch pictures from them.",
-    );
+    throw new Error("Fetching pictures needs permission to reach the sites.");
   }
   try {
     return await job();

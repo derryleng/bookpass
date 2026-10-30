@@ -21,13 +21,13 @@ func (s *server) checkTarget(raw string) (path, creates, problem string) {
 		return path, "", "The file name must end in .kdbx."
 	}
 	if path == filepath.Clean(s.cfg.VaultPath) {
-		return path, "", "The vault is already there."
+		return path, "", "The vault is already at that location."
 	}
 	if info, err := os.Stat(path); err == nil {
 		if info.IsDir() {
 			return path, "", "That is a folder, not a file name."
 		}
-		return path, "", "A file with that name already exists there. Pick another name or folder."
+		return path, "", "A file with that name already exists. Choose another name or folder."
 	}
 	// Walk up to the nearest folder that exists. Everything below it would be created.
 	dir := filepath.Dir(path)
@@ -53,7 +53,7 @@ func (s *server) checkTarget(raw string) (path, creates, problem string) {
 	// A throwaway file in the folder that exists proves it can be written, then it is removed again.
 	probe, err := os.CreateTemp(dir, ".bookpass-check-*")
 	if err != nil {
-		return path, "", fmt.Sprintf("BookPass cannot write to %s: %v", dir, err)
+		return path, "", fmt.Sprintf("Cannot write to %s: %v", dir, err)
 	}
 	probe.Close()
 	os.Remove(probe.Name())

@@ -84,11 +84,6 @@ export function SettingsPanel({
       <section className={`${panel} flex flex-col gap-3`}>
         <div>
           <h2 className="text-base font-semibold">Locking</h2>
-          <p className={hint}>
-            When BookPass asks for your master password again. Choose what suits
-            you: a long time means fewer prompts, a short time means more
-            privacy.
-          </p>
         </div>
         {lockModes.map((mode) => {
           const selected = settings.lockMode === mode.value;
@@ -146,10 +141,7 @@ export function SettingsPanel({
       <section className={`${panel} flex flex-col gap-3`}>
         <div>
           <h2 className="text-base font-semibold">Vault file</h2>
-          <p className={hint}>
-            All your bookmarks live in this one encrypted KeePass file. Changing
-            it locks the vault.
-          </p>
+          <p className={hint}>Changing the file locks the vault.</p>
         </div>
         <VaultLocation
           status={status}
@@ -185,10 +177,6 @@ export function SettingsPanel({
                 </option>
               ))}
           </select>
-          <span className={`${hint} font-normal!`}>
-            Before every save the helper copies the old file into a backups
-            folder next to the vault. Each backup is a full copy.
-          </span>
         </label>
       </section>
 
@@ -250,12 +238,6 @@ export function SettingsPanel({
       <section className={`${panel} flex flex-col gap-3`}>
         <div>
           <h2 className="text-base font-semibold">Pictures</h2>
-          <p className={hint}>
-            The site icon and cover picture shown for each bookmark. Both are
-            stored inside the vault. BookPass never asks a service about your
-            bookmarks: pictures come from the page you are on, from the
-            bookmarked site itself, or from files you choose.
-          </p>
         </div>
         <label className="flex items-start gap-3">
           <input
@@ -269,9 +251,7 @@ export function SettingsPanel({
               Save a cover picture and site icon when I save a page
             </div>
             <div className={hint}>
-              BookPass looks at that one page for its icon and preview image, or
-              takes a small screenshot of the tab. The screenshot never leaves
-              this computer. Nothing is fetched in the background.
+              Uses the page's images, or a screenshot of the tab.
             </div>
           </div>
         </label>
@@ -286,15 +266,9 @@ export function SettingsPanel({
           />
           <div>
             <div className="font-semibold">
-              Also read preview images that sit on another server
+              Allow cover pictures from other servers
             </div>
-            <div className={hint}>
-              Many sites keep their preview image on a separate image server.
-              Reading it makes a request there that the page you are on did not
-              make, so it is off by default and BookPass uses a screenshot
-              instead. This applies to saving a page and to fetching pictures
-              below.
-            </div>
+            <div className={hint}>A screenshot is used instead when off.</div>
           </div>
         </label>
         <label className={`${field} max-w-75`}>
@@ -313,8 +287,7 @@ export function SettingsPanel({
             ))}
           </select>
           <span className={`${hint} font-normal!`}>
-            Wider covers look sharper and make the vault bigger. Each one is
-            squeezed to at most 20 KB.
+            Larger covers increase the vault size.
           </span>
         </label>
         <div className={field}>
@@ -328,11 +301,6 @@ export function SettingsPanel({
               <I n="globe" /> Fetch missing pictures…
             </button>
           </div>
-          <span className={`${hint} font-normal!`}>
-            For bookmarks that were typed in, imported or saved from a link. You
-            can also fetch, choose or remove the pictures of a single bookmark
-            when you edit it.
-          </span>
         </div>
         {fetching && snapshot && (
           <FetchMissingDialog
@@ -350,11 +318,7 @@ export function SettingsPanel({
 
       <section className={`${panel} flex flex-col gap-3`}>
         <h2 className="text-base font-semibold">About</h2>
-        <p>
-          BookPass keeps bookmarks in an encrypted KeePass file on your own
-          disk. It sends nothing anywhere. It only contacts a bookmarked site
-          when you ask it to fetch that site’s pictures.
-        </p>
+        <p>Bookmarks stored in an encrypted KeePass file.</p>
         <p className={hint}>
           Icons by{" "}
           <a
@@ -414,10 +378,7 @@ function PasswordPanel() {
     <form className={`${panel} flex flex-col gap-3`} onSubmit={change}>
       <div>
         <h2 className="text-base font-semibold">Master password</h2>
-        <p className={hint}>
-          Changing it re-encrypts the vault. If you use a key file, it stays the
-          same.
-        </p>
+        <p className={hint}>Changing it re-encrypts the vault.</p>
       </div>
       <label className={`${field} max-w-90`}>
         <span>Current password</span>
@@ -487,7 +448,7 @@ function BackupsPanel() {
   async function restore(name: string, withPassword: boolean) {
     if (
       !confirm(
-        "Replace the vault with this backup? The vault as it is now is kept as a backup too.",
+        "Replace the vault with this backup? The current vault is saved as a backup.",
       )
     )
       return;
@@ -510,21 +471,14 @@ function BackupsPanel() {
     <section className={`${panel} flex flex-col gap-3`}>
       <div>
         <h2 className="text-base font-semibold">Backups</h2>
-        <p className={hint}>
-          The helper keeps these next to the vault file. Restoring one replaces
-          what you have now.
-        </p>
+        <p className={hint}>Restoring replaces the current vault.</p>
       </div>
       {!backups && !message && (
         <span className="text-muted">
           <I n="spinner" spin /> Looking…
         </span>
       )}
-      {backups?.length === 0 && (
-        <p className="text-muted">
-          No backups yet. The first appears after the second save.
-        </p>
-      )}
+      {backups?.length === 0 && <p className="text-muted">No backups yet.</p>}
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
         {backups?.map((b) => (
           <li key={b.name}>
@@ -551,7 +505,7 @@ function BackupsPanel() {
                 }}
               >
                 <label className={`${field} max-w-90`}>
-                  <span>Password this backup was saved with</span>
+                  <span>Backup password</span>
                   <input
                     className={input}
                     type="password"

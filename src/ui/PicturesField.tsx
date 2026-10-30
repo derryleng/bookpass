@@ -11,7 +11,7 @@ import { useImage } from "./api";
 import { I } from "./Icon";
 import { errorText, Favicon } from "./parts";
 import { withSiteAccess } from "./site-access";
-import { btn, callout, hint, caption } from "./cls";
+import { btn, callout, caption } from "./cls";
 
 /** What the person changed. undefined: not touched. null: take it away. A string: the new picture, base64. */
 export interface PicturePending {
@@ -226,11 +226,6 @@ export function PicturesField({
           </div>
         </div>
       </div>
-      <p className={hint}>
-        Fetching visits the site once, with no cookies and no referrer, and asks
-        your browser for permission to reach it each time. Pictures you choose
-        never leave this computer.
-      </p>
       {notes.map((note) => (
         <div className={callout()} key={note} role="status">
           <I n="circle-exclamation" />

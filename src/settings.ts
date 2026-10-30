@@ -54,22 +54,22 @@ export const lockModes: { value: LockMode; label: string; help: string }[] = [
   {
     value: "browser-close",
     label: "When the browser closes",
-    help: "Unlock once per browser session. Locks when you quit the browser.",
+    help: "Stays unlocked until the browser closes.",
   },
   {
     value: "idle",
     label: "After a period of inactivity",
-    help: "Locks after you have not used BookPass for the time you choose.",
+    help: "Locks after a set time without use.",
   },
   {
     value: "system-idle",
     label: "When the computer is idle or locked",
-    help: "Locks after the computer sits idle, and when you lock your screen.",
+    help: "Locks when the computer is idle or the screen locks.",
   },
   {
     value: "every-time",
     label: "Every time you close it",
-    help: "Locks as soon as the popup or the manager tab closes. Most private, most typing.",
+    help: "Locks when the popup or manager tab closes.",
   },
 ];
 

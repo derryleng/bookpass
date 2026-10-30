@@ -75,9 +75,7 @@ export function ImportDialog({
       if (
         !(await browser.permissions.request({ permissions: ["bookmarks"] }))
       ) {
-        return setError(
-          "BookPass needs the bookmarks permission to read your browser bookmarks.",
-        );
+        return setError("The bookmarks permission is required.");
       }
       const roots = (await browser.bookmarks.getTree()) as BrowserNode[];
       await load(fromBrowserTree(roots), "your browser bookmarks");
@@ -116,7 +114,7 @@ export function ImportDialog({
               {done.folders} folder
               {done.folders === 1 ? "" : "s"}.
               {done.skipped > 0 &&
-                ` ${done.skipped} already in your vault were skipped.`}
+                ` ${done.skipped} skipped (already in the vault).`}
             </span>
           </div>
           <footer className="flex items-center gap-2">
@@ -128,10 +126,7 @@ export function ImportDialog({
         </>
       ) : (
         <>
-          <p className={hint}>
-            Bookmark files from Chrome, Firefox, Raindrop (HTML or CSV) and most
-            other services work. The whole file is read here, on your computer.
-          </p>
+          <p className={hint}>HTML or CSV bookmark file.</p>
           <div className="flex items-center gap-2">
             <label className={btn()}>
               <I n="file-lines" /> Choose a file
@@ -168,9 +163,7 @@ export function ImportDialog({
                     void load(parsed, source, e.target.checked);
                   }}
                 />
-                <span>
-                  Skip bookmarks whose address is already in the vault
-                </span>
+                <span>Skip existing addresses</span>
               </label>
               <label className="flex items-center gap-2">
                 <input
@@ -178,7 +171,7 @@ export function ImportDialog({
                   checked={wrap}
                   onChange={(e) => setWrap(e.target.checked)}
                 />
-                <span>Put them in a new folder called Imported {today}</span>
+                <span>Add to a new folder {today}</span>
               </label>
               <label className={field}>
                 <span>Place it inside</span>
@@ -236,11 +229,7 @@ export function ExportDialog({
     <Dialog title="Export bookmarks" onClose={onClose}>
       <div className={callout("warn")}>
         <I n="triangle-exclamation" />
-        <span>
-          Exported files are not encrypted. Anyone who gets a copy can read
-          every address and note. Your vault file, which is encrypted, already
-          opens in KeePassXC and is the better backup.
-        </span>
+        <span>Exported files are not encrypted.</span>
       </div>
       <div className="flex flex-col gap-2">
         <button
@@ -253,7 +242,7 @@ export function ExportDialog({
             )
           }
         >
-          <I n="file-lines" /> HTML for browsers and most services
+          <I n="file-lines" /> HTML (browsers and most services)
         </button>
         <button
           className={btn()}
@@ -265,7 +254,7 @@ export function ExportDialog({
             )
           }
         >
-          <I n="file-lines" /> CSV with folders, tags and notes
+          <I n="file-lines" /> CSV (folders, tags and notes)
         </button>
         <button
           className={btn()}
@@ -277,14 +266,13 @@ export function ExportDialog({
             )
           }
         >
-          <I n="file-lines" /> JSON with everything
+          <I n="file-lines" /> JSON (everything)
         </button>
       </div>
       <p className={hint}>
         {bookmarks.length} bookmark{bookmarks.length === 1 ? "" : "s"} in{" "}
         {folders.length} folder
-        {folders.length === 1 ? "" : "s"}. Cover pictures and icons stay in the
-        vault.
+        {folders.length === 1 ? "" : "s"}. Pictures are not included.
       </p>
     </Dialog>
   );
@@ -322,14 +310,11 @@ export function DuplicatesDialog({
       {groups.length === 0 ? (
         <div className={callout()} role="status">
           <I n="circle-check" />
-          <span>No two bookmarks share an address.</span>
+          <span>No duplicates found.</span>
         </div>
       ) : (
         <>
-          <p className={hint}>
-            Addresses that differ only by a trailing slash or a #fragment count
-            as the same page.
-          </p>
+          <p className={hint}>Trailing slashes and #fragments are ignored.</p>
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {groups.map((group) => (
               <li
@@ -365,8 +350,7 @@ export function DuplicatesDialog({
             ))}
           </ul>
           <button className={btn()} onClick={() => trash(extras)}>
-            <I n="trash" /> Keep only the newest of each ({extras.length} to
-            trash)
+            <I n="trash" /> Keep the newest of each ({extras.length} to trash)
           </button>
         </>
       )}

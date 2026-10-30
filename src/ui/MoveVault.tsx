@@ -128,9 +128,7 @@ export function MoveVaultDialog({
       }
     >
       <p className={hint}>
-        The vault file and the backups beside it are copied to the new place and
-        checked, and only then removed from the old one. BookPass stays
-        unlocked.
+        The vault and its backups are moved to the new folder.
       </p>
       <div className={field}>
         <span>Now</span>
@@ -158,9 +156,7 @@ export function MoveVaultDialog({
         </div>
         {noDialog && (
           <span className={`${hint} font-normal!`}>
-            This computer has no folder dialog for BookPass to open, so type the
-            full path of the folder instead. A folder that does not exist yet is
-            created.
+            No folder dialog is available. Enter the folder path.
           </span>
         )}
       </label>
@@ -185,14 +181,14 @@ export function MoveVaultDialog({
           <span>
             {check.creates ? (
               <>
-                The folder <span className={path}>{check.creates}</span> does
-                not exist yet and will be created.
+                The folder <span className={path}>{check.creates}</span> will be
+                created.
               </>
             ) : (
-              "The folder exists and can be written to."
+              "The folder is writable."
             )}{" "}
-            If this folder is synced, the other computers will pick the vault up
-            from there.
+            If this folder is synced, other computers will pick up the vault
+            from it.
           </span>
         </div>
       )}

@@ -192,10 +192,7 @@ function Popup({ status, snapshot }: PageContext) {
         <div className="flex flex-col gap-3 p-3">
           <div className={callout("warn")}>
             <I n="triangle-exclamation" />
-            <span>
-              BookPass can only save web pages (addresses starting with http or
-              https).
-            </span>
+            <span>Only http and https pages can be saved.</span>
           </div>
           <button className={btn()} onClick={() => openManager()}>
             Open manager
@@ -207,10 +204,7 @@ function Popup({ status, snapshot }: PageContext) {
             {existing && (
               <div className={callout()}>
                 <I n="circle-check" />
-                <span>
-                  You saved this page before. Saving again updates that
-                  bookmark.
-                </span>
+                <span>Already saved. Saving updates the bookmark.</span>
               </div>
             )}
             <div className="flex items-stretch gap-3">
@@ -322,9 +316,7 @@ function SaveTabs({
   async function save(selectedOnly: boolean) {
     try {
       if (!(await browser.permissions.request({ permissions: ["tabs"] }))) {
-        return onError(
-          "Saving several tabs needs permission to read their titles and addresses.",
-        );
+        return onError("Saving several tabs needs the tabs permission.");
       }
       const tabs = await browser.tabs.query(
         selectedOnly
@@ -346,7 +338,7 @@ function SaveTabs({
         emptyFolders: [],
       };
       if (parsed.bookmarks.length === 0)
-        return onError("None of those tabs are web pages BookPass can save.");
+        return onError("None of those tabs can be saved.");
       const result = await send("importBookmarks", {
         parsed,
         parentId: folder,
@@ -380,8 +372,7 @@ function SaveTabs({
         </button>
       </div>
       <p className={`${hint} mt-1.5`}>
-        They go into a new folder. Hold Ctrl or Shift and click tabs to select
-        several.
+        Saved to a new folder. Ctrl or Shift click to select tabs.
       </p>
     </details>
   );

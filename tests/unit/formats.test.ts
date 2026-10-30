@@ -111,7 +111,7 @@ describe("CSV", () => {
 
   it("refuses a CSV that is not bookmarks", () => {
     expect(() => parseRaindropCsv("name,age\r\nann,3\r\n")).toThrow(
-      /url column/,
+      /URL column/,
     );
   });
 });

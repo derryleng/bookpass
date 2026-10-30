@@ -133,11 +133,7 @@ export function Sidebar({
           <I n="plus" />
         </button>
       </div>
-      {tree.length === 0 && (
-        <p className={`${hint} mx-2.5`}>
-          No folders yet. Create one to organise your bookmarks.
-        </p>
-      )}
+      {tree.length === 0 && <p className={`${hint} mx-2.5`}>No folders yet.</p>}
       {tree.map((node) => (
         <FolderRow
           key={node.folder.id}
@@ -158,7 +154,7 @@ export function Sidebar({
               className={btn("quiet tiny")}
               onClick={() => setTagDialog(true)}
               aria-label="Manage tags"
-              title="Rename, merge, color and delete tags"
+              title="Manage tags"
             >
               <I n="pen" />
             </button>

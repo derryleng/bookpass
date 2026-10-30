@@ -36,9 +36,8 @@ export function Banners({ status }: { status: Status }) {
           <div className={callout("warn")} key={name}>
             <I n="triangle-exclamation" />
             <span className="min-w-0 flex-1">
-              Your sync tool left a separate copy of the vault,{" "}
-              <span className={path}>{name}</span>, because two computers saved
-              at once. Merge it to keep the changes from both.
+              Conflicting vault copy detected:{" "}
+              <span className={path}>{name}</span>.
             </span>
             <button
               className={btn("small")}
@@ -47,7 +46,7 @@ export function Banners({ status }: { status: Status }) {
                 void run(name, () => send("mergeConflictCopy", { name }))
               }
             >
-              {working === name ? <I n="spinner" spin /> : "Merge it"}
+              {working === name ? <I n="spinner" spin /> : "Merge"}
             </button>
             <button className={btn("small")} onClick={() => hide(name)}>
               Not now
@@ -59,9 +58,8 @@ export function Banners({ status }: { status: Status }) {
         <div className={callout()} key={c.id}>
           <I n="circle-exclamation" />
           <span className="min-w-0 flex-1">
-            <strong>{c.title}</strong> was changed here and on another computer.
-            BookPass kept the edit from {c.kept}. The other one is saved in the
-            bookmark's history.
+            Conflicting edits to <strong>{c.title}</strong>. The edit from{" "}
+            {c.kept} was kept. The other is in the bookmark history.
           </span>
           <button
             className={btn("small")}
@@ -71,7 +69,7 @@ export function Banners({ status }: { status: Status }) {
               )
             }
           >
-            Use the other edit instead
+            Use other edit
           </button>
           <button
             className={btn("small")}
@@ -81,7 +79,7 @@ export function Banners({ status }: { status: Status }) {
               )
             }
           >
-            Fine as it is
+            Dismiss
           </button>
         </div>
       ))}
@@ -90,14 +88,14 @@ export function Banners({ status }: { status: Status }) {
         <div className={callout("warn")}>
           <I n="triangle-exclamation" />
           <span className="min-w-0 flex-1">
-            Your vault is {megabytes(status.vaultBytes)}. It is read and saved
-            as a whole, so it may feel slow.{" "}
+            The vault is {megabytes(status.vaultBytes)}. Reading and saving may
+            be slow.{" "}
             {status.vaultBytes > stopCoversVaultBytes
-              ? "New cover pictures are paused until it is smaller."
-              : `Cover pictures stop being saved at ${megabytes(stopCoversVaultBytes)}.`}
+              ? "New cover pictures are paused."
+              : `Cover pictures stop at ${megabytes(stopCoversVaultBytes)}.`}
           </span>
           <button className={btn("small")} onClick={() => hide("size")}>
-            Got it
+            Dismiss
           </button>
         </div>
       )}
